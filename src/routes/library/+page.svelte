@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { base } from '$app/paths';
 	import SectionBadge from '$lib/components/SectionBadge.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import StarRating from '$lib/components/StarRating.svelte';
@@ -8,6 +7,10 @@
 
 	type Tab = 'tests' | 'practice' | 'courses' | 'resources';
 	let activeTab: Tab = 'tests';
+
+	// Test view toggle
+	type TestView = 'byTest' | 'bySection';
+	let testView: TestView = 'byTest';
 
 	type SectionFilter = Section | 'All';
 	let sectionFilter: SectionFilter = 'All';
@@ -20,7 +23,9 @@
 		{ id: 'resources', label: 'Resources', count: resources.length }
 	];
 
-	const sections: SectionFilter[] = ['All', 'Reading', 'Listening', 'Speaking', 'Writing', 'General'];
+	const sections: SectionFilter[] = ['All', 'Reading', 'Listening', 'Speaking', 'Writing'];
+
+	const sectionList: Section[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
 
 	$: filteredTests = practiceTests.filter((t) => {
 		if (accessFilter !== 'all' && t.access !== accessFilter) return false;
@@ -45,11 +50,18 @@
 	});
 
 	const sectionColors: Record<string, string> = {
-		Reading: 'bg-blue-100 text-blue-700',
+		Reading:   'bg-blue-100 text-blue-700',
 		Listening: 'bg-purple-100 text-purple-700',
-		Speaking: 'bg-orange-100 text-orange-700',
-		Writing: 'bg-pink-100 text-pink-700',
-		General: 'bg-brand-green-light text-brand-green'
+		Speaking:  'bg-orange-100 text-orange-700',
+		Writing:   'bg-pink-100 text-pink-700',
+		General:   'bg-brand-green-light text-brand-green'
+	};
+
+	const sectionHeaderColors: Record<string, string> = {
+		Reading:   'bg-blue-500',
+		Listening: 'bg-purple-500',
+		Speaking:  'bg-orange-500',
+		Writing:   'bg-pink-500'
 	};
 </script>
 
@@ -57,35 +69,43 @@
 	<title>Content Library – TST Prep</title>
 </svelte:head>
 
-<div class="px-8 py-8">
+<div class="px-8 py-7">
 	<!-- Header -->
-	<div class="mb-6">
+	<div class="mb-5">
 		<h1 class="text-2xl font-black text-gray-900">Content Library</h1>
-		<p class="text-gray-400 text-sm mt-1">All TOEFL preparation materials in one place</p>
+		<p class="text-gray-400 text-sm mt-0.5">All TOEFL preparation materials in one place</p>
 	</div>
 
-	<!-- Tabs -->
-	<div class="flex items-center gap-2 mb-6 bg-white rounded-2xl p-1.5 shadow-card w-fit">
+	<!-- Tabs — unified pill bar -->
+	<div class="inline-flex bg-gray-100 rounded-xl p-1 gap-1 mb-5">
 		{#each tabs as tab}
 			<button
-				class="tab {activeTab === tab.id ? 'active' : ''} flex items-center gap-2"
-				on:click={() => { activeTab = tab.id; sectionFilter = 'All'; }}
+				class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150
+					{activeTab === tab.id
+						? 'bg-white text-brand-green shadow-sm'
+						: 'text-gray-500 hover:text-gray-700'}"
+				on:click={() => { activeTab = tab.id; sectionFilter = 'All'; accessFilter = 'all'; }}
 			>
 				{tab.label}
-				<span class="text-xs {activeTab === tab.id ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'} px-1.5 py-0.5 rounded-full font-bold">
+				<span class="text-xs px-1.5 py-0.5 rounded-full font-bold
+					{activeTab === tab.id ? 'bg-brand-green text-white' : 'bg-gray-200 text-gray-500'}">
 					{tab.count}
 				</span>
 			</button>
 		{/each}
 	</div>
 
-	<!-- Filters -->
-	<div class="flex items-center gap-3 mb-6 flex-wrap">
-		{#if activeTab !== 'tests' && activeTab !== 'resources'}
-			<div class="flex gap-1.5 flex-wrap">
+	<!-- Toolbar row (filters + toggle) -->
+	<div class="flex items-center gap-3 mb-5 flex-wrap">
+		<!-- Section filter (not for tests or resources) -->
+		{#if activeTab === 'practice' || activeTab === 'courses'}
+			<div class="flex gap-1 flex-wrap">
 				{#each sections as sec}
 					<button
-						class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all {sectionFilter === sec ? 'bg-brand-green text-white' : 'bg-white text-gray-500 hover:bg-gray-50 shadow-sm'}"
+						class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+							{sectionFilter === sec
+								? 'bg-brand-green text-white'
+								: 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-200'}"
 						on:click={() => (sectionFilter = sec)}
 					>
 						{sec}
@@ -94,11 +114,35 @@
 			</div>
 		{/if}
 
+		<!-- By Test / By Section toggle (tests only) -->
+		{#if activeTab === 'tests'}
+			<div class="flex bg-gray-100 rounded-lg p-0.5">
+				<button
+					class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all
+						{testView === 'byTest' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500'}"
+					on:click={() => (testView = 'byTest')}
+				>
+					By Test No.
+				</button>
+				<button
+					class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all
+						{testView === 'bySection' ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500'}"
+					on:click={() => (testView = 'bySection')}
+				>
+					By Section
+				</button>
+			</div>
+		{/if}
+
+		<!-- Access filter (not for resources) -->
 		{#if activeTab !== 'resources'}
-			<div class="flex gap-1.5 ml-auto">
+			<div class="flex gap-1 ml-auto">
 				{#each [['all', 'All'], ['free', 'Free'], ['locked', 'Premium']] as [val, lbl]}
 					<button
-						class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all {accessFilter === val ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50 shadow-sm'}"
+						class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+							{accessFilter === val
+								? 'bg-gray-800 text-white'
+								: 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-200'}"
 						on:click={() => (accessFilter = val as 'all' | 'free' | 'locked')}
 					>
 						{lbl}
@@ -108,121 +152,144 @@
 		{/if}
 	</div>
 
-	<!-- ── PRACTICE TESTS ────────────────────────────────────── -->
-	{#if activeTab === 'tests'}
-		<div class="grid grid-cols-3 gap-4">
+	<!-- ── PRACTICE TESTS: BY TEST NO. ──────────────────────────── -->
+	{#if activeTab === 'tests' && testView === 'byTest'}
+		<div class="grid grid-cols-4 gap-3">
 			{#each filteredTests as test}
-				<div class="card relative {test.access === 'locked' ? 'opacity-90' : ''} hover:shadow-lg transition-shadow">
-					{#if test.access === 'locked'}
-						<div class="absolute top-4 right-4">
-							<span class="bg-gray-100 text-gray-400 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-								🔒 Premium
-							</span>
-						</div>
-					{:else if test.attempts > 0}
-						<div class="absolute top-4 right-4">
-							<span class="bg-brand-green-light text-brand-green text-xs font-bold px-2 py-1 rounded-full">
-								✓ Attempted
-							</span>
-						</div>
-					{:else}
-						<div class="absolute top-4 right-4">
-							<span class="bg-blue-50 text-blue-500 text-xs font-bold px-2 py-1 rounded-full">
-								Free
-							</span>
-						</div>
-					{/if}
+				<div class="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow flex flex-col gap-3
+					{test.access === 'locked' ? 'opacity-80' : ''}">
 
-					<div class="mb-3">
-						<p class="text-xs font-semibold text-gray-400 mb-1">TOEFL Full Test</p>
-						<h3 class="font-black text-gray-900 text-base pr-16">Test #{test.testNumber}</h3>
+					<!-- Header row -->
+					<div class="flex items-start justify-between">
+						<div>
+							<p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide leading-none mb-1">TOEFL Full Test</p>
+							<h3 class="font-black text-gray-900 text-sm">{test.title}</h3>
+						</div>
+						{#if test.access === 'locked'}
+							<span class="text-[10px] bg-gray-100 text-gray-400 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 flex-shrink-0">🔒 Premium</span>
+						{:else if test.attempts > 0}
+							<span class="text-[10px] bg-brand-green-light text-brand-green font-bold px-2 py-0.5 rounded-full flex-shrink-0">✓ Done</span>
+						{:else}
+							<span class="text-[10px] bg-blue-50 text-blue-500 font-bold px-2 py-0.5 rounded-full flex-shrink-0">Free</span>
+						{/if}
 					</div>
 
-					<!-- Section icons -->
-					<div class="flex gap-1.5 mb-4">
+					<!-- Section badges -->
+					<div class="flex gap-1">
 						{#each test.sections as sec}
-							<SectionBadge section={sec} size="md" />
+							<SectionBadge section={sec} size="sm" />
 						{/each}
 					</div>
 
-					<!-- Score / stats -->
+					<!-- Score or meta -->
 					{#if test.bestScore !== null}
-						<div class="flex items-center gap-3 mb-3">
-							<div class="bg-brand-green-light rounded-xl px-3 py-1.5 text-center">
-								<p class="text-brand-green font-black text-lg leading-none">{test.bestScore.toFixed(1)}</p>
-								<p class="text-xs text-gray-400">Best</p>
+						<div class="flex items-center gap-2">
+							<div class="bg-brand-green-light rounded-lg px-2.5 py-1 text-center">
+								<p class="text-brand-green font-black text-base leading-none">{test.bestScore.toFixed(1)}</p>
+								<p class="text-[10px] text-gray-400 leading-none mt-0.5">Best</p>
 							</div>
-							<div class="text-xs text-gray-400">
+							<div class="text-[11px] text-gray-400 leading-relaxed">
 								<p>{test.attempts} attempt{test.attempts !== 1 ? 's' : ''}</p>
 								<p>{test.lastAttempt}</p>
 							</div>
 						</div>
 					{:else}
-						<div class="flex items-center gap-2 mb-3 text-xs text-gray-400">
-							<span>⏱ {test.duration}</span>
-							<span>·</span>
-							<span>4 sections</span>
-						</div>
+						<p class="text-[11px] text-gray-400">⏱ {test.duration} · 4 sections</p>
 					{/if}
 
 					<StarRating rating={test.rating} count={test.ratingCount} />
 
-					<div class="mt-4">
+					<!-- CTA -->
+					<div class="mt-auto">
 						{#if test.access === 'locked'}
-							<button class="btn-primary w-full">🔒 Unlock Test</button>
+							<button class="w-full text-xs font-semibold py-2 rounded-lg border border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white transition-all">
+								🔒 Unlock Test
+							</button>
 						{:else if test.attempts > 0}
-							<button class="btn-secondary w-full">Retake Test</button>
+							<button class="w-full text-xs font-semibold py-2 rounded-lg bg-brand-green text-white hover:bg-brand-green-dark transition-colors">
+								Retake Test
+							</button>
 						{:else}
-							<button class="btn-secondary w-full">Start Test →</button>
+							<button class="w-full text-xs font-semibold py-2 rounded-lg bg-brand-green text-white hover:bg-brand-green-dark transition-colors">
+								Start Test →
+							</button>
 						{/if}
 					</div>
 				</div>
 			{/each}
 		</div>
 
-	<!-- ── PRACTICE QUESTIONS ─────────────────────────────────── -->
-	{:else if activeTab === 'practice'}
-		<div class="grid grid-cols-2 gap-4">
-			{#each filteredPractice as set}
-				<div class="card flex gap-5 {set.access === 'locked' ? 'opacity-90' : ''} hover:shadow-lg transition-shadow">
-					<div class="flex-shrink-0">
-						<SectionBadge section={set.section} size="md" />
+	<!-- ── PRACTICE TESTS: BY SECTION ───────────────────────────── -->
+	{:else if activeTab === 'tests' && testView === 'bySection'}
+		<div class="grid grid-cols-4 gap-4">
+			{#each sectionList as section}
+				<div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+					<!-- Section header -->
+					<div class="{sectionHeaderColors[section]} px-4 py-3">
+						<p class="text-white font-black text-sm">{section}</p>
+						<p class="text-white/70 text-xs mt-0.5">15 practice tests</p>
 					</div>
+					<!-- Test list -->
+					<div class="divide-y divide-gray-50">
+						{#each practiceTests as test}
+							<div class="px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors">
+								<div class="flex items-center gap-2">
+									<span class="text-xs font-bold text-gray-700">Test #{test.testNumber}</span>
+									{#if test.bestScore !== null}
+										<span class="text-xs text-brand-green font-semibold">{test.bestScore.toFixed(1)}</span>
+									{/if}
+								</div>
+								<div>
+									{#if test.access === 'locked'}
+										<span class="text-gray-300 text-sm">🔒</span>
+									{:else if test.bestScore !== null}
+										<span class="text-brand-green text-xs font-bold">✓</span>
+									{:else}
+										<button class="text-xs text-brand-green font-semibold hover:underline">Start</button>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/each}
+		</div>
+
+	<!-- ── PRACTICE QUESTIONS ─────────────────────────────────────── -->
+	{:else if activeTab === 'practice'}
+		<div class="grid grid-cols-2 gap-3">
+			{#each filteredPractice as set}
+				<div class="bg-white rounded-xl border border-gray-100 p-4 flex gap-4 hover:shadow-md transition-shadow
+					{set.access === 'locked' ? 'opacity-80' : ''}">
+					<SectionBadge section={set.section} size="md" />
 					<div class="flex-1 min-w-0">
-						<div class="flex items-start justify-between gap-2 mb-1">
-							<h3 class="font-bold text-gray-900 text-sm leading-snug">
-								{set.title.replace('Free Interactive ', '').replace(' for the TOEFL Test', '')}
-							</h3>
+						<div class="flex items-start justify-between gap-2 mb-1.5">
+							<h3 class="font-bold text-gray-900 text-sm leading-snug">{set.title}</h3>
 							{#if set.access === 'locked'}
-								<span class="text-gray-300 text-lg flex-shrink-0">🔒</span>
+								<span class="text-gray-300 text-base flex-shrink-0">🔒</span>
 							{/if}
 						</div>
-
-						<div class="flex items-center gap-2 mb-2">
-							<span class="text-xs px-2 py-0.5 rounded-full font-semibold {sectionColors[set.section]}">{set.section}</span>
-							<span class="text-xs text-gray-400">{set.questionCount} questions</span>
-							<span class="text-xs text-gray-400">· {set.difficulty}</span>
+						<div class="flex items-center gap-2 mb-2 flex-wrap">
+							<span class="text-[11px] px-2 py-0.5 rounded-full font-semibold {sectionColors[set.section]}">{set.section}</span>
+							<span class="text-[11px] text-gray-400">{set.questionCount} questions · {set.difficulty}</span>
 						</div>
-
 						{#if set.completionPercent > 0}
 							<div class="mb-2">
-								<div class="flex justify-between text-xs text-gray-400 mb-1">
+								<div class="flex justify-between text-[11px] text-gray-400 mb-1">
 									<span>Progress</span>
 									<span class="font-semibold text-brand-green">{set.completionPercent}%</span>
 								</div>
 								<ProgressBar percent={set.completionPercent} />
 							</div>
 						{/if}
-
 						<StarRating rating={set.rating} count={set.ratingCount} />
-
-						<div class="mt-3">
+						<div class="mt-2.5">
 							{#if set.access === 'locked'}
-								<button class="btn-primary text-xs px-4 py-2">🔒 Unlock</button>
+								<button class="text-xs font-semibold px-4 py-1.5 rounded-lg border border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white transition-all">🔒 Unlock</button>
 							{:else if set.completionPercent > 0}
-								<button class="btn-secondary text-xs px-4 py-2">Continue →</button>
+								<button class="text-xs font-semibold px-4 py-1.5 rounded-lg bg-brand-green text-white hover:bg-brand-green-dark transition-colors">Continue →</button>
 							{:else}
-								<button class="btn-secondary text-xs px-4 py-2">Start Practice →</button>
+								<button class="text-xs font-semibold px-4 py-1.5 rounded-lg bg-brand-green text-white hover:bg-brand-green-dark transition-colors">Start Practice →</button>
 							{/if}
 						</div>
 					</div>
@@ -230,58 +297,42 @@
 			{/each}
 		</div>
 
-	<!-- ── COURSES ────────────────────────────────────────────── -->
+	<!-- ── COURSES ─────────────────────────────────────────────────── -->
 	{:else if activeTab === 'courses'}
 		<div class="grid grid-cols-3 gap-4">
 			{#each filteredCourses as course}
-				<div class="card p-0 overflow-hidden {course.access === 'locked' ? '' : ''} hover:shadow-lg transition-shadow group">
-					<!-- Thumbnail -->
-					<div class="relative h-36 bg-gray-100 overflow-hidden">
-						<img
-							src={course.thumbnail}
-							alt={course.title}
-							class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-						/>
-						<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+				<div class="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group">
+					<div class="relative h-32 bg-gray-100">
+						<img src={course.thumbnail} alt={course.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+						<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
 						{#if course.tag}
-							<span class="absolute top-3 left-3 bg-brand-pink text-white text-xs font-bold px-2 py-1 rounded-full">
-								{course.tag}
-							</span>
+							<span class="absolute top-2.5 left-2.5 bg-brand-pink text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{course.tag}</span>
 						{/if}
 						{#if course.access === 'locked'}
-							<div class="absolute top-3 right-3 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center">
-								<span class="text-white text-sm">🔒</span>
+							<div class="absolute top-2.5 right-2.5 w-6 h-6 bg-black/40 rounded-full flex items-center justify-center">
+								<span class="text-white text-xs">🔒</span>
 							</div>
 						{/if}
-						<div class="absolute bottom-3 left-3">
-							<SectionBadge section={course.section} size="md" />
+						<div class="absolute bottom-2.5 left-2.5">
+							<SectionBadge section={course.section} size="sm" />
 						</div>
 					</div>
-
-					<div class="p-4">
-						<h3 class="font-bold text-gray-900 text-sm leading-snug mb-2 line-clamp-2">
-							{course.title}
-						</h3>
-
-						<div class="flex items-center gap-3 text-xs text-gray-400 mb-2">
+					<div class="p-3.5">
+						<h3 class="font-bold text-gray-900 text-sm leading-snug mb-2 line-clamp-2">{course.title}</h3>
+						<div class="flex items-center gap-2 text-[11px] text-gray-400 mb-2">
 							<span>📚 {course.lessonCount} lessons</span>
 						</div>
-
 						{#if course.progressPercent > 0}
-							<div class="mb-3">
-								<ProgressBar percent={course.progressPercent} />
-							</div>
+							<div class="mb-2"><ProgressBar percent={course.progressPercent} /></div>
 						{/if}
-
 						<StarRating rating={course.rating} count={course.ratingCount} />
-
 						<div class="mt-3">
 							{#if course.access === 'locked'}
-								<button class="btn-primary w-full text-xs">🔒 Unlock Course</button>
+								<button class="w-full text-xs font-semibold py-2 rounded-lg border border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white transition-all">🔒 Unlock Course</button>
 							{:else if course.progressPercent > 0}
-								<button class="btn-secondary w-full text-xs">Continue Course →</button>
+								<button class="w-full text-xs font-semibold py-2 rounded-lg bg-brand-green text-white hover:bg-brand-green-dark transition-colors">Continue →</button>
 							{:else}
-								<button class="btn-secondary w-full text-xs">Start Course →</button>
+								<button class="w-full text-xs font-semibold py-2 rounded-lg bg-brand-green text-white hover:bg-brand-green-dark transition-colors">Start Course →</button>
 							{/if}
 						</div>
 					</div>
@@ -289,35 +340,33 @@
 			{/each}
 		</div>
 
-		<!-- Upsell banner for locked courses -->
-		<div class="mt-6 p-5 bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl flex items-center justify-between text-white">
+		<div class="mt-5 p-4 bg-gradient-to-r from-gray-800 to-gray-900 rounded-2xl flex items-center justify-between text-white">
 			<div>
-				<p class="font-black text-lg">Unlock All Score Builder Courses</p>
-				<p class="text-sm text-gray-400 mt-0.5">Get full access to all 6 expert-designed courses + 13 practice tests</p>
+				<p class="font-black">Unlock All Score Builder Courses</p>
+				<p class="text-sm text-gray-400 mt-0.5">Full access to all 6 expert-designed courses + 13 practice tests</p>
 			</div>
-			<button class="btn-primary flex-shrink-0">Upgrade to Premium</button>
+			<button class="bg-brand-pink text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-brand-pink-dark transition-colors flex-shrink-0">
+				Upgrade to Premium
+			</button>
 		</div>
 
-	<!-- ── RESOURCES ──────────────────────────────────────────── -->
+	<!-- ── RESOURCES ──────────────────────────────────────────────── -->
 	{:else if activeTab === 'resources'}
-		<div class="grid grid-cols-2 gap-4">
+		<div class="grid grid-cols-2 gap-3">
 			{#each filteredResources as res}
-				<div class="card flex items-start gap-4 hover:shadow-lg transition-shadow">
-					<div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
-						<span class="text-2xl">📄</span>
+				<div class="bg-white rounded-xl border border-gray-100 p-4 flex items-start gap-3 hover:shadow-md transition-shadow">
+					<div class="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+						<span class="text-xl">📄</span>
 					</div>
 					<div class="flex-1 min-w-0">
-						<div class="flex items-start justify-between gap-2">
+						<div class="flex items-start justify-between gap-2 mb-1">
 							<h3 class="font-bold text-gray-900 text-sm leading-snug">{res.title}</h3>
 							<SectionBadge section={res.section} />
 						</div>
-						<p class="text-xs text-gray-400 mt-1 mb-3">{res.description}</p>
+						<p class="text-[11px] text-gray-400 mb-2.5">{res.description}</p>
 						<div class="flex items-center gap-3">
-							<span class="text-xs text-gray-300">📦 {res.fileSize}</span>
-							<a
-								href={res.downloadUrl}
-								class="btn-ghost text-xs py-1.5 px-3 inline-flex items-center gap-1"
-							>
+							<span class="text-[11px] text-gray-300">📦 {res.fileSize}</span>
+							<a href={res.downloadUrl} class="text-xs font-semibold text-brand-green hover:underline flex items-center gap-1">
 								⬇ Download PDF
 							</a>
 						</div>

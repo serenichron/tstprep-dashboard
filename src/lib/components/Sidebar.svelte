@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { base } from '$app/paths';
 	import type { User } from '$lib/types';
 
@@ -28,11 +28,9 @@
 		}
 	];
 
-	$: currentPath = $page.url.pathname;
-
 	function isActive(href: string) {
 		const path = href.replace(base, '') || '/';
-		const current = currentPath.replace(base, '') || '/';
+		const current = page.url.pathname.replace(base, '') || '/';
 		if (path === '/') return current === '/';
 		return current.startsWith(path);
 	}
@@ -44,58 +42,54 @@
 		Expert: 'bg-purple-500',
 		Master: 'bg-brand-pink'
 	};
-
-	$: levelColor = levelColors[user.level] ?? 'bg-gray-400';
 </script>
 
 <aside class="fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-100 flex flex-col z-30 shadow-sm">
 	<!-- Logo -->
-	<div class="px-5 py-5 border-b border-gray-50">
+	<div class="px-5 py-4 border-b border-gray-100">
 		<a href="{base}/" class="flex items-center gap-2">
-			<div class="w-8 h-8 bg-brand-green rounded-lg flex items-center justify-center">
-				<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-					<path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+			<div class="w-8 h-8 bg-brand-green rounded-lg flex items-center justify-center flex-shrink-0">
+				<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
 				</svg>
 			</div>
-			<div>
-				<span class="font-black text-gray-900 text-base tracking-tight">TST</span>
-				<span class="font-black text-brand-green text-base tracking-tight">Prep</span>
+			<div class="leading-none">
+				<span class="font-black text-gray-900 text-lg tracking-tight">TST</span><span class="font-black text-brand-green text-lg tracking-tight">Prep</span>
 			</div>
 		</a>
 	</div>
 
 	<!-- Score badge -->
-	<div class="mx-4 mt-4 bg-brand-green-light rounded-xl p-3 flex items-center gap-3">
-		<div class="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center flex-shrink-0">
-			<span class="text-white font-black text-sm">{user.currentScore.toFixed(1)}</span>
+	<div class="mx-3 mt-3 bg-brand-green-light rounded-xl p-3">
+		<p class="text-xs text-gray-400 mb-1">Current Score</p>
+		<div class="flex items-center justify-between">
+			<p class="text-xl font-black text-brand-green">{user.currentScore.toFixed(1)} <span class="text-sm font-medium text-gray-400">/ 6.0</span></p>
+			<div class="w-9 h-9 bg-brand-green rounded-full flex items-center justify-center">
+				<span class="text-white font-black text-sm">{user.currentScore.toFixed(1)}</span>
+			</div>
 		</div>
-		<div class="min-w-0">
-			<p class="text-xs text-gray-500 leading-none mb-0.5">Current Score</p>
-			<p class="text-sm font-bold text-brand-green leading-none">{user.currentScore.toFixed(1)} / 6.0</p>
-			<p class="text-xs text-gray-400 mt-0.5">Target: {user.targetScore.toFixed(1)}</p>
-		</div>
+		<p class="text-xs text-gray-400 mt-1">Target: <span class="font-semibold text-gray-600">{user.targetScore.toFixed(1)}</span></p>
 	</div>
 
 	<!-- Navigation -->
-	<nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+	<nav class="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
 		{#each navItems as item}
 			<a href={item.href} class="nav-link {isActive(item.href) ? 'active' : ''}">
-				<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+				<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 					{@html item.icon}
 				</svg>
 				<span>{item.label}</span>
 			</a>
 		{/each}
 
-		<!-- Divider -->
 		<div class="pt-3 pb-1">
-			<p class="px-4 text-xs font-semibold text-gray-300 uppercase tracking-wider">Account</p>
+			<p class="px-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">Account</p>
 		</div>
 
 		{#if user.plan === 'free'}
-			<div class="mx-1 bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white">
+			<div class="mx-0.5 bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white">
 				<p class="text-xs font-bold mb-1">🚀 Go Premium</p>
-				<p class="text-xs opacity-90 mb-2">Unlock all 15 tests + Score Builder courses</p>
+				<p class="text-xs opacity-90 mb-2.5 leading-relaxed">Unlock all 15 tests + Score Builder courses</p>
 				<button class="w-full bg-white text-brand-pink text-xs font-bold py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
 					Upgrade Now
 				</button>
@@ -104,19 +98,19 @@
 	</nav>
 
 	<!-- User profile -->
-	<div class="px-4 py-4 border-t border-gray-100">
-		<div class="flex items-center gap-3">
+	<div class="px-3 py-3 border-t border-gray-100">
+		<div class="flex items-center gap-2.5">
 			<div class="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center flex-shrink-0">
 				<span class="text-white font-bold text-sm">{user.firstName[0]}</span>
 			</div>
 			<div class="min-w-0 flex-1">
 				<p class="text-sm font-semibold text-gray-800 truncate">{user.firstName}</p>
 				<div class="flex items-center gap-1.5">
-					<span class="w-2 h-2 rounded-full {levelColor}"></span>
+					<span class="w-1.5 h-1.5 rounded-full {levelColors[user.level] ?? 'bg-gray-400'}"></span>
 					<span class="text-xs text-gray-400">{user.level}</span>
 				</div>
 			</div>
-			<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium capitalize">
+			<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0">
 				{user.plan}
 			</span>
 		</div>
