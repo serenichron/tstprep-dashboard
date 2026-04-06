@@ -453,4 +453,29 @@
 	.view-btn-row:hover { background: #00b189; color: #fff; }
 
 	.footer { text-align: center; padding: 14px 0; font-size: 10px; color: #c0c0c0; }
+
+	@media (max-width: 767px) {
+		.dashboard { padding: 16px; }
+		h1 { font-size: 18px; }
+		.header { flex-direction: column; align-items: flex-start; gap: 10px; }
+		.overview-grid { grid-template-columns: 1fr; }
+		.general-card { display: flex; align-items: center; gap: 16px; text-align: left; padding: 14px 16px; }
+		.gauge-wrap { flex-shrink: 0; }
+		.section-cards { grid-template-columns: repeat(2, 1fr); }
+		.sec-card-val { font-size: 16px; }
+		.panel-header { flex-direction: column; align-items: flex-start; }
+		.trend-area { text-align: left; width: 100%; }
+		.sub-row { padding: 8px 14px; gap: 8px; }
+		.sub-score { flex: 0 0 120px; }
+		.sub-details { flex-basis: 100%; }
+		.group-header { padding: 8px 14px; }
+		.view-toggle-bar { padding: 7px 14px; }
+	}
+
+	@media (max-width: 480px) {
+		.section-cards { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+		.sec-card { padding: 10px 8px; }
+		.sub-score { flex: 0 0 100px; }
+		.view-btn-row { padding: 3px 10px; font-size: 10px; }
+	}
 </style>

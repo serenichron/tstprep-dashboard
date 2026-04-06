@@ -6,10 +6,7 @@
 
 	const sectionScores: { section: Section; score: number; change: number; color: string; questionTypes: { label: string; accuracy: number }[] }[] = [
 		{
-			section: 'Reading',
-			score: 3.5,
-			change: +0.5,
-			color: 'bg-blue-500',
+			section: 'Reading', score: 3.5, change: +0.5, color: 'bg-blue-500',
 			questionTypes: [
 				{ label: 'Main Idea',    accuracy: 82 },
 				{ label: 'Vocabulary',   accuracy: 74 },
@@ -19,10 +16,7 @@
 			]
 		},
 		{
-			section: 'Listening',
-			score: 3.5,
-			change: +0.5,
-			color: 'bg-purple-500',
+			section: 'Listening', score: 3.5, change: +0.5, color: 'bg-purple-500',
 			questionTypes: [
 				{ label: 'Main Idea',  accuracy: 75 },
 				{ label: 'Detail',     accuracy: 61 },
@@ -32,10 +26,7 @@
 			]
 		},
 		{
-			section: 'Speaking',
-			score: 0,
-			change: 0,
-			color: 'bg-orange-500',
+			section: 'Speaking', score: 0, change: 0, color: 'bg-orange-500',
 			questionTypes: [
 				{ label: 'Task 1 (Independent)', accuracy: 0 },
 				{ label: 'Task 2 (Campus)',       accuracy: 0 },
@@ -44,10 +35,7 @@
 			]
 		},
 		{
-			section: 'Writing',
-			score: 0,
-			change: 0,
-			color: 'bg-pink-500',
+			section: 'Writing', score: 0, change: 0, color: 'bg-pink-500',
 			questionTypes: [
 				{ label: 'Integrated Task',  accuracy: 0 },
 				{ label: 'Independent Task', accuracy: 0 }
@@ -55,18 +43,18 @@
 		}
 	];
 
-	const testsAttempted   = practiceTests.filter((t) => t.attempts > 0).length;
-	const testsFree        = practiceTests.filter((t) => t.access === 'free').length;
-	const xpToNextLevel    = 500 - (mockUser.xp % 500);
-	const xpProgress       = ((mockUser.xp % 500) / 500) * 100;
+	const testsAttempted = practiceTests.filter((t) => t.attempts > 0).length;
+	const testsFree      = practiceTests.filter((t) => t.access === 'free').length;
+	const xpToNextLevel  = 500 - (mockUser.xp % 500);
+	const xpProgress     = ((mockUser.xp % 500) / 500) * 100;
 
 	const badges = [
-		{ icon: '🏆', label: 'First Test',   earned: testsAttempted >= 1,         desc: 'Completed first practice test' },
-		{ icon: '📈', label: 'Improving',    earned: true,                         desc: 'Score improved +1.0' },
-		{ icon: '💯', label: '100 Questions', earned: true,                        desc: 'Answered 100+ questions' },
-		{ icon: '🔥', label: '7-Day Streak', earned: mockUser.streak >= 7,         desc: '7 consecutive study days' },
-		{ icon: '🎯', label: 'Score 4.0+',   earned: mockUser.currentScore >= 4,   desc: 'Reached score of 4.0' },
-		{ icon: '🌟', label: 'Score 5.0+',   earned: mockUser.currentScore >= 5,   desc: 'Reached score of 5.0' }
+		{ icon: '🏆', label: 'First Test',    earned: testsAttempted >= 1,       desc: 'Completed first practice test' },
+		{ icon: '📈', label: 'Improving',     earned: true,                      desc: 'Score improved +1.0' },
+		{ icon: '💯', label: '100 Questions', earned: true,                      desc: 'Answered 100+ questions' },
+		{ icon: '🔥', label: '7-Day Streak',  earned: mockUser.streak >= 7,      desc: '7 consecutive study days' },
+		{ icon: '🎯', label: 'Score 4.0+',    earned: mockUser.currentScore >= 4, desc: 'Reached score of 4.0' },
+		{ icon: '🌟', label: 'Score 5.0+',    earned: mockUser.currentScore >= 5, desc: 'Reached score of 5.0' }
 	];
 </script>
 
@@ -74,41 +62,42 @@
 	<title>My Progress – TST Prep</title>
 </svelte:head>
 
-<div class="px-8 py-8">
-	<div class="mb-6">
-		<h1 class="text-2xl font-black text-gray-900">My Progress</h1>
+<div class="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+	<div class="mb-5 sm:mb-6">
+		<h1 class="text-xl sm:text-2xl font-black text-gray-900">My Progress</h1>
 		<p class="text-gray-400 text-sm mt-1">Section breakdown, question types, and achievements</p>
 	</div>
 
-	<!-- Top stats row -->
-	<div class="grid grid-cols-4 gap-4 mb-6">
-		<div class="card text-center">
-			<p class="text-3xl font-black text-brand-green">{mockUser.currentScore.toFixed(1)}</p>
+	<!-- Top stats -->
+	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-6">
+		<div class="card text-center p-4 sm:p-6">
+			<p class="text-2xl sm:text-3xl font-black text-brand-green">{mockUser.currentScore.toFixed(1)}</p>
 			<p class="text-xs text-gray-400 mt-1">Overall Score</p>
 			<p class="text-xs text-brand-green font-semibold mt-0.5">Target: {mockUser.targetScore.toFixed(1)}</p>
 		</div>
-		<div class="card text-center">
-			<p class="text-3xl font-black text-blue-500">{testsAttempted}/{testsFree}</p>
+		<div class="card text-center p-4 sm:p-6">
+			<p class="text-2xl sm:text-3xl font-black text-blue-500">{testsAttempted}/{testsFree}</p>
 			<p class="text-xs text-gray-400 mt-1">Free Tests Used</p>
 			<p class="text-xs text-gray-300 mt-0.5">+13 with Premium</p>
 		</div>
-		<div class="card text-center">
-			<p class="text-3xl font-black text-orange-500">{mockUser.streak}</p>
+		<div class="card text-center p-4 sm:p-6">
+			<p class="text-2xl sm:text-3xl font-black text-orange-500">{mockUser.streak}</p>
 			<p class="text-xs text-gray-400 mt-1">Day Streak 🔥</p>
 			<p class="text-xs text-gray-300 mt-0.5">Keep it going!</p>
 		</div>
-		<div class="card text-center">
-			<p class="text-3xl font-black text-purple-500">{mockUser.xp.toLocaleString()}</p>
+		<div class="card text-center p-4 sm:p-6">
+			<p class="text-2xl sm:text-3xl font-black text-purple-500">{mockUser.xp.toLocaleString()}</p>
 			<p class="text-xs text-gray-400 mt-1">Total XP</p>
 			<p class="text-xs text-purple-400 mt-0.5">{mockUser.level}</p>
 		</div>
 	</div>
 
-	<div class="grid grid-cols-3 gap-6">
-		<div class="col-span-2 space-y-4">
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+		<!-- Section scores (left 2 cols on desktop, full width on mobile) -->
+		<div class="lg:col-span-2 space-y-4">
 			<h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider">Section Performance</h2>
 			{#each sectionScores as sec}
-				<div class="card">
+				<div class="card p-4 sm:p-6">
 					<div class="flex items-center justify-between mb-4">
 						<div class="flex items-center gap-3">
 							<SectionBadge section={sec.section} size="md" />
@@ -150,21 +139,21 @@
 					</div>
 					{#if sec.score === 0}
 						<div class="mt-4">
-							<a href="/library" class="btn-secondary text-xs px-4 py-2 inline-block">
-								Start {sec.section} Practice →
-							</a>
+							<a href="/library" class="btn-secondary text-xs px-4 py-2 inline-block">Start {sec.section} Practice →</a>
 						</div>
 					{/if}
 				</div>
 			{/each}
 		</div>
 
+		<!-- Right column -->
 		<div class="space-y-4">
-			<div class="card">
+			<!-- XP card -->
+			<div class="card p-4 sm:p-6">
 				<h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Level & XP</h2>
 				<div class="flex flex-col items-center text-center mb-4">
-					<div class="w-20 h-20 bg-gradient-to-br from-brand-green to-blue-500 rounded-full flex items-center justify-center mb-2">
-						<span class="text-3xl">⭐</span>
+					<div class="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-brand-green to-blue-500 rounded-full flex items-center justify-center mb-2">
+						<span class="text-2xl sm:text-3xl">⭐</span>
 					</div>
 					<p class="font-black text-xl text-gray-900">{mockUser.level}</p>
 					<p class="text-sm text-gray-400">{mockUser.xp.toLocaleString()} XP</p>
@@ -182,22 +171,24 @@
 				</div>
 			</div>
 
-			<div class="card">
+			<!-- Badges -->
+			<div class="card p-4 sm:p-6">
 				<h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Badges</h2>
-				<div class="grid grid-cols-2 gap-3">
+				<div class="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
 					{#each badges as badge}
 						<div
-							class="flex flex-col items-center text-center p-3 rounded-xl transition-all
+							class="flex flex-col items-center text-center p-2 sm:p-3 rounded-xl transition-all
 							{badge.earned ? 'bg-brand-green-light' : 'bg-gray-50 opacity-50'}"
 							title={badge.desc}
 						>
-							<span class="text-2xl mb-1 {!badge.earned ? 'grayscale' : ''}">{badge.icon}</span>
-							<p class="text-xs font-bold {badge.earned ? 'text-gray-800' : 'text-gray-400'}">{badge.label}</p>
+							<span class="text-xl sm:text-2xl mb-1 {!badge.earned ? 'grayscale' : ''}">{badge.icon}</span>
+							<p class="text-[10px] sm:text-xs font-bold {badge.earned ? 'text-gray-800' : 'text-gray-400'}">{badge.label}</p>
 						</div>
 					{/each}
 				</div>
 			</div>
 
+			<!-- Study plan upsell -->
 			<div class="bg-gradient-to-br from-brand-green to-blue-500 rounded-2xl p-4 text-white">
 				<p class="text-sm font-black mb-1">📅 Study Plan</p>
 				<p class="text-xs opacity-90 mb-3">Get a personalized weekly study plan based on your exam date and target score.</p>

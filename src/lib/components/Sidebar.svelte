@@ -3,7 +3,15 @@
 	import { page } from '$app/state';
 	import type { User } from '$lib/types';
 
-	let { user }: { user: User } = $props();
+	let {
+		user,
+		mobileOpen = false,
+		onMobileClose
+	}: {
+		user: User;
+		mobileOpen?: boolean;
+		onMobileClose?: () => void;
+	} = $props();
 
 	const navItems = [
 		{
@@ -44,12 +52,21 @@
 		Expert:       'bg-purple-500',
 		Master:       'bg-brand-pink'
 	};
+
+	function handleNavClick() {
+		onMobileClose?.();
+	}
 </script>
 
-<aside class="fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-100 flex flex-col z-30 shadow-sm">
-	<!-- Logo -->
-	<div class="px-5 py-4 border-b border-gray-100">
-		<a href="{base}/" class="flex items-center gap-2">
+<aside class="
+	fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex flex-col z-50 shadow-sm
+	transition-transform duration-300
+	{mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+	lg:translate-x-0
+">
+	<!-- Logo + mobile close -->
+	<div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+		<a href="{base}/" class="flex items-center gap-2" onclick={handleNavClick}>
 			<div class="w-8 h-8 bg-brand-green rounded-lg flex items-center justify-center flex-shrink-0">
 				<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -59,6 +76,15 @@
 				<span class="font-black text-gray-900 text-lg tracking-tight">TST</span><span class="font-black text-brand-green text-lg tracking-tight">Prep</span>
 			</div>
 		</a>
+		<button
+			class="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors"
+			onclick={onMobileClose}
+			aria-label="Close menu"
+		>
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+			</svg>
+		</button>
 	</div>
 
 	<!-- Score badge -->
@@ -76,7 +102,7 @@
 	<!-- Navigation -->
 	<nav class="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
 		{#each navItems as item}
-			<a href={item.href} class="nav-link" class:active={item.href === activeHref}>
+			<a href={item.href} class="nav-link" class:active={item.href === activeHref} onclick={handleNavClick}>
 				<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 					{@html item.icon}
 				</svg>
