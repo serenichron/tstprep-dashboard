@@ -376,10 +376,7 @@
 
 	.dashboard {
 		font-family: 'DM Sans', sans-serif;
-		background: #f4f5f7;
-		min-height: 100vh;
 		padding: 28px 32px;
-		max-width: 1100px;
 		color: #222;
 	}
 
