@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		--green: #00b189;
+		--green-light: #e6f7f3;
+		--pink: #ff5859;
+	}
+
+	* {
+		box-sizing: border-box;
+	}
+
+	body {
+		@apply antialiased;
+	}
+}
+
+@layer components {
+	.card {
+		@apply bg-white rounded-2xl shadow-card p-6;
+	}
+
+	.btn-primary {
+		@apply bg-brand-pink text-white font-semibold px-5 py-2.5 rounded-xl
+           hover:bg-brand-pink-dark transition-colors duration-150 text-sm;
+	}
+
+	.btn-secondary {
+		@apply bg-brand-green text-white font-semibold px-5 py-2.5 rounded-xl
+           hover:bg-brand-green-dark transition-colors duration-150 text-sm;
+	}
+
+	.btn-ghost {
+		@apply bg-gray-100 text-gray-600 font-semibold px-5 py-2.5 rounded-xl
+           hover:bg-gray-200 transition-colors duration-150 text-sm;
+	}
+
+	.section-badge {
+		@apply inline-flex items-center justify-center w-6 h-6 rounded-full
+           text-xs font-bold text-white;
+	}
+
+	.nav-link {
+		@apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500
+           font-medium text-sm transition-all duration-150
+           hover:bg-brand-green-light hover:text-brand-green;
+	}
+
+	.nav-link.active {
+		@apply bg-brand-green-light text-brand-green font-semibold;
+	}
+
+	.tab {
+		@apply px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150
+           text-gray-500 hover:text-brand-green;
+	}
+
+	.tab.active {
+		@apply bg-brand-green text-white;
+	}
+}
