@@ -83,4 +83,5 @@ export interface User {
 	xp: number;
 	level: string;
 	joinDate: string;
+	credits: number;
 }
