@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { page } from '$app/stores';
 	import type { User } from '$lib/types';
 
 	export let user: User;
-	export let currentPath: string = '/';
 
 	const navItems = [
 		{
@@ -28,12 +28,14 @@
 		}
 	];
 
-	function isActive(href: string) {
-		const path = href.replace(base, '') || '/';
-		const current = currentPath.replace(base, '') || '/';
-		if (path === '/') return current === '/';
-		return current.startsWith(path);
-	}
+	$: activeHref = (() => {
+		const current = $page.url.pathname.replace(base, '') || '/';
+		for (const item of navItems) {
+			const path = item.href.replace(base, '') || '/';
+			if (path === '/' ? current === '/' : current.startsWith(path)) return item.href;
+		}
+		return '';
+	})();
 
 	const levelColors: Record<string, string> = {
 		Beginner: 'bg-gray-400',
@@ -74,7 +76,7 @@
 	<!-- Navigation -->
 	<nav class="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
 		{#each navItems as item}
-			<a href={item.href} class="nav-link {isActive(item.href) ? 'active' : ''}">
+			<a href={item.href} class="nav-link" class:active={item.href === activeHref}>
 				<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 					{@html item.icon}
 				</svg>
