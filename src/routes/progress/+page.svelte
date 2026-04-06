@@ -4,41 +4,36 @@
 	import SectionBadge from '$lib/components/SectionBadge.svelte';
 	import type { Section } from '$lib/types';
 
-	const sectionScores: { section: Section; score: number; change: number; color: string; questionTypes: { label: string; accuracy: number }[] }[] = [
+	const sectionScores: { section: Section; score: number; change: number; color: string; questionTypes: { id: string; label: string; accuracy: number }[] }[] = [
 		{
 			section: 'Reading', score: 3.5, change: +0.5, color: 'bg-blue-500',
 			questionTypes: [
-				{ label: 'Main Idea',    accuracy: 82 },
-				{ label: 'Vocabulary',   accuracy: 74 },
-				{ label: 'Inference',    accuracy: 58 },
-				{ label: 'Detail',       accuracy: 71 },
-				{ label: 'Organization', accuracy: 65 }
+				{ id: 'reading_academic_passage',   label: 'Academic Passage',   accuracy: 71 },
+				{ id: 'reading_complete_the_words', label: 'Complete the Words', accuracy: 82 },
+				{ id: 'reading_daily_life',         label: 'Read in Daily Life', accuracy: 58 }
 			]
 		},
 		{
 			section: 'Listening', score: 3.5, change: +0.5, color: 'bg-purple-500',
 			questionTypes: [
-				{ label: 'Main Idea',  accuracy: 75 },
-				{ label: 'Detail',     accuracy: 61 },
-				{ label: 'Function',   accuracy: 55 },
-				{ label: 'Attitude',   accuracy: 48 },
-				{ label: 'Connecting', accuracy: 62 }
+				{ id: 'listening_listen_and_choose', label: 'Listen and Choose',  accuracy: 75 },
+				{ id: 'listening_conversation',      label: 'Conversation',        accuracy: 61 },
+				{ id: 'listening_academic_talk',     label: 'Academic Talk',       accuracy: 48 }
 			]
 		},
 		{
 			section: 'Speaking', score: 0, change: 0, color: 'bg-orange-500',
 			questionTypes: [
-				{ label: 'Task 1 (Independent)', accuracy: 0 },
-				{ label: 'Task 2 (Campus)',       accuracy: 0 },
-				{ label: 'Task 3 (Academic)',     accuracy: 0 },
-				{ label: 'Task 4 (Lecture)',      accuracy: 0 }
+				{ id: 'speaking_listen_and_repeat', label: 'Listen and Repeat', accuracy: 0 },
+				{ id: 'speaking_take_an_interview', label: 'Take an Interview',  accuracy: 0 }
 			]
 		},
 		{
 			section: 'Writing', score: 0, change: 0, color: 'bg-pink-500',
 			questionTypes: [
-				{ label: 'Integrated Task',  accuracy: 0 },
-				{ label: 'Independent Task', accuracy: 0 }
+				{ id: 'writing_build_a_sentence',    label: 'Build a Sentence',    accuracy: 0 },
+				{ id: 'writing_write_an_email',      label: 'Write an Email',       accuracy: 0 },
+				{ id: 'writing_academic_discussion', label: 'Academic Discussion',  accuracy: 0 }
 			]
 		}
 	];
