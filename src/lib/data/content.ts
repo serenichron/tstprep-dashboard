@@ -42,7 +42,8 @@ export const practiceTests: PracticeTest[] = [
 		attempts: 2,
 		duration: '~3 hours',
 		rating: 4.7,
-		ratingCount: 312
+		ratingCount: 312,
+		sectionScores: { Reading: 4.0, Listening: 3.5, Speaking: null, Writing: null }
 	},
 	{
 		id: 102,
@@ -125,30 +126,6 @@ export const practiceSets: PracticeSet[] = [
 		rating: 4.6,
 		ratingCount: 278
 	},
-	{
-		id: 205,
-		type: 'practice',
-		title: 'Advanced Reading Comprehension Drills',
-		section: 'Reading',
-		access: 'locked',
-		questionCount: 60,
-		completionPercent: 0,
-		difficulty: 'Advanced',
-		rating: 4.8,
-		ratingCount: 145
-	},
-	{
-		id: 206,
-		type: 'practice',
-		title: 'Listening Detail & Inference Questions',
-		section: 'Listening',
-		access: 'locked',
-		questionCount: 45,
-		completionPercent: 0,
-		difficulty: 'Advanced',
-		rating: 4.7,
-		ratingCount: 132
-	}
 ];
 
 // ─── Skill Courses ────────────────────────────────────────────────────────────

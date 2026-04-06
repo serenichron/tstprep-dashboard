@@ -14,9 +14,10 @@ export interface PracticeTest {
 	bestScore: number | null;
 	lastAttempt: string | null;
 	attempts: number;
-	duration: string; // e.g. "~3 hours"
+	duration: string;
 	rating: number;
 	ratingCount: number;
+	sectionScores?: Partial<Record<'Reading' | 'Listening' | 'Speaking' | 'Writing', number | null>>;
 }
 
 export interface PracticeSet {

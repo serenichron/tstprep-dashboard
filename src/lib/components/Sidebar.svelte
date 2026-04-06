@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { base } from '$app/paths';
 	import type { User } from '$lib/types';
 
 	export let user: User;
+	export let currentPath: string = '/';
 
 	const navItems = [
 		{
@@ -30,7 +30,7 @@
 
 	function isActive(href: string) {
 		const path = href.replace(base, '') || '/';
-		const current = page.url.pathname.replace(base, '') || '/';
+		const current = currentPath.replace(base, '') || '/';
 		if (path === '/') return current === '/';
 		return current.startsWith(path);
 	}
