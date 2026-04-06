@@ -4,7 +4,6 @@
 	import SectionBadge from '$lib/components/SectionBadge.svelte';
 	import type { Section } from '$lib/types';
 
-	// Section performance (mock data)
 	const sectionScores: { section: Section; score: number; change: number; color: string; questionTypes: { label: string; accuracy: number }[] }[] = [
 		{
 			section: 'Reading',
@@ -12,10 +11,10 @@
 			change: +0.5,
 			color: 'bg-blue-500',
 			questionTypes: [
-				{ label: 'Main Idea', accuracy: 82 },
-				{ label: 'Vocabulary', accuracy: 74 },
-				{ label: 'Inference', accuracy: 58 },
-				{ label: 'Detail', accuracy: 71 },
+				{ label: 'Main Idea',    accuracy: 82 },
+				{ label: 'Vocabulary',   accuracy: 74 },
+				{ label: 'Inference',    accuracy: 58 },
+				{ label: 'Detail',       accuracy: 71 },
 				{ label: 'Organization', accuracy: 65 }
 			]
 		},
@@ -25,10 +24,10 @@
 			change: +0.5,
 			color: 'bg-purple-500',
 			questionTypes: [
-				{ label: 'Main Idea', accuracy: 75 },
-				{ label: 'Detail', accuracy: 61 },
-				{ label: 'Function', accuracy: 55 },
-				{ label: 'Attitude', accuracy: 48 },
+				{ label: 'Main Idea',  accuracy: 75 },
+				{ label: 'Detail',     accuracy: 61 },
+				{ label: 'Function',   accuracy: 55 },
+				{ label: 'Attitude',   accuracy: 48 },
 				{ label: 'Connecting', accuracy: 62 }
 			]
 		},
@@ -39,9 +38,9 @@
 			color: 'bg-orange-500',
 			questionTypes: [
 				{ label: 'Task 1 (Independent)', accuracy: 0 },
-				{ label: 'Task 2 (Campus)', accuracy: 0 },
-				{ label: 'Task 3 (Academic)', accuracy: 0 },
-				{ label: 'Task 4 (Lecture)', accuracy: 0 }
+				{ label: 'Task 2 (Campus)',       accuracy: 0 },
+				{ label: 'Task 3 (Academic)',     accuracy: 0 },
+				{ label: 'Task 4 (Lecture)',      accuracy: 0 }
 			]
 		},
 		{
@@ -50,29 +49,24 @@
 			change: 0,
 			color: 'bg-pink-500',
 			questionTypes: [
-				{ label: 'Integrated Task', accuracy: 0 },
+				{ label: 'Integrated Task',  accuracy: 0 },
 				{ label: 'Independent Task', accuracy: 0 }
 			]
 		}
 	];
 
-	// Completion stats
-	const testsAttempted = practiceTests.filter((t) => t.attempts > 0).length;
-	const testsFree = practiceTests.filter((t) => t.access === 'free').length;
-	const practiceCompleted = practiceSets.filter((s) => s.completionPercent === 100).length;
+	const testsAttempted   = practiceTests.filter((t) => t.attempts > 0).length;
+	const testsFree        = practiceTests.filter((t) => t.access === 'free').length;
+	const xpToNextLevel    = 500 - (mockUser.xp % 500);
+	const xpProgress       = ((mockUser.xp % 500) / 500) * 100;
 
-	// XP needed for next level
-	const xpToNextLevel = 500 - (mockUser.xp % 500);
-	const xpProgress = ((mockUser.xp % 500) / 500) * 100;
-
-	// Badges earned
 	const badges = [
-		{ icon: '🏆', label: 'First Test', earned: testsAttempted >= 1, desc: 'Completed first practice test' },
-		{ icon: '📈', label: 'Improving', earned: true, desc: 'Score improved +1.0' },
-		{ icon: '💯', label: '100 Questions', earned: true, desc: 'Answered 100+ questions' },
-		{ icon: '🔥', label: '7-Day Streak', earned: mockUser.streak >= 7, desc: '7 consecutive study days' },
-		{ icon: '🎯', label: 'Score 4.0+', earned: mockUser.currentScore >= 4, desc: 'Reached score of 4.0' },
-		{ icon: '🌟', label: 'Score 5.0+', earned: mockUser.currentScore >= 5, desc: 'Reached score of 5.0' }
+		{ icon: '🏆', label: 'First Test',   earned: testsAttempted >= 1,         desc: 'Completed first practice test' },
+		{ icon: '📈', label: 'Improving',    earned: true,                         desc: 'Score improved +1.0' },
+		{ icon: '💯', label: '100 Questions', earned: true,                        desc: 'Answered 100+ questions' },
+		{ icon: '🔥', label: '7-Day Streak', earned: mockUser.streak >= 7,         desc: '7 consecutive study days' },
+		{ icon: '🎯', label: 'Score 4.0+',   earned: mockUser.currentScore >= 4,   desc: 'Reached score of 4.0' },
+		{ icon: '🌟', label: 'Score 5.0+',   earned: mockUser.currentScore >= 5,   desc: 'Reached score of 5.0' }
 	];
 </script>
 
@@ -81,7 +75,6 @@
 </svelte:head>
 
 <div class="px-8 py-8">
-	<!-- Header -->
 	<div class="mb-6">
 		<h1 class="text-2xl font-black text-gray-900">My Progress</h1>
 		<p class="text-gray-400 text-sm mt-1">Section breakdown, question types, and achievements</p>
@@ -112,10 +105,8 @@
 	</div>
 
 	<div class="grid grid-cols-3 gap-6">
-		<!-- Section Scores (left 2 cols) -->
 		<div class="col-span-2 space-y-4">
 			<h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider">Section Performance</h2>
-
 			{#each sectionScores as sec}
 				<div class="card">
 					<div class="flex items-center justify-between mb-4">
@@ -141,8 +132,6 @@
 							{/if}
 						</div>
 					</div>
-
-					<!-- Question type breakdown -->
 					<div class="space-y-2.5">
 						{#each sec.questionTypes as qt}
 							<div>
@@ -159,7 +148,6 @@
 							</div>
 						{/each}
 					</div>
-
 					{#if sec.score === 0}
 						<div class="mt-4">
 							<a href="/library" class="btn-secondary text-xs px-4 py-2 inline-block">
@@ -171,9 +159,7 @@
 			{/each}
 		</div>
 
-		<!-- Right column: XP + Badges -->
 		<div class="space-y-4">
-			<!-- XP / Level card -->
 			<div class="card">
 				<h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Level & XP</h2>
 				<div class="flex flex-col items-center text-center mb-4">
@@ -185,7 +171,6 @@
 				</div>
 				<ProgressBar percent={xpProgress} color="bg-purple-500" height="h-2" />
 				<p class="text-xs text-center text-gray-400 mt-2">{xpToNextLevel} XP to next level</p>
-
 				<div class="mt-4 pt-4 border-t border-gray-50">
 					<p class="text-xs font-semibold text-gray-500 mb-2">Earn XP by:</p>
 					<div class="space-y-1 text-xs text-gray-400">
@@ -197,7 +182,6 @@
 				</div>
 			</div>
 
-			<!-- Badges -->
 			<div class="card">
 				<h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Badges</h2>
 				<div class="grid grid-cols-2 gap-3">
@@ -214,12 +198,9 @@
 				</div>
 			</div>
 
-			<!-- Study plan teaser (upsell) -->
 			<div class="bg-gradient-to-br from-brand-green to-blue-500 rounded-2xl p-4 text-white">
 				<p class="text-sm font-black mb-1">📅 Study Plan</p>
-				<p class="text-xs opacity-90 mb-3">
-					Get a personalized weekly study plan based on your exam date and target score.
-				</p>
+				<p class="text-xs opacity-90 mb-3">Get a personalized weekly study plan based on your exam date and target score.</p>
 				<button class="w-full bg-white text-brand-green text-xs font-bold py-2 rounded-xl hover:bg-gray-50 transition-colors">
 					Generate My Plan (Premium)
 				</button>

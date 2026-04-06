@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import type { User } from '$lib/types';
 
-	export let user: User;
+	let { user }: { user: User } = $props();
 
 	const navItems = [
 		{
@@ -28,21 +28,21 @@
 		}
 	];
 
-	$: activeHref = (() => {
-		const current = $page.url.pathname.replace(base, '') || '/';
+	const activeHref = $derived.by(() => {
+		const current = page.url.pathname.replace(base, '') || '/';
 		for (const item of navItems) {
 			const path = item.href.replace(base, '') || '/';
 			if (path === '/' ? current === '/' : current.startsWith(path)) return item.href;
 		}
 		return '';
-	})();
+	});
 
 	const levelColors: Record<string, string> = {
-		Beginner: 'bg-gray-400',
+		Beginner:     'bg-gray-400',
 		Practitioner: 'bg-blue-500',
-		Advanced: 'bg-brand-green',
-		Expert: 'bg-purple-500',
-		Master: 'bg-brand-pink'
+		Advanced:     'bg-brand-green',
+		Expert:       'bg-purple-500',
+		Master:       'bg-brand-pink'
 	};
 </script>
 

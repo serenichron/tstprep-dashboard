@@ -6,39 +6,28 @@
 	import type { Section } from '$lib/types';
 
 	type Tab = 'tests' | 'practice' | 'courses' | 'resources';
-	let activeTab: Tab = 'tests';
-
 	type TestView = 'byTest' | 'bySection';
-	let testView: TestView = 'byTest';
-
 	type SectionFilter = Section | 'All';
-	let sectionFilter: SectionFilter = 'All';
-	let accessFilter: 'all' | 'free' | 'locked' = 'all';
+
+	let activeTab = $state<Tab>('tests');
+	let testView = $state<TestView>('byTest');
+	let sectionFilter = $state<SectionFilter>('All');
+	let accessFilter = $state<'all' | 'free' | 'locked'>('all');
 
 	const tabs: { id: Tab; label: string; count: number }[] = [
-		{ id: 'tests',     label: 'Practice Tests',     count: practiceTests.length },
-		{ id: 'practice',  label: 'Practice Questions',  count: practiceSets.length },
-		{ id: 'courses',   label: 'Skill Courses',       count: courses.length },
-		{ id: 'resources', label: 'Resources',           count: resources.length }
+		{ id: 'tests',     label: 'Practice Tests',    count: practiceTests.length },
+		{ id: 'practice',  label: 'Practice Questions', count: practiceSets.length },
+		{ id: 'courses',   label: 'Skill Courses',      count: courses.length },
+		{ id: 'resources', label: 'Resources',          count: resources.length }
 	];
 
 	const sections: SectionFilter[] = ['All', 'Reading', 'Listening', 'Speaking', 'Writing'];
 	const sectionList: ('Reading' | 'Listening' | 'Speaking' | 'Writing')[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
 
-	$: filteredTests = practiceTests.filter((t) =>
-		accessFilter === 'all' || t.access === accessFilter
-	);
-	$: filteredPractice = practiceSets.filter((s) =>
-		(sectionFilter === 'All' || s.section === sectionFilter) &&
-		(accessFilter === 'all' || s.access === accessFilter)
-	);
-	$: filteredCourses = courses.filter((c) =>
-		(sectionFilter === 'All' || c.section === sectionFilter) &&
-		(accessFilter === 'all' || c.access === accessFilter)
-	);
-	$: filteredResources = resources.filter((r) =>
-		sectionFilter === 'All' || r.section === sectionFilter
-	);
+	const filteredTests    = $derived(practiceTests.filter((t) => accessFilter === 'all' || t.access === accessFilter));
+	const filteredPractice = $derived(practiceSets.filter((s) => (sectionFilter === 'All' || s.section === sectionFilter) && (accessFilter === 'all' || s.access === accessFilter)));
+	const filteredCourses  = $derived(courses.filter((c) => (sectionFilter === 'All' || c.section === sectionFilter) && (accessFilter === 'all' || c.access === accessFilter)));
+	const filteredResources = $derived(resources.filter((r) => sectionFilter === 'All' || r.section === sectionFilter));
 
 	const sectionColors: Record<string, string> = {
 		Reading:   'bg-blue-100 text-blue-700',
@@ -66,7 +55,7 @@
 			<button
 				class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150
 					{activeTab === tab.id ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
-				on:click={() => { activeTab = tab.id; sectionFilter = 'All'; accessFilter = 'all'; }}
+				onclick={() => { activeTab = tab.id; sectionFilter = 'All'; accessFilter = 'all'; }}
 			>
 				{tab.label}
 				<span class="text-xs px-1.5 py-0.5 rounded-full font-bold
@@ -85,24 +74,23 @@
 					<button
 						class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
 							{sectionFilter === sec ? 'bg-brand-green text-white' : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-200'}"
-						on:click={() => (sectionFilter = sec)}
+						onclick={() => (sectionFilter = sec)}
 					>{sec}</button>
 				{/each}
 			</div>
 		{/if}
 
 		{#if activeTab === 'tests'}
-			<!-- Test Section / Test Number toggle — matching screenshot labels -->
 			<div class="flex bg-gray-100 rounded-lg p-0.5">
 				<button
 					class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all
 						{testView === 'bySection' ? 'bg-brand-green text-white shadow-sm' : 'text-gray-500'}"
-					on:click={() => (testView = 'bySection')}
+					onclick={() => (testView = 'bySection')}
 				>Test Section</button>
 				<button
 					class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all
 						{testView === 'byTest' ? 'bg-brand-green text-white shadow-sm' : 'text-gray-500'}"
-					on:click={() => (testView = 'byTest')}
+					onclick={() => (testView = 'byTest')}
 				>Test Number</button>
 			</div>
 		{/if}
@@ -113,21 +101,19 @@
 					<button
 						class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
 							{accessFilter === val ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-200'}"
-						on:click={() => (accessFilter = val as 'all' | 'free' | 'locked')}
+						onclick={() => (accessFilter = val as 'all' | 'free' | 'locked')}
 					>{lbl}</button>
 				{/each}
 			</div>
 		{/if}
 	</div>
 
-	<!-- ── PRACTICE TESTS: TEST NUMBER VIEW ─────────────────────── -->
+	<!-- ── PRACTICE TESTS: TEST NUMBER VIEW ────────────────────── -->
 	{#if activeTab === 'tests' && testView === 'byTest'}
 		<div class="grid grid-cols-4 gap-3">
 			{#each filteredTests as test}
 				<div class="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow flex flex-col
 					{test.access === 'locked' ? 'opacity-85' : ''}">
-
-					<!-- Card header -->
 					<div class="flex items-center justify-between mb-3">
 						<h3 class="font-black text-brand-green text-base">Test #{test.testNumber}</h3>
 						{#if test.access === 'locked'}
@@ -141,7 +127,6 @@
 
 					<StarRating rating={test.rating} count={test.ratingCount} />
 
-					<!-- 4 section rows -->
 					<div class="mt-3 flex flex-col gap-1.5">
 						{#each sectionList as sec}
 							{@const sScore = test.sectionScores?.[sec]}
@@ -175,21 +160,18 @@
 			{/each}
 		</div>
 
-	<!-- ── PRACTICE TESTS: TEST SECTION VIEW ────────────────────── -->
+	<!-- ── PRACTICE TESTS: SECTION VIEW ────────────────────────── -->
 	{:else if activeTab === 'tests' && testView === 'bySection'}
 		<div class="grid grid-cols-2 gap-5">
 			{#each sectionList as section}
 				<div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-card">
-					<!-- Section title -->
 					<div class="px-6 py-5 text-center border-b border-gray-50">
 						<h3 class="text-xl font-black text-brand-green">{section} section</h3>
 					</div>
-					<!-- Test grid — 4 columns, matching screenshot layout -->
 					<div class="p-4 grid grid-cols-4 gap-2">
 						{#each practiceTests as test}
 							<div class="flex flex-col items-center gap-1.5 p-2 rounded-xl
 								{test.access === 'locked' ? 'opacity-50' : 'hover:bg-brand-green-light cursor-pointer'} transition-colors">
-								<!-- Dashed circle icon -->
 								<div class="w-10 h-10 rounded-full border-2
 									{test.access === 'locked' ? 'border-dashed border-gray-300' : 'border-dashed border-brand-green'}
 									flex items-center justify-center">
@@ -197,8 +179,7 @@
 								</div>
 								<span class="text-[11px] font-semibold text-gray-600 leading-none">Test#{test.testNumber}</span>
 								{#if test.access === 'locked'}
-									<button class="text-[9px] font-bold text-brand-pink border border-brand-pink rounded-md px-1.5 py-0.5
-										hover:bg-brand-pink hover:text-white transition-all leading-none">
+									<button class="text-[9px] font-bold text-brand-pink border border-brand-pink rounded-md px-1.5 py-0.5 hover:bg-brand-pink hover:text-white transition-all leading-none">
 										Unlock
 									</button>
 								{:else}
@@ -216,7 +197,7 @@
 			{/each}
 		</div>
 
-	<!-- ── PRACTICE QUESTIONS ────────────────────────────────────── -->
+	<!-- ── PRACTICE QUESTIONS ──────────────────────────────────── -->
 	{:else if activeTab === 'practice'}
 		<div class="grid grid-cols-2 gap-3">
 			{#each filteredPractice as set}
@@ -258,7 +239,7 @@
 			{/each}
 		</div>
 
-	<!-- ── COURSES ──────────────────────────────────────────────── -->
+	<!-- ── COURSES ───────────────────────────────────────────────── -->
 	{:else if activeTab === 'courses'}
 		<div class="grid grid-cols-3 gap-4">
 			{#each filteredCourses as course}
