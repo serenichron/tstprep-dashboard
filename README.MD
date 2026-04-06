@@ -1,25 +1,44 @@
 # TST Prep Dashboard
 
-A user-facing dashboard for [TST Prep](https://tstprep.com) — a test preparation platform helping students succeed on the TOEFL and Duolingo English Test.
+A headless SvelteKit frontend for the [TST Prep](https://tstprep.com) student dashboard — a test preparation platform helping students succeed on the TOEFL and Duolingo English Test (DET).
 
 ## Project Overview
 
-This project is a SvelteKit web application providing students with a personalized learning experience, including:
+This project replaces a fragmented, Elementor-built multi-page dashboard with a unified, modern student experience. It communicates with an existing WordPress + LearnDash backend via REST APIs.
 
-- **User Dashboard** — personalized home with progress overview and recommendations
-- **Quiz History** — review past quiz attempts, scores, and performance trends
-- **Quiz Funnel** — guided quiz experience that walks students through exam content
-- Additional functionality to be defined
+**Core sections:**
+- **Home Dashboard** — score forecast, weekly progress, streaks, next recommended action
+- **Content Library** — all courses, tests, and resources (free + locked), with upsell CTAs
+- **Skill Courses** — paid, skill-focused quiz-based courses (Reading, Listening, Speaking, Writing)
+- **Practice Questions** — free and paid sets of targeted drills by section
+- **Full Practice Tests** — timed, simulated TOEFL/DET exams (4-section, scored 1–6)
+- **Resource Library** — free PDF reference materials, searchable
+- **Submission History** — quiz and test history, scores, and performance analytics
+- Additional sections to be defined
 
 ## Tech Stack
 
-- [SvelteKit](https://kit.svelte.dev/) — full-stack Svelte framework
-- TypeScript
-- TBD: styling, state management, backend/API integration
+| Layer | Technology |
+|---|---|
+| Frontend framework | [SvelteKit](https://kit.svelte.dev/) + TypeScript |
+| Styling | TBD (Tailwind CSS likely) |
+| Backend CMS | WordPress + LearnDash + Uncanny Owl |
+| Data API | WordPress REST API + LearnDash REST API |
+| Auth | WordPress cookie auth / JWT (TBD) |
+| Hosting | TBD |
 
-## Status
+## Backend APIs
 
-> Early development. Project structure and design decisions are being finalized.
+- WordPress REST: `https://[site]/wp-json/wp/v2/`
+- LearnDash REST: `https://[site]/wp-json/ldlms/v2/`
+- Custom endpoints: to be added for features not natively supported
+
+## Project Documentation
+
+| Doc | Description |
+|---|---|
+| [Content Structure](docs/CONTENT-STRUCTURE.md) | Content taxonomy, types, and data model |
+| [UX Vision](docs/UX-VISION.md) | Dashboard UX vision, user flows, and brainstorm |
 
 ## Getting Started
 
@@ -32,13 +51,26 @@ npm run dev
 
 ```
 src/
-  lib/         # Shared components, utilities, stores
-  routes/      # SvelteKit file-based routing
-  app.html     # Root HTML template
+  lib/
+    api/         # WordPress & LearnDash API clients
+    components/  # Shared UI components
+    stores/      # Svelte stores (user, progress, etc.)
+    types/       # TypeScript types
+  routes/
+    (dashboard)/ # Protected dashboard routes
+    (auth)/      # Login / register
+  app.html       # Root HTML template
+docs/            # Project documentation
 ```
 
-## Notes for Developers
+## Notes for Developers Coming from React
 
-- Coming from React? Svelte is component-based like React but with no virtual DOM. Components are `.svelte` files with `<script>`, `<style>`, and markup in a single file.
-- State is reactive by default — no `useState`, just declare a variable with `let` and Svelte tracks it.
-- Routing is file-based via `src/routes/`, similar to Next.js App Router.
+- Svelte components are `.svelte` files — one file holds `<script>`, `<style>`, and markup
+- No virtual DOM, no `useState` — declare `let count = 0` and Svelte tracks it reactively
+- Routing is file-based in `src/routes/`, similar to Next.js App Router
+- `$lib` is an alias for `src/lib/` — use it for imports
+- SvelteKit handles SSR, routing, and data loading via `+page.ts` / `+page.server.ts` files
+
+## Status
+
+> Early development — architecture and design decisions are being finalized.
