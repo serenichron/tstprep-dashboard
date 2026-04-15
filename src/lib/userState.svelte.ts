@@ -20,7 +20,7 @@ export const planLabels: Record<UserPlan, string> = {
 const testCounts: Record<UserPlan, number> = {
 	free:             2,
 	emergency_basic:  2,
-	emergency_premium:6,
+	emergency_premium:8,  // 2 free + 6 from product (tests 3–8)
 	score_builder:    10,
 	private_lessons:  13,
 	unlock_all_tests: 15
