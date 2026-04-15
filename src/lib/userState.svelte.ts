@@ -19,10 +19,10 @@ export const planLabels: Record<UserPlan, string> = {
 // ─── Practice test access (by test number, 1-indexed) ────────────────────────
 const testCounts: Record<UserPlan, number> = {
 	free:             2,
-	emergency_basic:  2,
+	emergency_basic:  4,  // 2 free + 2 from product (tests 3–4)
 	emergency_premium:8,  // 2 free + 6 from product (tests 3–8)
-	score_builder:    10,
-	private_lessons:  13,
+	score_builder:    12, // 2 free + 10 from product (tests 3–12)
+	private_lessons:  15, // 2 free + 13 from product (tests 3–15)
 	unlock_all_tests: 15
 };
 
