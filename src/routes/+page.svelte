@@ -61,6 +61,9 @@
 		unlock_all_tests: { headline: "All 15 tests, zero limits 🔓",           sub: "You have full access to every practice test — keep pushing!",                      cta: "Go to Library" },
 	};
 
+	const dashboardUpsell  = $derived(getUpsell());
+	const dashboardBanner  = $derived(bannerCopy[userState.plan]);
+
 	const inProgress = [
 		practiceSets.find((s) => s.completionPercent > 0 && s.completionPercent < 100),
 		practiceSets.find((s) => s.id === 202)
@@ -216,17 +219,15 @@
 		</div>
 	</div>
 
-	{@const upsell = getUpsell()}
-	{@const banner = bannerCopy[userState.plan]}
-	{#if upsell && banner}
+	{#if dashboardUpsell && dashboardBanner}
 		<div class="mt-4 lg:mt-6 bg-gradient-to-r from-brand-pink to-orange-400 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white">
 			<div>
-				<p class="font-black text-base sm:text-lg">{banner.headline}</p>
-				<p class="text-sm opacity-90 mt-0.5">{banner.sub}</p>
+				<p class="font-black text-base sm:text-lg">{dashboardBanner.headline}</p>
+				<p class="text-sm opacity-90 mt-0.5">{dashboardBanner.sub}</p>
 			</div>
-			<a href={upsell.href} target="_blank" rel="noopener noreferrer"
+			<a href={dashboardUpsell.href} target="_blank" rel="noopener noreferrer"
 				class="bg-white text-brand-pink font-black px-5 sm:px-6 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0 w-full sm:w-auto text-center no-underline">
-				{banner.cta}
+				{dashboardBanner.cta}
 			</a>
 		</div>
 	{/if}
