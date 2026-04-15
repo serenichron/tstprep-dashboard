@@ -34,6 +34,7 @@ const courseAccess: Record<number, UserPlan[]> = {
 };
 
 export function isTestAccessible(testNumber: number): boolean {
+	if (testNumber <= 2) return true; // always free
 	return testNumber <= testCounts[userPlan];
 }
 
