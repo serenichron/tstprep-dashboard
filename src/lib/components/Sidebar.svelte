@@ -4,10 +4,12 @@
 
 	let {
 		isOpen = true,
-		onClose
+		onClose,
+		onToggle
 	}: {
 		isOpen?: boolean;
 		onClose?: () => void;
+		onToggle?: () => void;
 	} = $props();
 
 	const navItems = [
@@ -38,11 +40,15 @@
 		}
 	];
 
+	// Fix: use exact match or startsWith(path + '/') to avoid /history matching /history2
 	const activeHref = $derived.by(() => {
 		const current = page.url.pathname.replace(base, '') || '/';
 		for (const item of navItems) {
 			const path = item.href.replace(base, '') || '/';
-			if (path === '/' ? current === '/' : current.startsWith(path)) return item.href;
+			const matches = path === '/'
+				? current === '/'
+				: current === path || current.startsWith(path + '/');
+			if (matches) return item.href;
 		}
 		return '';
 	});
@@ -52,10 +58,6 @@
 	}
 </script>
 
-<!--
-  Mobile : slide in/out (translate)    — full width w-60
-  Desktop: always visible, width-based — w-60 open, w-14 collapsed (icon rail)
--->
 <aside class="
 	fixed top-14 bottom-0 left-0 bg-white border-r border-gray-100 flex flex-col z-50 shadow-sm
 	transition-all duration-300 overflow-hidden
@@ -81,9 +83,9 @@
 		{/each}
 	</nav>
 
-	<!-- Upgrade CTA — hidden in collapsed rail -->
+	<!-- Upgrade CTA — full when open, icon-only when collapsed -->
 	{#if isOpen}
-		<div class="px-3 pb-4">
+		<div class="px-3 pb-3">
 			<div class="bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white">
 				<p class="text-xs font-bold mb-1">🚀 Go Premium</p>
 				<p class="text-xs opacity-90 mb-2.5 leading-relaxed">Unlock all 15 tests + Score Builder courses</p>
@@ -93,8 +95,7 @@
 			</div>
 		</div>
 	{:else}
-		<!-- Collapsed: just a small upgrade icon hint -->
-		<div class="pb-4 px-2 hidden lg:block">
+		<div class="pb-3 px-2 hidden lg:block">
 			<div class="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-brand-pink to-orange-400 flex items-center justify-center cursor-pointer" title="Go Premium">
 				<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z" />
@@ -102,4 +103,23 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- ─── Collapse / expand toggle (desktop only) ─── -->
+	<button
+		onclick={onToggle}
+		class="hidden lg:flex items-center border-t border-gray-100 py-3 transition-colors hover:bg-gray-50 text-gray-400 hover:text-gray-600
+			{isOpen ? 'px-4 gap-2' : 'justify-center px-0'}"
+		aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+	>
+		<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+			{#if isOpen}
+				<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+			{:else}
+				<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+			{/if}
+		</svg>
+		{#if isOpen}
+			<span class="text-xs font-medium">Collapse</span>
+		{/if}
+	</button>
 </aside>

@@ -25,10 +25,10 @@
 <!-- ─── Sticky Header ──────────────────────────────────────────────────────── -->
 <header class="fixed top-0 inset-x-0 h-14 bg-white border-b border-gray-100 z-50 flex items-center px-4 gap-3 shadow-sm">
 
-	<!-- Sidebar toggle -->
+	<!-- Sidebar toggle — mobile only (desktop uses the in-sidebar button) -->
 	<button
 		onclick={() => (sidebarOpen = !sidebarOpen)}
-		class="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 flex-shrink-0"
+		class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 flex-shrink-0"
 		aria-label="Toggle menu"
 	>
 		<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@
 
 <!-- ─── Layout body ───────────────────────────────────────────────────────── -->
 <div class="flex min-h-screen bg-gray-50 pt-14">
-	<Sidebar isOpen={sidebarOpen} onClose={() => (sidebarOpen = false)} />
+	<Sidebar isOpen={sidebarOpen} onClose={() => (sidebarOpen = false)} onToggle={() => (sidebarOpen = !sidebarOpen)} />
 	<main class="flex-1 min-h-screen transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : 'lg:ml-14'}">
 		{@render children()}
 	</main>
