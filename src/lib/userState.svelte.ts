@@ -64,10 +64,10 @@ export function getUpsell(): UpsellConfig | null {
 			};
 		case 'emergency_basic':
 			return {
-				headline: 'Upgrade to Premium',
-				body:     'Get 6 full practice tests + full Emergency Course access.',
-				cta:      'Upgrade Now',
-				href:     'https://tstprep.com/sp/toefl-emergency-course/'
+				headline: 'Try Score Builder',
+				body:     '10 practice tests + 6 expert courses built for lasting score gains.',
+				cta:      'Learn More',
+				href:     'https://tstprep.com/sp/toefl-score-builder-program/'
 			};
 		case 'emergency_premium':
 			return {
@@ -84,13 +84,18 @@ export function getUpsell(): UpsellConfig | null {
 				href:     'https://tstprep.com/sp/private-lessons-for-the-toefl-ibt/'
 			};
 		case 'private_lessons':
-			return null;
+			return {
+				headline: 'Keep the momentum',
+				body:     'You\'re on the fastest path to your target score. Book your next session to stay on track.',
+				cta:      'Schedule a Lesson',
+				href:     'https://tstprep.com/sp/private-lessons-for-the-toefl-ibt/'
+			};
 		case 'unlock_all_tests':
 			return {
-				headline: 'Add Score Builder',
-				body:     'Pair your 15 tests with expert courses to maximize your score.',
-				cta:      'Learn More',
-				href:     'https://tstprep.com/sp/toefl-score-builder-program/'
+				headline: 'Unlock All 15 Tests',
+				body:     'Get instant access to all 15 full TOEFL practice tests — no restrictions.',
+				cta:      'Unlock Now',
+				href:     'https://tstprep.com/sp/toefl-ibt-practice-tests/'
 			};
 		default:
 			return null;
