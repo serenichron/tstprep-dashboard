@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
+	import { getUpsell } from '$lib/userState.svelte';
 
 	let {
 		isOpen = true,
@@ -83,25 +84,30 @@
 		{/each}
 	</nav>
 
-	<!-- Upgrade CTA — full when open, icon-only when collapsed -->
-	{#if isOpen}
-		<div class="px-3 pb-3">
-			<div class="bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white">
-				<p class="text-xs font-bold mb-1">🚀 Go Premium</p>
-				<p class="text-xs opacity-90 mb-2.5 leading-relaxed">Unlock all 15 tests + Score Builder courses</p>
-				<button class="w-full bg-white text-brand-pink text-xs font-bold py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-					Upgrade Now
-				</button>
+	<!-- Upgrade CTA — dynamic per plan, full when open, icon-only when collapsed -->
+	{#if getUpsell()}
+		{@const upsell = getUpsell()!}
+		{#if isOpen}
+			<div class="px-3 pb-3">
+				<a href={upsell.href} target="_blank" rel="noopener noreferrer" class="block bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white no-underline hover:brightness-105 transition-all">
+					<p class="text-xs font-bold mb-1">{upsell.headline}</p>
+					<p class="text-xs opacity-90 mb-2.5 leading-relaxed">{upsell.body}</p>
+					<span class="block w-full bg-white text-brand-pink text-xs font-bold py-1.5 rounded-lg text-center hover:bg-gray-50 transition-colors">
+						{upsell.cta}
+					</span>
+				</a>
 			</div>
-		</div>
-	{:else}
-		<div class="pb-3 px-2 hidden lg:block">
-			<div class="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-brand-pink to-orange-400 flex items-center justify-center cursor-pointer" title="Go Premium">
-				<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z" />
-				</svg>
+		{:else}
+			<div class="pb-3 px-2 hidden lg:block">
+				<a href={upsell.href} target="_blank" rel="noopener noreferrer"
+					class="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-brand-pink to-orange-400 flex items-center justify-center cursor-pointer"
+					title={upsell.headline}>
+					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z" />
+					</svg>
+				</a>
 			</div>
-		</div>
+		{/if}
 	{/if}
 
 	<!-- ─── Collapse / expand toggle (desktop only) ─── -->

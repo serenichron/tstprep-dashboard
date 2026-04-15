@@ -4,6 +4,7 @@
 	import StarRating from '$lib/components/StarRating.svelte';
 	import { practiceTests, practiceSets, courses, resources } from '$lib/data/content';
 	import type { Section } from '$lib/types';
+	import { isTestAccessible, isCourseAccessible } from '$lib/userState.svelte';
 
 	type Tab = 'tests' | 'practice' | 'courses' | 'resources';
 	type TestView = 'byTest' | 'bySection';
@@ -24,9 +25,21 @@
 	const sections: SectionFilter[] = ['All', 'Reading', 'Listening', 'Speaking', 'Writing'];
 	const sectionList: ('Reading' | 'Listening' | 'Speaking' | 'Writing')[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
 
-	const filteredTests     = $derived(practiceTests.filter((t) => accessFilter === 'all' || t.access === accessFilter));
-	const filteredPractice  = $derived(practiceSets.filter((s) => (sectionFilter === 'All' || s.section === sectionFilter) && (accessFilter === 'all' || s.access === accessFilter)));
-	const filteredCourses   = $derived(courses.filter((c) => (sectionFilter === 'All' || c.section === sectionFilter) && (accessFilter === 'all' || c.access === accessFilter)));
+	const filteredTests = $derived(practiceTests.filter((t) => {
+		if (accessFilter === 'free')   return isTestAccessible(t.testNumber);
+		if (accessFilter === 'locked') return !isTestAccessible(t.testNumber);
+		return true;
+	}));
+	const filteredPractice = $derived(practiceSets.filter((s) =>
+		(sectionFilter === 'All' || s.section === sectionFilter) &&
+		(accessFilter === 'all' || s.access === accessFilter)
+	));
+	const filteredCourses = $derived(courses.filter((c) => {
+		if (sectionFilter !== 'All' && c.section !== sectionFilter) return false;
+		if (accessFilter === 'free')   return isCourseAccessible(c.id);
+		if (accessFilter === 'locked') return !isCourseAccessible(c.id);
+		return true;
+	}));
 	const filteredResources = $derived(resources.filter((r) => sectionFilter === 'All' || r.section === sectionFilter));
 
 	const sectionColors: Record<string, string> = {
@@ -114,16 +127,17 @@
 	{#if activeTab === 'tests' && testView === 'byTest'}
 		<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
 			{#each filteredTests as test}
+				{@const locked = !isTestAccessible(test.testNumber)}
 				<div class="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-shadow flex flex-col
-					{test.access === 'locked' ? 'opacity-85' : ''}">
+					{locked ? 'opacity-85' : ''}">
 					<div class="flex items-center justify-between mb-3">
 						<h3 class="font-black text-brand-green text-base">Test #{test.testNumber}</h3>
-						{#if test.access === 'locked'}
-							<span class="text-[10px] bg-gray-100 text-gray-400 font-bold px-2 py-0.5 rounded-full">🔒 Premium</span>
+						{#if locked}
+							<span class="text-[10px] bg-gray-100 text-gray-400 font-bold px-2 py-0.5 rounded-full">🔒 Locked</span>
 						{:else if test.attempts > 0}
 							<span class="text-[10px] bg-brand-green-light text-brand-green font-bold px-2 py-0.5 rounded-full">✓ Done</span>
 						{:else}
-							<span class="text-[10px] bg-blue-50 text-blue-500 font-bold px-2 py-0.5 rounded-full">Free</span>
+							<span class="text-[10px] bg-blue-50 text-blue-500 font-bold px-2 py-0.5 rounded-full">Included</span>
 						{/if}
 					</div>
 					<StarRating rating={test.rating} count={test.ratingCount} />
@@ -136,7 +150,7 @@
 									<span class="text-xs text-gray-600 font-medium">{sec} #{test.testNumber}</span>
 								</div>
 								<div class="flex items-center gap-1.5">
-									{#if test.access === 'locked'}
+									{#if locked}
 										<button class="text-[10px] font-semibold px-2 py-1 rounded-lg border border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white transition-all whitespace-nowrap">
 											🔒 Unlock
 										</button>
@@ -169,15 +183,16 @@
 					</div>
 					<div class="p-3 sm:p-4 grid grid-cols-4 sm:grid-cols-5 gap-2">
 						{#each practiceTests as test}
+							{@const locked = !isTestAccessible(test.testNumber)}
 							<div class="flex flex-col items-center gap-1.5 p-1.5 sm:p-2 rounded-xl
-								{test.access === 'locked' ? 'opacity-50' : 'hover:bg-brand-green-light cursor-pointer'} transition-colors">
+								{locked ? 'opacity-50' : 'hover:bg-brand-green-light cursor-pointer'} transition-colors">
 								<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2
-									{test.access === 'locked' ? 'border-dashed border-gray-300' : 'border-dashed border-brand-green'}
+									{locked ? 'border-dashed border-gray-300' : 'border-dashed border-brand-green'}
 									flex items-center justify-center">
 									<SectionBadge section={section} size="sm" />
 								</div>
 								<span class="text-[10px] sm:text-[11px] font-semibold text-gray-600 leading-none">Test#{test.testNumber}</span>
-								{#if test.access === 'locked'}
+								{#if locked}
 									<button class="text-[8px] sm:text-[9px] font-bold text-brand-pink border border-brand-pink rounded-md px-1 sm:px-1.5 py-0.5 hover:bg-brand-pink hover:text-white transition-all leading-none">
 										Unlock
 									</button>
@@ -240,8 +255,9 @@
 
 	<!-- ── COURSES ──────────────────────────────────────────────────── -->
 	{:else if activeTab === 'courses'}
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
 			{#each filteredCourses as course}
+				{@const locked = !isCourseAccessible(course.id)}
 				<div class="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group">
 					<div class="relative h-28 sm:h-32 bg-gray-100">
 						<img src={course.thumbnail} alt={course.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -249,7 +265,7 @@
 						{#if course.tag}
 							<span class="absolute top-2.5 left-2.5 bg-brand-pink text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{course.tag}</span>
 						{/if}
-						{#if course.access === 'locked'}
+						{#if locked}
 							<div class="absolute top-2.5 right-2.5 w-6 h-6 bg-black/40 rounded-full flex items-center justify-center">
 								<span class="text-white text-xs">🔒</span>
 							</div>
@@ -268,7 +284,7 @@
 						{/if}
 						<StarRating rating={course.rating} count={course.ratingCount} />
 						<div class="mt-3">
-							{#if course.access === 'locked'}
+							{#if locked}
 								<button class="w-full text-xs font-semibold py-2 rounded-lg border border-brand-pink text-brand-pink hover:bg-brand-pink hover:text-white transition-all">🔒 Unlock Course</button>
 							{:else if course.progressPercent > 0}
 								<button class="w-full text-xs font-semibold py-2 rounded-lg bg-brand-green text-white hover:bg-brand-green-dark transition-colors">Continue →</button>
