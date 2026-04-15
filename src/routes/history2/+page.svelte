@@ -204,14 +204,24 @@
 			</div>
 		</div>
 
-		<!-- Score Overview: Overall + 5 section cards (incl. Complete Tests) -->
+		<!-- Score Overview: Overall gauge + 5 section cards (incl. Complete Tests) -->
 		<div class="overview-row">
-			<!-- Overall Score -->
-			<div class="ov-card ov-overall">
-				<span class="ov-label">{isComplete ? 'Composite Avg' : 'Overall Avg'}</span>
-				<div class="ov-big" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">
-					{gaugeNA ? '—' : fmtScore(gaugeScore)}{#if !gaugeNA}<span class="ov-denom">/6</span>{/if}
+			<!-- Overall Score — gauge -->
+			<div class="ov-card ov-gauge-card">
+				<div class="ov-gw">
+					<svg viewBox="0 0 120 86" class="ov-gsv">
+						<path d={arcPath(SA, EA)} fill="none" stroke="#ebebeb" stroke-width="9" stroke-linecap="round" />
+						{#if !gaugeNA}
+							<path d={arcPath(SA, gaugeFillAngle)} fill="none" stroke={gaugeColor} stroke-width="9" stroke-linecap="round" style="transition:all .6s ease" />
+						{/if}
+						<text x="14" y="82" font-size="8" fill="#ccc" text-anchor="middle">1</text>
+						<text x="106" y="82" font-size="8" fill="#ccc" text-anchor="middle">6</text>
+					</svg>
+					<div class="ov-gnum" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">
+						{gaugeNA ? '—' : fmtScore(gaugeScore)}{#if !gaugeNA}<span class="ov-gfrac">/6</span>{/if}
+					</div>
 				</div>
+				<div class="ov-label">{isComplete ? 'Composite Avg' : 'Overall Avg'}</div>
 				{#if gaugeBest !== null}
 					<div class="ov-best">Best <b class="green">{fmtScore(gaugeBest)}/6</b></div>
 				{:else}
@@ -486,7 +496,7 @@
 	.dashboard { font-family: 'DM Sans', sans-serif; padding: 0 32px 28px; color: #222; }
 
 	/* ── Sticky header ── */
-	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 20px 0 12px; border-bottom: 1px solid #ebebeb; margin-bottom: 16px; }
+	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 20px 0 12px; box-shadow: 0 3px 12px rgba(0,0,0,.07); margin-bottom: 16px; }
 
 	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
 	h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
@@ -497,27 +507,33 @@
 	.mode-btn { padding: 6px 14px; border-radius: 99px; border: none; cursor: pointer; font-size: 12px; font-weight: 400; background: transparent; color: #777; transition: all .2s; font-family: inherit; }
 	.mode-btn.active { font-weight: 600; background: #00b189; color: #fff; }
 
-	/* ── Overview row: Overall + 5 section cards (incl. Complete Tests) ── */
-	.overview-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+	/* ── Overview row: Overall gauge + 5 section cards (incl. Complete Tests) ── */
+	.overview-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; align-items: start; }
 
-	.ov-card { background: #fff; border-radius: 14px; padding: 14px 13px 12px; box-shadow: 0 1px 4px rgba(0,0,0,.05); position: relative; overflow: hidden; }
-	.ov-overall { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 3px; }
-	.ov-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; }
-	.ov-big { font-size: 28px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
-	.ov-denom { font-size: 13px; font-weight: 600; color: #bbb; }
-	.ov-best { font-size: 11px; color: #999; }
-	.ov-hint { font-size: 10px; color: #ccc; line-height: 1.3; max-width: 90px; }
+	.ov-card { background: #fff; border-radius: 14px; padding: 11px 12px 10px; box-shadow: 0 1px 4px rgba(0,0,0,.05); position: relative; overflow: hidden; }
 
+	/* Gauge card */
+	.ov-gauge-card { text-align: center; }
+	.ov-gw { position: relative; }
+	.ov-gsv { width: 100%; display: block; }
+	.ov-gnum { position: absolute; top: 44%; left: 50%; transform: translate(-50%, -50%); font-size: 19px; font-weight: 800; letter-spacing: -1px; line-height: 1; white-space: nowrap; }
+	.ov-gfrac { font-size: 10px; font-weight: 600; color: #bbb; }
+	.ov-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; margin-top: 1px; display: block; }
+	.ov-best { font-size: 11px; color: #999; margin-top: 2px; }
+	.ov-hint { font-size: 10px; color: #ccc; margin-top: 2px; }
+
+	/* Section cards */
 	.ov-sec { border: 2px solid transparent; cursor: pointer; text-align: left; font-family: inherit; transition: all .15s; }
 	.ov-sec.active { border-color: #00b189; box-shadow: 0 3px 12px rgba(0,177,137,.12); }
 	.ov-sec:hover:not(.active) { background: #f8f8f8; }
 	.ov-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #00b189; }
-	.ov-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
-	.ov-icon { width: 24px; height: 24px; border-radius: 7px; background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+	.ov-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+	.ov-icon { width: 22px; height: 22px; border-radius: 6px; background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 	.ov-icon.active { background: rgba(0,177,137,.08); color: #00b189; }
 	.ov-name { font-size: 11px; font-weight: 600; color: #333; }
-	.ov-score-row { display: flex; align-items: baseline; gap: 2px; margin-bottom: 6px; }
-	.ov-val { font-size: 22px; font-weight: 800; letter-spacing: -1px; }
+	.ov-score-row { display: flex; align-items: baseline; gap: 2px; margin-bottom: 4px; }
+	.ov-val { font-size: 20px; font-weight: 800; letter-spacing: -1px; }
+	.ov-denom { font-size: 11px; font-weight: 600; color: #bbb; }
 	.ov-unit { font-size: 9px; color: #aaa; margin-left: 3px; }
 	.ov-foot { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
 	.ov-count { font-weight: 600; }
