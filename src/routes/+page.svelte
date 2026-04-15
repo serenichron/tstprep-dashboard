@@ -12,6 +12,7 @@
 		practiceSets,
 		courses
 	} from '$lib/data/content';
+	import { userState, getUpsell } from '$lib/userState.svelte';
 
 	const daysUntilExam = mockUser.examDate
 		? Math.max(0, Math.ceil((new Date(mockUser.examDate).getTime() - Date.now()) / 86400000))
@@ -49,6 +50,16 @@
 	}));
 	const polyline = chartPoints.map((p) => `${p.x},${p.y}`).join(' ');
 	const areaPath = `M${chartPoints[0].x},${chartH} ${chartPoints.map((p) => `L${p.x},${p.y}`).join(' ')} L${chartPoints[chartPoints.length - 1].x},${chartH} Z`;
+
+	// Banner copy — wider/bolder than the sidebar CTA
+	const bannerCopy: Record<string, { headline: string; sub: string; cta: string }> = {
+		free:             { headline: "You've used both free tests 🎯",        sub: "Unlock 13 more full practice tests + all Score Builder courses",                    cta: "Upgrade Now" },
+		emergency_basic:  { headline: "Ready to build lasting skills? 📈",      sub: "Score Builder gives you 10 practice tests + 6 expert courses for deep improvement", cta: "See Score Builder" },
+		emergency_premium:{ headline: "Take your prep to the next level 🚀",    sub: "Score Builder's 10 tests and expert courses will get you past your plateau",       cta: "Try Score Builder" },
+		score_builder:    { headline: "Want faster results? Work 1-on-1 🎓",    sub: "A TOEFL expert can target your exact weak spots in a single session",              cta: "Book a Lesson" },
+		private_lessons:  { headline: "Keep the momentum going! 💪",            sub: "You're on the fastest path to your target score — stay consistent",               cta: "Schedule Next Session" },
+		unlock_all_tests: { headline: "All 15 tests, zero limits 🔓",           sub: "You have full access to every practice test — keep pushing!",                      cta: "Go to Library" },
+	};
 
 	const inProgress = [
 		practiceSets.find((s) => s.completionPercent > 0 && s.completionPercent < 100),
@@ -205,15 +216,18 @@
 		</div>
 	</div>
 
-	{#if mockUser.plan === 'free'}
+	{@const upsell = getUpsell()}
+	{@const banner = bannerCopy[userState.plan]}
+	{#if upsell && banner}
 		<div class="mt-4 lg:mt-6 bg-gradient-to-r from-brand-pink to-orange-400 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white">
 			<div>
-				<p class="font-black text-base sm:text-lg">You've used both free tests 🎯</p>
-				<p class="text-sm opacity-90 mt-0.5">Unlock 13 more full practice tests + all Score Builder courses</p>
+				<p class="font-black text-base sm:text-lg">{banner.headline}</p>
+				<p class="text-sm opacity-90 mt-0.5">{banner.sub}</p>
 			</div>
-			<button class="bg-white text-brand-pink font-black px-5 sm:px-6 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0 w-full sm:w-auto text-center">
-				Upgrade to Premium
-			</button>
+			<a href={upsell.href} target="_blank" rel="noopener noreferrer"
+				class="bg-white text-brand-pink font-black px-5 sm:px-6 py-2.5 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0 w-full sm:w-auto text-center no-underline">
+				{banner.cta}
+			</a>
 		</div>
 	{/if}
 </div>

@@ -188,72 +188,59 @@
 </svelte:head>
 
 <div class="dashboard">
-	<!-- Header -->
-	<div class="header">
-		<div>
-			<h1><span class="green">Results</span> Dashboard</h1>
-			<p class="subtitle">Track your TOEFL 2026 scores across all sections</p>
-		</div>
-		<div class="mode-toggle">
-			{#each [['all','All'],['test','Test'],['practice','Practice']] as [val, label]}
-				<button class="mode-btn" class:active={mode === val} onclick={() => (mode = val as typeof mode)}>
-					{label}
-				</button>
-			{/each}
-		</div>
-	</div>
-
-	<!-- Score Overview -->
-	<div class="overview-grid">
-		<div class="general-card">
-			<div class="gauge-wrap" style="width:110px;height:{110 * 0.72}px;margin:0 auto;position:relative">
-				<svg width="110" height={110 * 0.72} viewBox="0 0 120 86">
-					<path d={arcPath(SA, EA)} fill="none" stroke="#eee" stroke-width="8" stroke-linecap="round" />
-					{#if !gaugeNA}
-						<path d={arcPath(SA, gaugeFillAngle)} fill="none" stroke={gaugeColor} stroke-width="8" stroke-linecap="round" style="transition:all .7s ease" />
-					{/if}
-					<text x="14" y="82" font-size="8" fill="#bbb" text-anchor="middle">1</text>
-					<text x="106" y="82" font-size="8" fill="#bbb" text-anchor="middle">6</text>
-				</svg>
-				<div class="gauge-label" style="color:{gaugeNA ? '#ccc' : '#222'}">
-					{gaugeNA ? '—' : fmtScoreFull(gaugeScore)}
-				</div>
+	<!-- ─── Sticky header: title row + overview cards ─── -->
+	<div class="sticky-header">
+		<div class="header">
+			<div>
+				<h1><span class="green">Results</span> Dashboard</h1>
+				<p class="subtitle">Track your TOEFL 2026 scores across all sections</p>
 			</div>
-			<div class="card-meta">{gaugeLabel}</div>
-			{#if gaugeScore === null}
-				<p class="card-hint">{isComplete ? 'No fully scored tests yet' : 'Requires scored submissions in all 4 sections'}</p>
-			{/if}
-			{#if gaugeBest !== null}
-				<div class="card-best">Best: <b class="green">{fmtScoreFull(gaugeBest)}</b></div>
-			{/if}
+			<div class="mode-toggle">
+				{#each [['all','All'],['test','Test'],['practice','Practice']] as [val, label]}
+					<button class="mode-btn" class:active={mode === val} onclick={() => (mode = val as typeof mode)}>
+						{label}
+					</button>
+				{/each}
+			</div>
 		</div>
 
-		<div class="section-cards">
+		<!-- Score Overview: Overall + 5 section cards (incl. Complete Tests) -->
+		<div class="overview-row">
+			<!-- Overall Score -->
+			<div class="ov-card ov-overall">
+				<span class="ov-label">{isComplete ? 'Composite Avg' : 'Overall Avg'}</span>
+				<div class="ov-big" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">
+					{gaugeNA ? '—' : fmtScore(gaugeScore)}{#if !gaugeNA}<span class="ov-denom">/6</span>{/if}
+				</div>
+				{#if gaugeBest !== null}
+					<div class="ov-best">Best <b class="green">{fmtScore(gaugeBest)}/6</b></div>
+				{:else}
+					<div class="ov-hint">{isComplete ? 'No fully scored tests' : 'Need all 4 sections'}</div>
+				{/if}
+			</div>
+
+			<!-- Section cards -->
 			{#each secs as sc}
 				{@const s = stats[sc]}
 				{@const act = sec === sc}
-				<button class="sec-card" class:active={act} onclick={() => (sec = sc)}>
-					{#if act}<div class="sec-card-bar"></div>{/if}
-					<div class="sec-card-head">
-						<div class="sec-icon" class:active={act}>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								{#each iconPaths[sc] as d}
-									<path {d} />
-								{/each}
-								{#if sc === 'Speaking'}
-									<line x1="12" x2="12" y1="19" y2="22" />
-								{/if}
+				<button class="ov-card ov-sec" class:active={act} onclick={() => (sec = sc)}>
+					{#if act}<div class="ov-bar"></div>{/if}
+					<div class="ov-head">
+						<div class="ov-icon" class:active={act}>
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								{#each iconPaths[sc] as d}<path {d} />{/each}
+								{#if sc === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
 							</svg>
 						</div>
-						<span class="sec-card-name">{sc === 'Complete Tests' ? 'Full Tests' : sc}</span>
+						<span class="ov-name">{sc === 'Complete Tests' ? 'Full Tests' : sc}</span>
 					</div>
-					<div class="sec-card-score">
-						<span class="sec-card-val" style="color:{s.avg === null ? '#d0d0d0' : '#222'}">{s.avg === null ? '—' : fmtScoreFull(s.avg)}</span>
-						<span class="sec-card-unit">{sc === 'Complete Tests' ? 'composite avg' : 'avg'}</span>
+					<div class="ov-score-row">
+						<span class="ov-val" style="color:{s.avg === null ? '#d0d5dd' : '#1a1a1a'}">{s.avg === null ? '—' : fmtScore(s.avg)}</span>
+						{#if s.avg !== null}<span class="ov-denom">/6</span><span class="ov-unit">{sc === 'Complete Tests' ? 'comp' : 'avg'}</span>{/if}
 					</div>
-					<div class="sec-card-foot">
-						<span>Best: <b style="color:{s.best === null ? '#ccc' : '#00b189'}">{s.best === null ? '—' : fmtScoreFull(s.best)}</b></span>
-						<span>{s.count}</span>
+					<div class="ov-foot">
+						<span>Best: <b style="color:{s.best === null ? '#ccc' : '#00b189'}">{s.best === null ? '—' : fmtScore(s.best)}</b></span>
+						<span class="ov-count">{s.count}</span>
 					</div>
 				</button>
 			{/each}
@@ -496,37 +483,44 @@
 <style>
 	* { box-sizing: border-box; margin: 0; padding: 0; }
 
-	.dashboard { font-family: 'DM Sans', sans-serif; padding: 28px 32px; color: #222; }
+	.dashboard { font-family: 'DM Sans', sans-serif; padding: 0 32px 28px; color: #222; }
 
-	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+	/* ── Sticky header ── */
+	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 20px 0 12px; border-bottom: 1px solid #ebebeb; margin-bottom: 16px; }
+
+	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
 	h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
 	.green { color: #00b189; }
 	.subtitle { font-size: 12px; color: #999; margin-top: 2px; }
 
 	.mode-toggle { display: inline-flex; background: #edeef0; border-radius: 99px; padding: 3px; }
-	.mode-btn { padding: 7px 16px; border-radius: 99px; border: none; cursor: pointer; font-size: 12px; font-weight: 400; background: transparent; color: #777; transition: all .2s; font-family: inherit; }
+	.mode-btn { padding: 6px 14px; border-radius: 99px; border: none; cursor: pointer; font-size: 12px; font-weight: 400; background: transparent; color: #777; transition: all .2s; font-family: inherit; }
 	.mode-btn.active { font-weight: 600; background: #00b189; color: #fff; }
 
-	.overview-grid { display: grid; grid-template-columns: 170px 1fr; gap: 12px; margin-bottom: 16px; }
+	/* ── Overview row: Overall + 5 section cards (incl. Complete Tests) ── */
+	.overview-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 
-	.general-card { background: #fff; border-radius: 16px; padding: 18px 10px 14px; box-shadow: 0 1px 6px rgba(0,0,0,.04); text-align: center; }
-	.gauge-label { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); font-size: 22px; font-weight: 800; letter-spacing: -1px; }
-	.card-meta { font-size: 11px; font-weight: 600; color: #999; }
-	.card-hint { font-size: 9.5px; color: #c0c0c0; margin: 6px 8px 0; line-height: 1.3; }
-	.card-best { margin-top: 6px; font-size: 11px; color: #999; }
+	.ov-card { background: #fff; border-radius: 14px; padding: 14px 13px 12px; box-shadow: 0 1px 4px rgba(0,0,0,.05); position: relative; overflow: hidden; }
+	.ov-overall { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 3px; }
+	.ov-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; }
+	.ov-big { font-size: 28px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+	.ov-denom { font-size: 13px; font-weight: 600; color: #bbb; }
+	.ov-best { font-size: 11px; color: #999; }
+	.ov-hint { font-size: 10px; color: #ccc; line-height: 1.3; max-width: 90px; }
 
-	.section-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-	.sec-card { background: #fafafa; border: 2px solid transparent; border-radius: 14px; padding: 12px 10px; cursor: pointer; text-align: left; transition: all .15s; font-family: inherit; box-shadow: 0 1px 3px rgba(0,0,0,.03); position: relative; overflow: hidden; }
-	.sec-card.active { background: #fff; border-color: #00b189; box-shadow: 0 3px 14px rgba(0,177,137,.1); }
-	.sec-card-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #00b189; }
-	.sec-card-head { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
-	.sec-icon { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; background: #f0f0f0; color: #999; }
-	.sec-icon.active { background: rgba(0,177,137,.07); color: #00b189; }
-	.sec-card-name { font-weight: 600; font-size: 11px; color: #333; }
-	.sec-card-score { display: flex; align-items: baseline; gap: 3px; margin-bottom: 4px; }
-	.sec-card-val { font-size: 18px; font-weight: 800; letter-spacing: -1px; }
-	.sec-card-unit { font-size: 9px; color: #aaa; }
-	.sec-card-foot { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
+	.ov-sec { border: 2px solid transparent; cursor: pointer; text-align: left; font-family: inherit; transition: all .15s; }
+	.ov-sec.active { border-color: #00b189; box-shadow: 0 3px 12px rgba(0,177,137,.12); }
+	.ov-sec:hover:not(.active) { background: #f8f8f8; }
+	.ov-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #00b189; }
+	.ov-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+	.ov-icon { width: 24px; height: 24px; border-radius: 7px; background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+	.ov-icon.active { background: rgba(0,177,137,.08); color: #00b189; }
+	.ov-name { font-size: 11px; font-weight: 600; color: #333; }
+	.ov-score-row { display: flex; align-items: baseline; gap: 2px; margin-bottom: 6px; }
+	.ov-val { font-size: 22px; font-weight: 800; letter-spacing: -1px; }
+	.ov-unit { font-size: 9px; color: #aaa; margin-left: 3px; }
+	.ov-foot { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
+	.ov-count { font-weight: 600; }
 
 	.panel { background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.04); overflow: hidden; }
 	.panel-header { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -588,14 +582,14 @@
 		.section-cards { grid-template-columns: repeat(3, 1fr); }
 	}
 	@media (max-width: 767px) {
-		.dashboard { padding: 16px; }
+		.dashboard { padding: 0 16px 20px; }
+		.sticky-header { top: 56px; padding: 14px 0 10px; }
 		h1 { font-size: 18px; }
 		.header { flex-direction: column; align-items: flex-start; gap: 10px; }
-		.overview-grid { grid-template-columns: 1fr; }
-		.general-card { display: flex; align-items: center; gap: 16px; text-align: left; padding: 14px 16px; }
-		.gauge-wrap { flex-shrink: 0; }
-		.section-cards { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-		.sec-card-val { font-size: 15px; }
+		.overview-row { grid-template-columns: repeat(3, 1fr); }
+		.ov-overall { grid-column: 1 / -1; flex-direction: row; text-align: left; gap: 16px; padding: 12px 14px; }
+		.ov-big { font-size: 24px; }
+		.ov-val { font-size: 20px; }
 		.panel-header { flex-direction: column; align-items: flex-start; }
 		.trend-area { text-align: left; width: 100%; }
 		.sub-row { padding: 8px 14px; gap: 8px; }
@@ -605,8 +599,8 @@
 		.view-toggle-bar { padding: 7px 14px; }
 	}
 	@media (max-width: 480px) {
-		.section-cards { grid-template-columns: repeat(2, 1fr); }
-		.sec-card { padding: 10px 8px; }
+		.overview-row { grid-template-columns: repeat(2, 1fr); }
+		.ov-card { padding: 10px 10px 9px; }
 		.sub-score { flex: 0 0 100px; }
 		.view-btn-row { padding: 3px 10px; font-size: 10px; }
 	}
