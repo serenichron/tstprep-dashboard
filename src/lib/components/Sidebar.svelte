@@ -55,7 +55,8 @@
 	});
 
 	function handleNavClick() {
-		onClose?.();
+		// Only close (mobile overlay) when on a small screen; desktop keeps its state
+		if (window.innerWidth < 1024) onClose?.();
 	}
 </script>
 
@@ -66,6 +67,25 @@
 		? 'w-60 translate-x-0'
 		: 'w-60 -translate-x-full lg:translate-x-0 lg:w-14'}
 ">
+	<!-- ─── Collapse / expand toggle (desktop only) ─── -->
+	<button
+		onclick={onToggle}
+		class="hidden lg:flex items-center border-b border-gray-100 py-3 transition-colors hover:bg-gray-50 text-gray-400 hover:text-gray-600
+			{isOpen ? 'px-4 gap-2' : 'justify-center px-0'}"
+		aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+	>
+		<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+			{#if isOpen}
+				<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+			{:else}
+				<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+			{/if}
+		</svg>
+		{#if isOpen}
+			<span class="text-xs font-medium">Collapse</span>
+		{/if}
+	</button>
+
 	<!-- Navigation -->
 	<nav class="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
 		{#each navItems as item}
@@ -110,22 +130,4 @@
 		{/if}
 	{/if}
 
-	<!-- ─── Collapse / expand toggle (desktop only) ─── -->
-	<button
-		onclick={onToggle}
-		class="hidden lg:flex items-center border-t border-gray-100 py-3 transition-colors hover:bg-gray-50 text-gray-400 hover:text-gray-600
-			{isOpen ? 'px-4 gap-2' : 'justify-center px-0'}"
-		aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-	>
-		<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-			{#if isOpen}
-				<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-			{:else}
-				<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-			{/if}
-		</svg>
-		{#if isOpen}
-			<span class="text-xs font-medium">Collapse</span>
-		{/if}
-	</button>
 </aside>
