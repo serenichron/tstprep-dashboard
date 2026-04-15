@@ -52,31 +52,54 @@
 	}
 </script>
 
+<!--
+  Mobile : slide in/out (translate)    — full width w-60
+  Desktop: always visible, width-based — w-60 open, w-14 collapsed (icon rail)
+-->
 <aside class="
-	fixed top-14 bottom-0 left-0 w-60 bg-white border-r border-gray-100 flex flex-col z-50 shadow-sm
-	transition-transform duration-300
-	{isOpen ? 'translate-x-0' : '-translate-x-full'}
+	fixed top-14 bottom-0 left-0 bg-white border-r border-gray-100 flex flex-col z-50 shadow-sm
+	transition-all duration-300 overflow-hidden
+	{isOpen
+		? 'w-60 translate-x-0'
+		: 'w-60 -translate-x-full lg:translate-x-0 lg:w-14'}
 ">
 	<!-- Navigation -->
-	<nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+	<nav class="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
 		{#each navItems as item}
-			<a href={item.href} class="nav-link" class:active={item.href === activeHref} onclick={handleNavClick}>
-				<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+			<a
+				href={item.href}
+				class="nav-link {isOpen ? '' : 'lg:justify-center lg:px-0 lg:py-3'}"
+				class:active={item.href === activeHref}
+				title={item.label}
+				onclick={handleNavClick}
+			>
+				<svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 					{@html item.icon}
 				</svg>
-				<span>{item.label}</span>
+				<span class="truncate {isOpen ? '' : 'lg:hidden'}">{item.label}</span>
 			</a>
 		{/each}
 	</nav>
 
-	<!-- Upgrade CTA -->
-	<div class="px-3 pb-4">
-		<div class="bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white">
-			<p class="text-xs font-bold mb-1">🚀 Go Premium</p>
-			<p class="text-xs opacity-90 mb-2.5 leading-relaxed">Unlock all 15 tests + Score Builder courses</p>
-			<button class="w-full bg-white text-brand-pink text-xs font-bold py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-				Upgrade Now
-			</button>
+	<!-- Upgrade CTA — hidden in collapsed rail -->
+	{#if isOpen}
+		<div class="px-3 pb-4">
+			<div class="bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white">
+				<p class="text-xs font-bold mb-1">🚀 Go Premium</p>
+				<p class="text-xs opacity-90 mb-2.5 leading-relaxed">Unlock all 15 tests + Score Builder courses</p>
+				<button class="w-full bg-white text-brand-pink text-xs font-bold py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+					Upgrade Now
+				</button>
+			</div>
 		</div>
-	</div>
+	{:else}
+		<!-- Collapsed: just a small upgrade icon hint -->
+		<div class="pb-4 px-2 hidden lg:block">
+			<div class="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-brand-pink to-orange-400 flex items-center justify-center cursor-pointer" title="Go Premium">
+				<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z" />
+				</svg>
+			</div>
+		</div>
+	{/if}
 </aside>

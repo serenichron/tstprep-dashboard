@@ -100,7 +100,7 @@
 <!-- ─── Layout body ───────────────────────────────────────────────────────── -->
 <div class="flex min-h-screen bg-gray-50 pt-14">
 	<Sidebar isOpen={sidebarOpen} onClose={() => (sidebarOpen = false)} />
-	<main class="flex-1 min-h-screen transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : ''}">
+	<main class="flex-1 min-h-screen transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : 'lg:ml-14'}">
 		{@render children()}
 	</main>
 </div>
