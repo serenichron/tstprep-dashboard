@@ -216,66 +216,50 @@
 				</button>
 			{/each}
 		</div>
+
+		<!-- Section bar: section info, trend sparkline, view filter -->
+		<div class="section-bar">
+			<div class="sb-left">
+				<div class="sb-icon">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						{#each iconPaths[sec] as d}<path {d} />{/each}
+						{#if sec === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
+					</svg>
+				</div>
+				<span class="sb-name">{sec}</span>
+				<span class="sb-dot">·</span>
+				<span class="sb-count">{st.count} submission{st.count !== 1 ? 's' : ''}</span>
+				{#if needsAI}<span class="sb-ai">· {st.aiCount} AI-graded</span>{/if}
+			</div>
+			<div class="sb-mid">
+				{#if trendData}
+					<svg width="72" height="22" viewBox="0 0 {trendData.W} {trendData.H}">
+						<defs><linearGradient id="sbg" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0%" stop-color={trendData.color} stop-opacity=".12" />
+							<stop offset="100%" stop-color={trendData.color} stop-opacity="0" />
+						</linearGradient></defs>
+						<path d={trendData.area} fill="url(#sbg)" />
+						<path d={trendData.d} fill="none" stroke={trendData.color} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+						{#each trendData.coords as c}
+							<circle cx={c.x} cy={c.y} r="2" fill="#fff" stroke={trendData.color} stroke-width="1.4" />
+						{/each}
+					</svg>
+					<span class="sb-diff" style="color:{trendData.color}">{trendData.diffLabel}</span>
+				{:else}
+					<span class="sb-no-trend">No trend yet</span>
+				{/if}
+			</div>
+			<div class="sb-right">
+				<span class="sb-view-label">View by</span>
+				{#each [['test','Test #'],['date','Date']] as [val, label]}
+					<button class="sb-view-btn" class:active={viewBy === val} onclick={() => (viewBy = val as typeof viewBy)}>{label}</button>
+				{/each}
+			</div>
+		</div>
 	</div>
 
 	<!-- Detail Panel -->
 	<div class="panel">
-		<div class="panel-header">
-			<div class="panel-title-row">
-				<div class="panel-icon">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						{#each iconPaths[sec] as d}
-							<path {d} />
-						{/each}
-						{#if sec === 'Speaking'}
-							<line x1="12" x2="12" y1="19" y2="22" />
-						{/if}
-					</svg>
-				</div>
-				<div>
-					<h2 class="panel-section-name">{sec}</h2>
-					<p class="panel-sub">
-						{st.count} submission{st.count !== 1 ? 's' : ''}
-						{#if needsAI} · {st.aiCount} AI-graded{/if}
-					</p>
-				</div>
-			</div>
-			<div class="trend-area">
-				<div class="trend-label">Progress</div>
-				{#if trendData}
-					<div style="display:flex;align-items:center;gap:8px">
-						<svg width={trendData.W} height={trendData.H}>
-							<defs>
-								<linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
-									<stop offset="0%" stop-color={trendData.color} stop-opacity=".12" />
-									<stop offset="100%" stop-color={trendData.color} stop-opacity="0" />
-								</linearGradient>
-							</defs>
-							<path d={trendData.area} fill="url(#tg)" />
-							<path d={trendData.d} fill="none" stroke={trendData.color} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-							{#each trendData.coords as c}
-								<circle cx={c.x} cy={c.y} r="2.2" fill="#fff" stroke={trendData.color} stroke-width="1.5" />
-							{/each}
-						</svg>
-						<span style="font-size:11px;font-weight:700;color:{trendData.color}">{trendData.diffLabel}</span>
-					</div>
-				{:else}
-					<span class="no-trend">Need 2+ scores</span>
-				{/if}
-			</div>
-		</div>
-
-		{#if rows.length > 0}
-			<div class="view-toggle-bar">
-				<span class="view-label">View by</span>
-				{#each [['test', 'Test Number'], ['date', 'Date']] as [val, label]}
-					<button class="view-btn" class:active={viewBy === val} onclick={() => (viewBy = val as typeof viewBy)}>
-						{label}
-					</button>
-				{/each}
-			</div>
-		{/if}
-
 		{#if rows.length === 0}
 			<div class="empty">
 				<div class="empty-icon">📝</div>
@@ -369,12 +353,12 @@
 	.dashboard { font-family: 'DM Sans', sans-serif; padding: 0 32px 28px; color: #222; }
 
 	/* ── Sticky header ── */
-	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 20px 0 12px; box-shadow: 0 3px 12px rgba(0,0,0,.07); margin-bottom: 16px; }
+	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 0 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 14px; }
 
-	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
-	h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+	h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
 	.green { color: #00b189; }
-	.subtitle { font-size: 12px; color: #999; margin-top: 2px; }
+	.subtitle { font-size: 11px; color: #999; margin-top: 1px; }
 
 	.mode-toggle { display: inline-flex; background: #edeef0; border-radius: 99px; padding: 3px; }
 	.mode-btn { padding: 6px 14px; border-radius: 99px; border: none; cursor: pointer; font-size: 12px; font-weight: 400; background: transparent; color: #777; transition: all .2s; font-family: inherit; }
@@ -383,13 +367,13 @@
 	/* ── Overview row: Overall gauge + 4 section cards ── */
 	.overview-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-items: start; }
 
-	.ov-card { background: #fff; border-radius: 14px; padding: 11px 12px 10px; box-shadow: 0 1px 4px rgba(0,0,0,.05); position: relative; overflow: hidden; }
+	.ov-card { background: #fff; border-radius: 12px; padding: 8px 10px 7px; box-shadow: 0 1px 4px rgba(0,0,0,.05); position: relative; overflow: hidden; }
 
 	/* Gauge card */
 	.ov-gauge-card { text-align: center; }
-	.ov-gw { position: relative; }
-	.ov-gsv { width: 100%; display: block; }
-	.ov-gnum { position: absolute; top: 44%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; font-weight: 800; letter-spacing: -1px; line-height: 1; white-space: nowrap; }
+	.ov-gw { position: relative; max-width: 68px; margin: 0 auto; }
+	.ov-gsv { width: 68px; height: 49px; display: block; }
+	.ov-gnum { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: 800; letter-spacing: -1px; line-height: 1; white-space: nowrap; }
 	.ov-gfrac { font-size: 10px; font-weight: 600; color: #bbb; }
 	.ov-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; margin-top: 1px; display: block; }
 	.ov-best { font-size: 11px; color: #999; margin-top: 2px; }
@@ -464,10 +448,26 @@
 
 	.footer { text-align: center; padding: 14px 0; font-size: 10px; color: #c0c0c0; }
 
+	/* ── Section bar (sticky header strip) ── */
+	.section-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0 8px; border-top: 1px solid #ebebeb; margin-top: 8px; flex-wrap: wrap; }
+	.sb-left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
+	.sb-icon { width: 22px; height: 22px; border-radius: 6px; background: rgba(0,177,137,.07); color: #00b189; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+	.sb-name { font-size: 12px; font-weight: 700; color: #222; white-space: nowrap; }
+	.sb-dot { color: #ddd; font-size: 12px; }
+	.sb-count { font-size: 11px; color: #999; white-space: nowrap; }
+	.sb-ai { font-size: 11px; color: #999; white-space: nowrap; }
+	.sb-mid { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+	.sb-diff { font-size: 11px; font-weight: 700; white-space: nowrap; }
+	.sb-no-trend { font-size: 10px; color: #ccc; font-style: italic; }
+	.sb-right { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+	.sb-view-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; margin-right: 2px; white-space: nowrap; }
+	.sb-view-btn { padding: 3px 10px; border-radius: 99px; border: none; cursor: pointer; font-size: 11px; font-weight: 400; background: transparent; color: #888; transition: all .15s; font-family: inherit; white-space: nowrap; }
+	.sb-view-btn.active { font-weight: 600; background: #222; color: #fff; }
+
 	@media (max-width: 767px) {
 		h1 { font-size: 18px; }
 		.header { flex-direction: column; align-items: flex-start; gap: 10px; }
-		.sticky-header { top: 56px; padding: 14px 0 10px; }
+		.sticky-header { top: 56px; padding: 10px 0 0; }
 		.overview-row { grid-template-columns: repeat(2, 1fr); }
 		.ov-overall { grid-column: 1 / -1; flex-direction: row; text-align: left; gap: 16px; padding: 12px 14px; }
 		.ov-big { font-size: 26px; }
