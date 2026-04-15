@@ -258,17 +258,23 @@
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
 			{#each filteredCourses as course}
 				{@const locked = !isCourseAccessible(course.id)}
-				<div class="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group">
-					<div class="relative h-28 sm:h-32 bg-gray-100">
-						<img src={course.thumbnail} alt={course.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+				<div class="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group {locked ? 'opacity-90' : ''}">
+					<div class="relative h-36 sm:h-40 bg-gray-100">
+						<img src={course.thumbnail} alt={course.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 {locked ? 'brightness-50' : ''}" />
 						<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+						{#if locked}
+							<!-- Lock overlay centered on image -->
+							<div class="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+								<div class="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+									<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+									</svg>
+								</div>
+								<span class="text-white text-[11px] font-bold bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">Locked</span>
+							</div>
+						{/if}
 						{#if course.tag}
 							<span class="absolute top-2.5 left-2.5 bg-brand-pink text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{course.tag}</span>
-						{/if}
-						{#if locked}
-							<div class="absolute top-2.5 right-2.5 w-6 h-6 bg-black/40 rounded-full flex items-center justify-center">
-								<span class="text-white text-xs">🔒</span>
-							</div>
 						{/if}
 						<div class="absolute bottom-2.5 left-2.5">
 							<SectionBadge section={course.section} size="sm" />
