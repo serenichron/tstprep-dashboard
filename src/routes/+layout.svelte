@@ -3,7 +3,7 @@
 	import '../app.css';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { mockUser } from '$lib/data/content';
-	import { userPlan, planLabels } from '$lib/userState.svelte';
+	import { userState, planLabels } from '$lib/userState.svelte';
 	import type { UserPlan } from '$lib/types';
 
 	let { children }: { children: Snippet } = $props();
@@ -84,8 +84,8 @@
 		<!-- Plan dropdown -->
 		<select
 			class="hidden sm:inline text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-medium border-0 cursor-pointer hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-green/30"
-			value={userPlan}
-			onchange={(e) => { userPlan = (e.currentTarget as HTMLSelectElement).value as UserPlan; }}
+			value={userState.plan}
+			onchange={(e) => { userState.plan = (e.currentTarget as HTMLSelectElement).value as UserPlan; }}
 			aria-label="Simulate user plan"
 		>
 			{#each Object.entries(planLabels) as [value, label]}

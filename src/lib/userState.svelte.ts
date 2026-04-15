@@ -1,7 +1,10 @@
 import type { UserPlan } from '$lib/types';
 
-// ─── Reactive shared plan state ───────────────────────────────────────────────
-export let userPlan = $state<UserPlan>('free');
+// ─── Reactive shared plan state (class pattern avoids ES module assignment error) ──
+class UserState {
+	plan = $state<UserPlan>('free');
+}
+export const userState = new UserState();
 
 // ─── Plan display labels ──────────────────────────────────────────────────────
 export const planLabels: Record<UserPlan, string> = {
@@ -35,11 +38,11 @@ const courseAccess: Record<number, UserPlan[]> = {
 
 export function isTestAccessible(testNumber: number): boolean {
 	if (testNumber <= 2) return true; // always free
-	return testNumber <= testCounts[userPlan];
+	return testNumber <= testCounts[userState.plan];
 }
 
 export function isCourseAccessible(courseId: number): boolean {
-	return courseAccess[courseId]?.includes(userPlan) ?? false;
+	return courseAccess[courseId]?.includes(userState.plan) ?? false;
 }
 
 // ─── Sidebar upsell config ────────────────────────────────────────────────────
@@ -51,7 +54,7 @@ export interface UpsellConfig {
 }
 
 export function getUpsell(): UpsellConfig | null {
-	switch (userPlan) {
+	switch (userState.plan) {
 		case 'free':
 			return {
 				headline: 'Try Emergency Course',
