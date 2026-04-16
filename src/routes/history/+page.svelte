@@ -12,36 +12,75 @@
 	const roundHalf   = (v: number) => Math.round(v * 2) / 2;
 
 	/* ─── Section submission mock data ─── */
+	/* Reading: 25 entries (tests 1–8)  |  Listening: 22 entries (tests 1–7)
+	   Writing: 8 entries (tests 1–5)   |  Speaking: 7 entries (tests 1–5)   */
 	const MOCK = [
-		{ id: 'r0', section: 'Reading',   testNumber: 1, mode: 'test',     score: 3.5, scoreAvailable: true,  date: '2026-01-10T09:15:00', details: { 'Part 1': '8/12',  'Part 2': '7/12'  } },
-		{ id: 'r1', section: 'Reading',   testNumber: 1, mode: 'practice', score: 3.0, scoreAvailable: true,  date: '2026-01-20T11:30:00', details: { 'Part 1': '7/12',  'Part 2': '6/12'  } },
-		{ id: 'r2', section: 'Reading',   testNumber: 2, mode: 'test',     score: 4.0, scoreAvailable: true,  date: '2026-02-05T10:00:00', details: { 'Part 1': '9/12',  'Part 2': '8/12'  } },
-		{ id: 'r3', section: 'Reading',   testNumber: 3, mode: 'test',     score: 4.0, scoreAvailable: true,  date: '2026-02-18T14:20:00', details: { 'Part 1': '10/12', 'Part 2': '8/12'  } },
-		{ id: 'r4', section: 'Reading',   testNumber: 3, mode: 'practice', score: 3.5, scoreAvailable: true,  date: '2026-02-25T09:45:00', details: { 'Part 1': '9/12',  'Part 2': '7/12'  } },
-		{ id: 'r5', section: 'Reading',   testNumber: 3, mode: 'test',     score: 4.5, scoreAvailable: true,  date: '2026-03-10T10:15:00', details: { 'Part 1': '11/12', 'Part 2': '9/12'  } },
-		{ id: 'r6', section: 'Reading',   testNumber: 4, mode: 'practice', score: 4.0, scoreAvailable: true,  date: '2026-03-22T15:00:00', details: { 'Part 1': '10/12', 'Part 2': '8/12'  } },
-		{ id: 'r7', section: 'Reading',   testNumber: 5, mode: 'test',     score: 4.5, scoreAvailable: true,  date: '2026-04-01T09:30:00', details: { 'Part 1': '11/12', 'Part 2': '10/12' } },
-		{ id: 'l0', section: 'Listening', testNumber: 1, mode: 'test',     score: 3.5, scoreAvailable: true,  date: '2026-01-12T10:00:00', details: { 'Part 1': '10/14', 'Part 2': '9/14'  } },
-		{ id: 'l1', section: 'Listening', testNumber: 2, mode: 'practice', score: 3.0, scoreAvailable: true,  date: '2026-01-28T13:30:00', details: { 'Part 1': '8/14',  'Part 2': '9/14'  } },
-		{ id: 'l2', section: 'Listening', testNumber: 2, mode: 'test',     score: 3.5, scoreAvailable: true,  date: '2026-02-10T11:00:00', details: { 'Part 1': '10/14', 'Part 2': '9/14'  } },
-		{ id: 'l3', section: 'Listening', testNumber: 3, mode: 'test',     score: 4.0, scoreAvailable: true,  date: '2026-02-20T09:15:00', details: { 'Part 1': '12/14', 'Part 2': '10/14' } },
-		{ id: 'l4', section: 'Listening', testNumber: 4, mode: 'practice', score: 3.5, scoreAvailable: true,  date: '2026-03-05T14:00:00', details: { 'Part 1': '11/14', 'Part 2': '9/14'  } },
-		{ id: 'l5', section: 'Listening', testNumber: 5, mode: 'test',     score: 4.0, scoreAvailable: true,  date: '2026-03-15T10:30:00', details: { 'Part 1': '12/14', 'Part 2': '11/14' } },
-		{ id: 'l6', section: 'Listening', testNumber: 5, mode: 'practice', score: 4.5, scoreAvailable: true,  date: '2026-03-29T09:00:00', details: { 'Part 1': '13/14', 'Part 2': '11/14' } },
-		{ id: 'l7', section: 'Listening', testNumber: 6, mode: 'test',     score: 4.5, scoreAvailable: true,  date: '2026-04-05T11:15:00', details: { 'Part 1': '13/14', 'Part 2': '12/14' } },
-		{ id: 'w0', section: 'Writing',   testNumber: 1, mode: 'test',     score: 3.0,  scoreAvailable: true,  date: '2026-01-14T10:30:00', details: { 'Build a Sentence': '6/10', 'Write an Email': '3/5',        'Academic Discussion': '2/5'        } },
-		{ id: 'w1', section: 'Writing',   testNumber: 1, mode: 'practice', score: null, scoreAvailable: false, date: '2026-01-22T14:00:00', details: { 'Build a Sentence': '7/10', 'Write an Email': 'not graded', 'Academic Discussion': 'not graded' } },
-		{ id: 'w2', section: 'Writing',   testNumber: 2, mode: 'test',     score: 3.5,  scoreAvailable: true,  date: '2026-02-08T09:30:00', details: { 'Build a Sentence': '7/10', 'Write an Email': '3/5',        'Academic Discussion': '3/5'        } },
-		{ id: 'w3', section: 'Writing',   testNumber: 3, mode: 'test',     score: null, scoreAvailable: false, date: '2026-02-22T11:45:00', details: { 'Build a Sentence': '8/10', 'Write an Email': 'not graded', 'Academic Discussion': 'not graded' } },
-		{ id: 'w4', section: 'Writing',   testNumber: 3, mode: 'practice', score: 4.0,  scoreAvailable: true,  date: '2026-03-01T10:00:00', details: { 'Build a Sentence': '8/10', 'Write an Email': '4/5',        'Academic Discussion': '3/5'        } },
-		{ id: 'w5', section: 'Writing',   testNumber: 4, mode: 'test',     score: 4.0,  scoreAvailable: true,  date: '2026-03-18T09:15:00', details: { 'Build a Sentence': '9/10', 'Write an Email': '4/5',        'Academic Discussion': '3/5'        } },
-		{ id: 'w6', section: 'Writing',   testNumber: 5, mode: 'test',     score: null, scoreAvailable: false, date: '2026-03-28T14:30:00', details: { 'Build a Sentence': '9/10', 'Write an Email': 'not graded', 'Academic Discussion': 'not graded' } },
-		{ id: 's0', section: 'Speaking',  testNumber: 1, mode: 'test',     score: null, scoreAvailable: false, date: '2026-01-16T11:00:00', details: { 'Listen and Repeat': 'not graded', 'Take an Interview': 'not graded' } },
-		{ id: 's1', section: 'Speaking',  testNumber: 2, mode: 'practice', score: 3.0,  scoreAvailable: true,  date: '2026-02-01T10:15:00', details: { 'Listen and Repeat': '5/7',        'Take an Interview': '3/4'         } },
-		{ id: 's2', section: 'Speaking',  testNumber: 2, mode: 'test',     score: null, scoreAvailable: false, date: '2026-02-15T13:00:00', details: { 'Listen and Repeat': 'not graded', 'Take an Interview': 'not graded' } },
-		{ id: 's3', section: 'Speaking',  testNumber: 3, mode: 'test',     score: 3.5,  scoreAvailable: true,  date: '2026-03-05T09:30:00', details: { 'Listen and Repeat': '6/7',        'Take an Interview': '3/4'         } },
-		{ id: 's4', section: 'Speaking',  testNumber: 4, mode: 'practice', score: null, scoreAvailable: false, date: '2026-03-20T14:45:00', details: { 'Listen and Repeat': 'not graded', 'Take an Interview': 'not graded' } },
-		{ id: 's5', section: 'Speaking',  testNumber: 5, mode: 'test',     score: 4.0,  scoreAvailable: true,  date: '2026-04-04T10:00:00', details: { 'Listen and Repeat': '7/7',        'Take an Interview': '4/4'         } },
+		// ── Reading ──
+		{ id:'r0',  section:'Reading', testNumber:1, mode:'test',     score:3.0, scoreAvailable:true,  date:'2025-12-15T09:00:00', details:{'Part 1':'7/12','Part 2':'6/12'} },
+		{ id:'r1',  section:'Reading', testNumber:1, mode:'practice', score:3.0, scoreAvailable:true,  date:'2026-01-10T09:15:00', details:{'Part 1':'7/12','Part 2':'6/12'} },
+		{ id:'r2',  section:'Reading', testNumber:1, mode:'test',     score:3.5, scoreAvailable:true,  date:'2026-01-20T11:30:00', details:{'Part 1':'8/12','Part 2':'7/12'} },
+		{ id:'r3',  section:'Reading', testNumber:1, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-02-14T10:00:00', details:{'Part 1':'9/12','Part 2':'9/12'} },
+		{ id:'r4',  section:'Reading', testNumber:2, mode:'test',     score:3.5, scoreAvailable:true,  date:'2026-01-28T13:00:00', details:{'Part 1':'8/12','Part 2':'7/12'} },
+		{ id:'r5',  section:'Reading', testNumber:2, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-02-05T10:00:00', details:{'Part 1':'9/12','Part 2':'8/12'} },
+		{ id:'r6',  section:'Reading', testNumber:2, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-02-12T14:00:00', details:{'Part 1':'9/12','Part 2':'9/12'} },
+		{ id:'r7',  section:'Reading', testNumber:2, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-03-02T09:30:00', details:{'Part 1':'10/12','Part 2':'9/12'} },
+		{ id:'r8',  section:'Reading', testNumber:3, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-02-18T14:20:00', details:{'Part 1':'10/12','Part 2':'8/12'} },
+		{ id:'r9',  section:'Reading', testNumber:3, mode:'practice', score:3.5, scoreAvailable:true,  date:'2026-02-25T09:45:00', details:{'Part 1':'9/12','Part 2':'7/12'} },
+		{ id:'r10', section:'Reading', testNumber:3, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-03-05T10:00:00', details:{'Part 1':'11/12','Part 2':'9/12'} },
+		{ id:'r11', section:'Reading', testNumber:3, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-03-10T10:15:00', details:{'Part 1':'10/12','Part 2':'9/12'} },
+		{ id:'r12', section:'Reading', testNumber:4, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-03-18T09:00:00', details:{'Part 1':'10/12','Part 2':'8/12'} },
+		{ id:'r13', section:'Reading', testNumber:4, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-03-22T15:00:00', details:{'Part 1':'10/12','Part 2':'8/12'} },
+		{ id:'r14', section:'Reading', testNumber:4, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-04-05T09:00:00', details:{'Part 1':'11/12','Part 2':'9/12'} },
+		{ id:'r15', section:'Reading', testNumber:5, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-04-01T09:30:00', details:{'Part 1':'11/12','Part 2':'10/12'} },
+		{ id:'r16', section:'Reading', testNumber:5, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-04-08T10:00:00', details:{'Part 1':'10/12','Part 2':'10/12'} },
+		{ id:'r17', section:'Reading', testNumber:5, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-14T09:15:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
+		{ id:'r18', section:'Reading', testNumber:6, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-03-25T11:00:00', details:{'Part 1':'11/12','Part 2':'9/12'} },
+		{ id:'r19', section:'Reading', testNumber:6, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-04-02T14:00:00', details:{'Part 1':'10/12','Part 2':'9/12'} },
+		{ id:'r20', section:'Reading', testNumber:6, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-09T10:30:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
+		{ id:'r21', section:'Reading', testNumber:7, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-06T09:00:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
+		{ id:'r22', section:'Reading', testNumber:7, mode:'practice', score:4.5, scoreAvailable:true,  date:'2026-04-10T11:00:00', details:{'Part 1':'11/12','Part 2':'10/12'} },
+		{ id:'r23', section:'Reading', testNumber:8, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-12T09:00:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
+		{ id:'r24', section:'Reading', testNumber:8, mode:'practice', score:4.5, scoreAvailable:true,  date:'2026-04-13T14:00:00', details:{'Part 1':'11/12','Part 2':'10/12'} },
+		// ── Listening ──
+		{ id:'l0',  section:'Listening', testNumber:1, mode:'test',     score:3.0, scoreAvailable:true, date:'2025-12-20T10:00:00', details:{'Part 1':'9/14','Part 2':'8/14'} },
+		{ id:'l1',  section:'Listening', testNumber:1, mode:'practice', score:3.0, scoreAvailable:true, date:'2026-01-12T10:00:00', details:{'Part 1':'10/14','Part 2':'8/14'} },
+		{ id:'l2',  section:'Listening', testNumber:1, mode:'test',     score:3.5, scoreAvailable:true, date:'2026-01-25T14:00:00', details:{'Part 1':'10/14','Part 2':'9/14'} },
+		{ id:'l3',  section:'Listening', testNumber:1, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-02-20T09:00:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
+		{ id:'l4',  section:'Listening', testNumber:2, mode:'practice', score:3.0, scoreAvailable:true, date:'2026-01-28T13:30:00', details:{'Part 1':'8/14','Part 2':'9/14'} },
+		{ id:'l5',  section:'Listening', testNumber:2, mode:'test',     score:3.5, scoreAvailable:true, date:'2026-02-10T11:00:00', details:{'Part 1':'10/14','Part 2':'9/14'} },
+		{ id:'l6',  section:'Listening', testNumber:2, mode:'practice', score:3.5, scoreAvailable:true, date:'2026-02-18T10:00:00', details:{'Part 1':'10/14','Part 2':'9/14'} },
+		{ id:'l7',  section:'Listening', testNumber:2, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-03-14T14:00:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
+		{ id:'l8',  section:'Listening', testNumber:3, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-02-20T09:15:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
+		{ id:'l9',  section:'Listening', testNumber:3, mode:'practice', score:3.5, scoreAvailable:true, date:'2026-03-01T11:00:00', details:{'Part 1':'11/14','Part 2':'9/14'} },
+		{ id:'l10', section:'Listening', testNumber:3, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-03-20T09:00:00', details:{'Part 1':'13/14','Part 2':'11/14'} },
+		{ id:'l11', section:'Listening', testNumber:4, mode:'practice', score:3.5, scoreAvailable:true, date:'2026-03-05T14:00:00', details:{'Part 1':'11/14','Part 2':'9/14'} },
+		{ id:'l12', section:'Listening', testNumber:4, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-03-15T10:30:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
+		{ id:'l13', section:'Listening', testNumber:4, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-04-03T09:00:00', details:{'Part 1':'13/14','Part 2':'11/14'} },
+		{ id:'l14', section:'Listening', testNumber:5, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-03-15T10:30:00', details:{'Part 1':'12/14','Part 2':'11/14'} },
+		{ id:'l15', section:'Listening', testNumber:5, mode:'practice', score:4.5, scoreAvailable:true, date:'2026-03-29T09:00:00', details:{'Part 1':'13/14','Part 2':'11/14'} },
+		{ id:'l16', section:'Listening', testNumber:5, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-04-08T10:00:00', details:{'Part 1':'13/14','Part 2':'12/14'} },
+		{ id:'l17', section:'Listening', testNumber:6, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-04-05T11:15:00', details:{'Part 1':'13/14','Part 2':'12/14'} },
+		{ id:'l18', section:'Listening', testNumber:6, mode:'practice', score:4.0, scoreAvailable:true, date:'2026-04-10T14:00:00', details:{'Part 1':'12/14','Part 2':'11/14'} },
+		{ id:'l19', section:'Listening', testNumber:6, mode:'test',     score:5.0, scoreAvailable:true, date:'2026-04-14T09:00:00', details:{'Part 1':'14/14','Part 2':'12/14'} },
+		{ id:'l20', section:'Listening', testNumber:7, mode:'test',     score:5.0, scoreAvailable:true, date:'2026-04-07T10:00:00', details:{'Part 1':'14/14','Part 2':'13/14'} },
+		{ id:'l21', section:'Listening', testNumber:7, mode:'practice', score:4.5, scoreAvailable:true, date:'2026-04-11T11:00:00', details:{'Part 1':'13/14','Part 2':'12/14'} },
+		// ── Writing ──
+		{ id:'w0', section:'Writing', testNumber:1, mode:'test',     score:3.0,  scoreAvailable:true,  date:'2026-01-14T10:30:00', details:{'Build a Sentence':'6/10','Write an Email':'3/5','Academic Discussion':'2/5'} },
+		{ id:'w1', section:'Writing', testNumber:1, mode:'practice', score:null, scoreAvailable:false, date:'2026-01-22T14:00:00', details:{'Build a Sentence':'7/10','Write an Email':'not graded','Academic Discussion':'not graded'} },
+		{ id:'w2', section:'Writing', testNumber:2, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-02-08T09:30:00', details:{'Build a Sentence':'7/10','Write an Email':'3/5','Academic Discussion':'3/5'} },
+		{ id:'w3', section:'Writing', testNumber:3, mode:'test',     score:null, scoreAvailable:false, date:'2026-02-22T11:45:00', details:{'Build a Sentence':'8/10','Write an Email':'not graded','Academic Discussion':'not graded'} },
+		{ id:'w4', section:'Writing', testNumber:3, mode:'practice', score:4.0,  scoreAvailable:true,  date:'2026-03-01T10:00:00', details:{'Build a Sentence':'8/10','Write an Email':'4/5','Academic Discussion':'3/5'} },
+		{ id:'w5', section:'Writing', testNumber:4, mode:'test',     score:4.0,  scoreAvailable:true,  date:'2026-03-18T09:15:00', details:{'Build a Sentence':'9/10','Write an Email':'4/5','Academic Discussion':'3/5'} },
+		{ id:'w6', section:'Writing', testNumber:5, mode:'test',     score:null, scoreAvailable:false, date:'2026-03-28T14:30:00', details:{'Build a Sentence':'9/10','Write an Email':'not graded','Academic Discussion':'not graded'} },
+		{ id:'w7', section:'Writing', testNumber:5, mode:'practice', score:4.0,  scoreAvailable:true,  date:'2026-04-06T11:00:00', details:{'Build a Sentence':'9/10','Write an Email':'4/5','Academic Discussion':'4/5'} },
+		// ── Speaking ──
+		{ id:'s0', section:'Speaking', testNumber:1, mode:'test',     score:null, scoreAvailable:false, date:'2026-01-16T11:00:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
+		{ id:'s1', section:'Speaking', testNumber:2, mode:'practice', score:3.0,  scoreAvailable:true,  date:'2026-02-01T10:15:00', details:{'Listen and Repeat':'5/7','Take an Interview':'3/4'} },
+		{ id:'s2', section:'Speaking', testNumber:2, mode:'test',     score:null, scoreAvailable:false, date:'2026-02-15T13:00:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
+		{ id:'s3', section:'Speaking', testNumber:3, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-03-05T09:30:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
+		{ id:'s4', section:'Speaking', testNumber:4, mode:'practice', score:null, scoreAvailable:false, date:'2026-03-20T14:45:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
+		{ id:'s5', section:'Speaking', testNumber:5, mode:'test',     score:4.0,  scoreAvailable:true,  date:'2026-04-04T10:00:00', details:{'Listen and Repeat':'7/7','Take an Interview':'4/4'} },
+		{ id:'s6', section:'Speaking', testNumber:3, mode:'practice', score:3.5,  scoreAvailable:true,  date:'2026-04-10T09:00:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
 	];
 
 	/* ─── Complete test mock data ─── */
@@ -55,13 +94,18 @@
 		composite: number | null;
 	}
 	const COMPLETE: CompleteSub[] = [
-		{ id: 'ct1a', testNumber: 1, date: '2026-01-18T10:00:00', duration: '1h 32m', scores: { Reading: 3.5, Listening: 3.5, Speaking: null, Writing: 3.0 }, composite: null },
-		{ id: 'ct1b', testNumber: 1, date: '2026-03-10T09:30:00', duration: '1h 28m', scores: { Reading: 4.0, Listening: 3.5, Speaking: null, Writing: 3.5 }, composite: null },
-		{ id: 'ct2a', testNumber: 2, date: '2026-02-12T11:00:00', duration: '1h 35m', scores: { Reading: 4.0, Listening: 3.5, Speaking: 3.0, Writing: 3.5 }, composite: roundHalf((4.0+3.5+3.0+3.5)/4) },
-		{ id: 'ct2b', testNumber: 2, date: '2026-03-29T10:15:00', duration: '1h 31m', scores: { Reading: 4.5, Listening: 4.0, Speaking: 3.5, Writing: 4.0 }, composite: roundHalf((4.5+4.0+3.5+4.0)/4) },
-		{ id: 'ct3a', testNumber: 3, date: '2026-02-25T14:00:00', duration: '1h 40m', scores: { Reading: 4.0, Listening: 4.0, Speaking: 3.5, Writing: null }, composite: null },
-		{ id: 'ct4a', testNumber: 4, date: '2026-03-18T09:00:00', duration: '1h 29m', scores: { Reading: 4.5, Listening: 3.5, Speaking: null, Writing: 4.0 }, composite: null },
-		{ id: 'ct5a', testNumber: 5, date: '2026-04-02T10:30:00', duration: '1h 27m', scores: { Reading: 4.5, Listening: 4.0, Speaking: 4.0, Writing: null }, composite: null },
+		{ id:'ct1a', testNumber:1, date:'2026-01-18T10:00:00', duration:'1h 32m', scores:{Reading:3.5,Listening:3.5,Speaking:null,Writing:3.0}, composite:null },
+		{ id:'ct1b', testNumber:1, date:'2026-03-10T09:30:00', duration:'1h 28m', scores:{Reading:4.0,Listening:3.5,Speaking:null,Writing:3.5}, composite:null },
+		{ id:'ct2a', testNumber:2, date:'2026-02-12T11:00:00', duration:'1h 35m', scores:{Reading:4.0,Listening:3.5,Speaking:3.0,Writing:3.5}, composite:roundHalf((4.0+3.5+3.0+3.5)/4) },
+		{ id:'ct2b', testNumber:2, date:'2026-03-29T10:15:00', duration:'1h 31m', scores:{Reading:4.5,Listening:4.0,Speaking:3.5,Writing:4.0}, composite:roundHalf((4.5+4.0+3.5+4.0)/4) },
+		{ id:'ct3a', testNumber:3, date:'2026-02-25T14:00:00', duration:'1h 40m', scores:{Reading:4.0,Listening:4.0,Speaking:3.5,Writing:null}, composite:null },
+		{ id:'ct3b', testNumber:3, date:'2026-04-01T09:00:00', duration:'1h 33m', scores:{Reading:4.5,Listening:4.5,Speaking:4.0,Writing:4.0}, composite:roundHalf((4.5+4.5+4.0+4.0)/4) },
+		{ id:'ct4a', testNumber:4, date:'2026-03-18T09:00:00', duration:'1h 29m', scores:{Reading:4.5,Listening:3.5,Speaking:null,Writing:4.0}, composite:null },
+		{ id:'ct4b', testNumber:4, date:'2026-04-07T10:30:00', duration:'1h 26m', scores:{Reading:4.5,Listening:4.0,Speaking:4.0,Writing:4.0}, composite:roundHalf((4.5+4.0+4.0+4.0)/4) },
+		{ id:'ct5a', testNumber:5, date:'2026-04-02T10:30:00', duration:'1h 27m', scores:{Reading:4.5,Listening:4.0,Speaking:4.0,Writing:null}, composite:null },
+		{ id:'ct5b', testNumber:5, date:'2026-04-13T09:00:00', duration:'1h 25m', scores:{Reading:5.0,Listening:4.5,Speaking:4.0,Writing:4.0}, composite:roundHalf((5.0+4.5+4.0+4.0)/4) },
+		{ id:'ct6a', testNumber:6, date:'2026-04-09T10:00:00', duration:'1h 30m', scores:{Reading:5.0,Listening:4.5,Speaking:4.0,Writing:4.5}, composite:roundHalf((5.0+4.5+4.0+4.5)/4) },
+		{ id:'ct7a', testNumber:7, date:'2026-04-14T11:00:00', duration:'1h 28m', scores:{Reading:5.0,Listening:5.0,Speaking:4.5,Writing:4.5}, composite:roundHalf((5.0+5.0+4.5+4.5)/4) },
 	];
 
 	const SEC4: Sec4[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
@@ -110,10 +154,14 @@
 
 	/* ─── State ─── */
 	const secs = ['Reading', 'Listening', 'Writing', 'Speaking', 'Complete Tests'];
-	let mode    = $state<'all' | 'test' | 'practice'>('all');
-	let sec     = $state('Reading');
-	let expanded = $state<Record<string, boolean>>({});
-	let viewBy  = $state<'test' | 'date'>('date');
+	const GRID_TESTS = 15; // 3 cols × 5 rows
+	const PAGE_SIZE  = 20;
+	let mode       = $state<'all' | 'test' | 'practice'>('all');
+	let sec        = $state('Reading');
+	let viewBy     = $state<'test' | 'date'>('date');
+	let datePage   = $state(1);
+	let cardLoaded = $state<Record<string, boolean>>({});
+	let cardShown  = $state<Record<string, number>>({});
 
 	/* ─── Derived — section stats ─── */
 	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
@@ -167,19 +215,31 @@
 	const ctByDate = $derived([...ctData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
 	/* ─── Derived — panel helpers ─── */
-	const isComplete   = $derived(sec === 'Complete Tests');
-	const needsAI      = $derived(sec === 'Writing' || sec === 'Speaking');
-	const st           = $derived(stats[sec]);
-	const trendData    = $derived(buildTrend(st.trend));
-	const gaugeScore   = $derived(isComplete ? st.avg : genScore);
-	const gaugeNA      = $derived(gaugeScore === null || gaugeScore === undefined);
-	const gaugeColor   = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
+	const isComplete     = $derived(sec === 'Complete Tests');
+	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
+	const st             = $derived(stats[sec]);
+	const trendData      = $derived(buildTrend(st.trend));
+	const gaugeScore     = $derived(isComplete ? st.avg : genScore);
+	const gaugeNA        = $derived(gaugeScore === null || gaugeScore === undefined);
+	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
 	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeScore as number) - 1) / 5) * TA);
-	const gaugeLabel   = $derived(isComplete ? 'Composite Avg' : 'Overall Score');
-	const gaugeBest    = $derived(isComplete ? st.best : genBest);
+	const gaugeBest      = $derived(isComplete ? st.best : genBest);
 
-	function toggleTest(key: string) { expanded[key] = !expanded[key]; }
-	function isExpanded(key: string) { return expanded[key] !== false; }
+	// Paginated date view
+	const pagedDateRows  = $derived(byDateRows.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
+	const totalDatePages = $derived(Math.ceil(byDateRows.length / PAGE_SIZE) || 1);
+	const pagedCtRows    = $derived(ctByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
+	const totalCtPages   = $derived(Math.ceil(ctByDate.length / PAGE_SIZE) || 1);
+
+	// Reset pagination when section, mode or view changes
+	$effect(() => {
+		void sec; void mode; void viewBy;
+		datePage = 1;
+	});
+
+	// Lazy-load helpers
+	function loadTestHistory(key: string) { cardLoaded[key] = true; cardShown[key] = 5; }
+	function loadMoreTest(key: string)    { cardShown[key] = (cardShown[key] ?? 5) + 5; }
 </script>
 
 <svelte:head>
@@ -235,7 +295,7 @@
 								{#if sc === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
 							</svg>
 						</div>
-						<span class="ov-name">{sc === 'Complete Tests' ? 'Full Tests' : sc}</span>
+						<span class="ov-name">{sc}</span>
 					</div>
 					<div class="ov-score-row">
 						<span class="ov-val" style="color:{s.avg === null ? '#d0d5dd' : '#1a1a1a'}">{s.avg === null ? '—' : fmtScore(s.avg)}</span>
@@ -258,7 +318,7 @@
 						{#if sec === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
 					</svg>
 				</div>
-				<span class="sb-name">{isComplete ? 'Full Tests' : sec}</span>
+				<span class="sb-name">{sec}</span>
 				<span class="sb-dot">·</span>
 				<span class="sb-count">{st.count} {isComplete ? 'attempt' : 'submission'}{st.count !== 1 ? 's' : ''}</span>
 				{#if isComplete && st.aiCount < st.count}<span class="sb-ai">· {st.aiCount} fully scored</span>{/if}
@@ -303,170 +363,203 @@
 
 	<!-- Detail Panel -->
 	<div class="panel">
-		<!-- ═══ SECTION VIEW ═══ -->
+
+		<!-- ═══ SECTION VIEW (Reading / Listening / Writing / Speaking) ═══ -->
 		{#if !isComplete}
-			{#if rows.length === 0}
-				<div class="empty">
-					<div class="empty-icon">📝</div>
-					<div class="empty-title">No {sec.toLowerCase()} submissions yet</div>
-					<div class="empty-sub">Complete a practice test to see results here</div>
-				</div>
-			{:else if viewBy === 'test'}
-				{#each Object.entries(groups) as [num, subs]}
-					{@const open = isExpanded(sec + num)}
-					<div>
-						<button class="group-header" onclick={() => toggleTest(sec + num)}>
-							<span>
-								<span class="group-name">{sec} Practice Test #{num}</span>
-								<span class="group-count">· {subs.length} attempt{subs.length !== 1 ? 's' : ''}</span>
-							</span>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:rotate({open ? 180 : 0}deg)">
-								<polyline points="6 9 12 15 18 9" />
-							</svg>
-						</button>
-						{#if open}
-							{#each subs as sub, i}
-								<div class="sub-row" class:alt={i % 2 !== 0}>
-									<div class="sub-info">
-										<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
-										<span class="badge" class:test={sub.mode === 'test'} class:practice={sub.mode === 'practice'}>{sub.mode === 'test' ? 'Test Mode' : 'Practice Mode'}</span>
-										{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
-									</div>
-									<div class="sub-score">
-										{#if sub.score === null}
-											<div class="bar-na" style="width:80px;height:6px"></div>
-											<span class="na-label">N/A</span>
-										{:else}
-											<div class="bar-track" style="width:80px;height:6px">
-												<div class="bar-fill" style="width:{((sub.score - 1) / 5) * 100}%;background:{scoreColor(sub.score)}"></div>
-											</div>
-											<span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
-										{/if}
-									</div>
-									<div class="sub-details">
-										{#each Object.entries(sub.details) as [k, v]}
-											<span class="detail-pill" class:ungraded={v === 'not graded'}>{k}: <b>{v}</b></span>
-										{/each}
-									</div>
-									<button class="view-btn-row">View →</button>
-								</div>
-							{/each}
-						{/if}
-					</div>
-				{/each}
+
+			{#if viewBy === 'date'}
+				<!-- ── By Date: paginated flat list ── -->
+				{#if byDateRows.length === 0}
+					<div class="empty"><div class="empty-icon">📝</div><div class="empty-title">No {sec.toLowerCase()} submissions yet</div><div class="empty-sub">Complete a practice test to see results here</div></div>
+				{:else}
+					{#each pagedDateRows as sub, i}
+						<div class="sub-row" class:alt={i % 2 !== 0}>
+							<div class="sub-info wide">
+								<span class="test-pill">Test #{sub.testNumber}</span>
+								<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
+								<span class="badge" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test Mode':'Practice Mode'}</span>
+								{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
+							</div>
+							<div class="sub-score">
+								{#if sub.score===null}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">N/A</span>
+								{:else}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div><span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>{/if}
+							</div>
+							<div class="sub-details">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
+							<button class="view-btn-row">View →</button>
+						</div>
+					{/each}
+					{#if totalDatePages > 1}
+						<div class="pagination">
+							<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
+							<span class="pg-info">Page {datePage} of {totalDatePages} · {byDateRows.length} submissions</span>
+							<button class="pg-btn" disabled={datePage===totalDatePages} onclick={() => datePage++}>Next →</button>
+						</div>
+					{/if}
+				{/if}
+
 			{:else}
-				{#each byDateRows as sub, i}
-					<div class="sub-row" class:alt={i % 2 !== 0}>
-						<div class="sub-info wide">
-							<span class="test-pill">Test #{sub.testNumber}</span>
-							<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
-							<span class="badge" class:test={sub.mode === 'test'} class:practice={sub.mode === 'practice'}>{sub.mode === 'test' ? 'Test Mode' : 'Practice Mode'}</span>
-							{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
-						</div>
-						<div class="sub-score">
-							{#if sub.score === null}
-								<div class="bar-na" style="width:80px;height:6px"></div>
-								<span class="na-label">N/A</span>
-							{:else}
-								<div class="bar-track" style="width:80px;height:6px">
-									<div class="bar-fill" style="width:{((sub.score - 1) / 5) * 100}%;background:{scoreColor(sub.score)}"></div>
+				<!-- ── By Test Number: 3×5 card grid ── -->
+				<div class="test-grid">
+					{#each Array.from({length: GRID_TESTS}, (_, i) => i + 1) as num}
+						{@const cardSubs = data.filter(s => s.section === sec && s.testNumber === num).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+						{@const scored   = cardSubs.filter(s => s.scoreAvailable && s.score !== null)}
+						{@const cardAvg  = scored.length ? roundHalf(scored.reduce((a,s) => a+(s.score as number),0)/scored.length) : null}
+						{@const cardBest = scored.length ? Math.max(...scored.map(s => s.score as number)) : null}
+						{@const key      = sec + '_' + num}
+						{@const loaded   = cardLoaded[key]}
+						{@const shown    = cardShown[key] ?? 5}
+						<div class="tc">
+							<div class="tc-head">
+								<div class="tc-title-row">
+									<span class="tc-num">Test #{num}</span>
+									<span class="tc-attempts">{cardSubs.length} attempt{cardSubs.length!==1?'s':''}</span>
 								</div>
-								<span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
-							{/if}
+								<div class="tc-stats">
+									{#if cardAvg !== null}
+										<span class="tc-stat">Avg <b style="color:{scoreColor(cardAvg)}">{fmtScore(cardAvg)}/6</b></span>
+										<span class="tc-sep">·</span>
+										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
+									{:else if cardSubs.length > 0}
+										<span class="tc-stat-na">Pending scores</span>
+									{:else}
+										<span class="tc-stat-na">No attempts yet</span>
+									{/if}
+								</div>
+							</div>
+							<div class="tc-body">
+								{#if cardSubs.length === 0}
+									<div class="tc-empty">No attempts for this test yet</div>
+								{:else if !loaded}
+									<button class="tc-overlay" onclick={() => loadTestHistory(key)}>
+										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+										<span>Load history</span>
+									</button>
+								{:else}
+									{#each cardSubs.slice(0, shown) as sub}
+										<div class="tc-sub">
+											<div class="tc-l1">
+												<span class="tc-date">{fmtD(sub.date)}</span>
+												<span class="tc-time">{fmtT(sub.date)}</span>
+												<span class="badge sm" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test':'Practice'}</span>
+												{#if !sub.scoreAvailable}<span class="badge sm ai-off">AI off</span>{/if}
+											</div>
+											<div class="tc-l2">
+												{#if sub.score===null}
+													<span class="na-label">N/A</span>
+												{:else}
+													<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div>
+													<span class="tc-score" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
+												{/if}
+											</div>
+											<div class="tc-pills">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill xs" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
+										</div>
+									{/each}
+									{#if shown < cardSubs.length}
+										<button class="tc-load-more" onclick={() => loadMoreTest(key)}>Load {Math.min(5, cardSubs.length - shown)} more</button>
+									{/if}
+								{/if}
+							</div>
 						</div>
-						<div class="sub-details">
-							{#each Object.entries(sub.details) as [k, v]}
-								<span class="detail-pill" class:ungraded={v === 'not graded'}>{k}: <b>{v}</b></span>
-							{/each}
-						</div>
-						<button class="view-btn-row">View →</button>
-					</div>
-				{/each}
+					{/each}
+				</div>
 			{/if}
 
 		<!-- ═══ COMPLETE TESTS VIEW ═══ -->
 		{:else}
-			{#if ctData.length === 0}
-				<div class="empty">
-					<div class="empty-icon">🗂️</div>
-					<div class="empty-title">No complete test attempts yet</div>
-					<div class="empty-sub">Take a full 4-section practice test to see results here</div>
-				</div>
-			{:else if viewBy === 'test'}
-				{#each Object.entries(ctGroups) as [num, attempts]}
-					{@const open = isExpanded('ct' + num)}
-					<div>
-						<button class="group-header" onclick={() => toggleTest('ct' + num)}>
-							<span>
-								<span class="group-name">TOEFL Practice Test #{num}</span>
-								<span class="group-count">· {attempts.length} attempt{attempts.length !== 1 ? 's' : ''}</span>
-							</span>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:rotate({open ? 180 : 0}deg)">
-								<polyline points="6 9 12 15 18 9" />
-							</svg>
-						</button>
-						{#if open}
-							{#each attempts as t, i}
-								<div class="sub-row" class:alt={i % 2 !== 0}>
-									<div class="sub-info">
-										<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
-										<span class="sub-date" style="color:#bbb">{t.duration}</span>
-									</div>
-									<div class="sec-chips">
-										{#each SEC4 as s}
-											{@const v = t.scores[s]}
-											<span class="sec-chip" style="color:{v !== null ? scoreColor(v) : '#ccc'};background:{v !== null ? scoreColor(v) + '18' : '#f5f5f5'}">
-												{s.slice(0,1)}: {v !== null ? fmtScore(v) : '—'}
-											</span>
-										{/each}
-									</div>
-									<div class="sub-score">
-										{#if t.composite !== null}
-											<div class="bar-track" style="width:80px;height:6px">
-												<div class="bar-fill" style="width:{((t.composite - 1) / 5) * 100}%;background:{scoreColor(t.composite)}"></div>
-											</div>
-											<span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-										{:else}
-											<div class="bar-na" style="width:80px;height:6px"></div>
-											<span class="na-label">Pending</span>
-										{/if}
-									</div>
-									<button class="view-btn-row">View →</button>
-								</div>
-							{/each}
-						{/if}
-					</div>
-				{/each}
+
+			{#if viewBy === 'date'}
+				<!-- ── By Date: paginated flat list ── -->
+				{#if ctByDate.length === 0}
+					<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-title">No complete test attempts yet</div><div class="empty-sub">Take a full 4-section practice test to see results here</div></div>
+				{:else}
+					{#each pagedCtRows as t, i}
+						<div class="sub-row" class:alt={i % 2 !== 0}>
+							<div class="sub-info wide">
+								<span class="test-pill">Test #{t.testNumber}</span>
+								<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
+								<span class="sub-date" style="color:#bbb">{t.duration}</span>
+							</div>
+							<div class="sec-chips">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
+							<div class="sub-score">
+								{#if t.composite!==null}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div><span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
+								{:else}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">Pending</span>{/if}
+							</div>
+							<button class="view-btn-row">View →</button>
+						</div>
+					{/each}
+					{#if totalCtPages > 1}
+						<div class="pagination">
+							<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
+							<span class="pg-info">Page {datePage} of {totalCtPages} · {ctByDate.length} attempts</span>
+							<button class="pg-btn" disabled={datePage===totalCtPages} onclick={() => datePage++}>Next →</button>
+						</div>
+					{/if}
+				{/if}
+
 			{:else}
-				{#each ctByDate as t, i}
-					<div class="sub-row" class:alt={i % 2 !== 0}>
-						<div class="sub-info wide">
-							<span class="test-pill">Test #{t.testNumber}</span>
-							<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
-							<span class="sub-date" style="color:#bbb">{t.duration}</span>
-						</div>
-						<div class="sec-chips">
-							{#each SEC4 as s}
-								{@const v = t.scores[s]}
-								<span class="sec-chip" style="color:{v !== null ? scoreColor(v) : '#ccc'};background:{v !== null ? scoreColor(v) + '18' : '#f5f5f5'}">
-									{s.slice(0,1)}: {v !== null ? fmtScore(v) : '—'}
-								</span>
-							{/each}
-						</div>
-						<div class="sub-score">
-							{#if t.composite !== null}
-								<div class="bar-track" style="width:80px;height:6px">
-									<div class="bar-fill" style="width:{((t.composite - 1) / 5) * 100}%;background:{scoreColor(t.composite)}"></div>
+				<!-- ── By Test Number: 3×5 card grid (Complete Tests) ── -->
+				<div class="test-grid">
+					{#each Array.from({length: GRID_TESTS}, (_, i) => i + 1) as num}
+						{@const cardSubs = ctData.filter(t => t.testNumber === num).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
+						{@const scored   = cardSubs.filter(t => t.composite !== null)}
+						{@const cardAvg  = scored.length ? roundHalf(scored.reduce((a,t) => a+(t.composite as number),0)/scored.length) : null}
+						{@const cardBest = scored.length ? Math.max(...scored.map(t => t.composite as number)) : null}
+						{@const key      = 'ct_' + num}
+						{@const loaded   = cardLoaded[key]}
+						{@const shown    = cardShown[key] ?? 5}
+						<div class="tc">
+							<div class="tc-head">
+								<div class="tc-title-row">
+									<span class="tc-num">Test #{num}</span>
+									<span class="tc-attempts">{cardSubs.length} attempt{cardSubs.length!==1?'s':''}</span>
 								</div>
-								<span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-							{:else}
-								<div class="bar-na" style="width:80px;height:6px"></div>
-								<span class="na-label">Pending</span>
-							{/if}
+								<div class="tc-stats">
+									{#if cardAvg !== null}
+										<span class="tc-stat">Comp avg <b style="color:{scoreColor(cardAvg)}">{fmtScore(cardAvg)}/6</b></span>
+										<span class="tc-sep">·</span>
+										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
+									{:else if cardSubs.length > 0}
+										<span class="tc-stat-na">Pending scores</span>
+									{:else}
+										<span class="tc-stat-na">No attempts yet</span>
+									{/if}
+								</div>
+							</div>
+							<div class="tc-body">
+								{#if cardSubs.length === 0}
+									<div class="tc-empty">No attempts for this test yet</div>
+								{:else if !loaded}
+									<button class="tc-overlay" onclick={() => loadTestHistory(key)}>
+										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+										<span>Load history</span>
+									</button>
+								{:else}
+									{#each cardSubs.slice(0, shown) as t}
+										<div class="tc-sub">
+											<div class="tc-l1">
+												<span class="tc-date">{fmtD(t.date)}</span>
+												<span class="tc-time">{fmtT(t.date)}</span>
+												<span class="sub-date" style="color:#bbb;font-size:10px">{t.duration}</span>
+											</div>
+											<div class="tc-l2">
+												{#if t.composite!==null}
+													<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div>
+													<span class="tc-score" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
+												{:else}
+													<span class="na-label">Pending</span>
+												{/if}
+											</div>
+											<div class="tc-pills">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip xs" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
+										</div>
+									{/each}
+									{#if shown < cardSubs.length}
+										<button class="tc-load-more" onclick={() => loadMoreTest(key)}>Load {Math.min(5, cardSubs.length - shown)} more</button>
+									{/if}
+								{/if}
+							</div>
 						</div>
-						<button class="view-btn-row">View →</button>
-					</div>
-				{/each}
+					{/each}
+				</div>
 			{/if}
 		{/if}
 	</div>
@@ -600,8 +693,60 @@
 	.sb-view-btn.active { font-weight: 600; background: #222; color: #fff; }
 	.sb-ctrl { display: inline-flex; align-items: center; gap: 4px; }
 	.sb-ctrl-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
-	.sb-select { font-family: inherit; font-size: 11px; font-weight: 600; color: #444; background: #f0f0f0; border: none; border-radius: 8px; padding: 3px 22px 3px 9px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; outline: none; transition: background .15s; white-space: nowrap; }
-	.sb-select:hover { background-color: #e5e5e5; }
+	.sb-select { font-family: inherit; font-size: 11px; font-weight: 600; color: #444; background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 3px 22px 3px 9px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; outline: none; transition: border-color .15s, box-shadow .15s; white-space: nowrap; }
+	.sb-select:hover { border-color: #d0d0d0; background-color: #fafafa; }
+	.sb-select:focus { border-color: #00b189; box-shadow: 0 0 0 3px rgba(0,177,137,.1); }
+
+	/* ── Test grid (By Test Number view) ── */
+	.test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 20px 20px; }
+
+	.tc { height: 280px; display: flex; flex-direction: column; background: #fff; border-radius: 12px; border: 1px solid #efefef; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+
+	.tc-head { flex-shrink: 0; padding: 9px 12px 8px; border-bottom: 1px solid #f0f0f0; background: #fafbfc; }
+	.tc-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+	.tc-num { font-size: 12px; font-weight: 700; color: #222; }
+	.tc-attempts { font-size: 10px; color: #bbb; font-weight: 500; }
+	.tc-stats { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+	.tc-stat { font-size: 10px; color: #888; }
+	.tc-stat-na { font-size: 10px; color: #ccc; font-style: italic; }
+	.tc-sep { color: #ddd; font-size: 10px; }
+
+	.tc-body { flex: 1; overflow-y: auto; position: relative; min-height: 0; }
+	.tc-body::-webkit-scrollbar { width: 3px; }
+	.tc-body::-webkit-scrollbar-track { background: transparent; }
+	.tc-body::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 99px; }
+
+	.tc-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: rgba(249,250,251,.97); border: none; cursor: pointer; font-family: inherit; width: 100%; transition: background .15s; }
+	.tc-overlay:hover { background: rgba(240,250,247,.99); }
+	.tc-overlay svg { color: #00b189; opacity: .8; }
+	.tc-overlay span { font-size: 11px; font-weight: 600; color: #00b189; }
+
+	.tc-empty { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 11px; color: #ccc; font-style: italic; padding: 16px; text-align: center; }
+
+	.tc-sub { padding: 7px 12px; border-bottom: 1px solid #f4f4f4; }
+	.tc-sub:last-of-type { border-bottom: none; }
+
+	.tc-l1 { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+	.tc-l2 { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+	.tc-date { font-size: 10px; color: #555; font-weight: 500; }
+	.tc-time { font-size: 10px; color: #bbb; }
+	.tc-score { font-size: 11px; font-weight: 700; min-width: 36px; }
+	.tc-pills { display: flex; gap: 3px; flex-wrap: wrap; }
+
+	.tc-load-more { display: block; width: 100%; padding: 7px; border: none; background: #f8f9fb; color: #00b189; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit; border-top: 1px solid #f0f0f0; transition: background .15s; }
+	.tc-load-more:hover { background: #f0faf8; }
+
+	/* ── Pagination ── */
+	.pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 13px 20px; border-top: 1px solid #f0f0f0; }
+	.pg-btn { padding: 5px 14px; border-radius: 8px; border: 1.5px solid #e0e0e0; background: #fff; color: #444; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+	.pg-btn:hover:not(:disabled) { border-color: #00b189; color: #00b189; }
+	.pg-btn:disabled { opacity: .4; cursor: default; }
+	.pg-info { font-size: 11px; color: #aaa; }
+
+	/* ── Badge & pill size variants ── */
+	.badge.sm { font-size: 8px; padding: 1px 5px; }
+	.detail-pill.xs { font-size: 9px; padding: 1px 5px; }
+	.sec-chip.xs { font-size: 9px; padding: 1px 5px; }
 
 	@media (max-width: 767px) {
 		.dashboard { padding: 0 16px 20px; }
@@ -619,11 +764,14 @@
 		.sub-details, .sec-chips { flex-basis: 100%; }
 		.group-header { padding: 8px 14px; }
 		.view-toggle-bar { padding: 7px 14px; }
+		.test-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px 14px; }
 	}
 	@media (max-width: 480px) {
 		.overview-row { grid-template-columns: repeat(2, 1fr); }
 		.ov-card { padding: 10px 10px 9px; }
 		.sub-score { flex: 0 0 100px; }
 		.view-btn-row { padding: 3px 10px; font-size: 10px; }
+		.test-grid { grid-template-columns: 1fr; }
+		.tc { height: 260px; }
 	}
 </style>
