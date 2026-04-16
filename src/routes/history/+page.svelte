@@ -169,6 +169,20 @@
 	let datePage   = $state(1);
 	let cardLoaded = $state<Record<string, boolean>>({});
 	let cardShown  = $state<Record<string, number>>({});
+	let groupOpen  = $state(false);
+	let modeOpen   = $state(false);
+
+	const groupOptions = [
+		{ value: 'date' as const,  label: 'By Date' },
+		{ value: 'test' as const,  label: 'By Test Number' },
+	];
+	const modeOptions = [
+		{ value: 'all'      as const, label: 'All' },
+		{ value: 'test'     as const, label: 'Test Mode' },
+		{ value: 'practice' as const, label: 'Practice Mode' },
+	];
+	const groupLabel = $derived(groupOptions.find(o => o.value === viewBy)!.label);
+	const modeLabel  = $derived(modeOptions.find(o => o.value === mode)!.label);
 
 	/* ─── Derived — section stats ─── */
 	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
@@ -243,6 +257,13 @@
 		void sec; void mode; void viewBy;
 		datePage = 1;
 	});
+
+	// Persist viewBy across in-session navigation (resets on full page refresh)
+	$effect(() => {
+		const saved = sessionStorage.getItem('historyViewBy');
+		if (saved === 'test' || saved === 'date') viewBy = saved;
+	});
+	$effect(() => { sessionStorage.setItem('historyViewBy', viewBy); });
 
 	// Lazy-load helpers
 	function loadTestHistory(key: string) { cardLoaded[key] = true; cardShown[key] = 5; }
@@ -351,23 +372,48 @@
 			</div>
 			<div class="sb-sep-v"></div>
 			<div class="sb-right">
-				<span class="sb-ctrl">
-					<span class="sb-ctrl-label">Group</span>
-					<select class="sb-select" bind:value={viewBy}>
-						<option value="date">By Date</option>
-						<option value="test">By Test Number</option>
-					</select>
-				</span>
-				<span class="sb-ctrl">
-					<span class="sb-ctrl-label">Mode</span>
-					<select class="sb-select" bind:value={mode}>
-						<option value="all">All</option>
-						<option value="test">Test Mode</option>
-						<option value="practice">Practice Mode</option>
-					</select>
-				</span>
+				<!-- Group dropdown -->
+				<span class="sb-ctrl-label">Group</span>
+				<div class="dd-wrap" class:open={groupOpen}>
+					<button class="dd-trigger" onclick={() => { groupOpen = !groupOpen; modeOpen = false; }}>
+						{groupLabel}
+						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+					</button>
+					{#if groupOpen}
+						<div class="dd-panel">
+							{#each groupOptions as opt}
+								<button class="dd-item" class:sel={viewBy === opt.value}
+									onclick={() => { viewBy = opt.value; groupOpen = false; }}>
+									{opt.label}
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</div>
+				<!-- Mode dropdown -->
+				<span class="sb-ctrl-label">Mode</span>
+				<div class="dd-wrap" class:open={modeOpen}>
+					<button class="dd-trigger" onclick={() => { modeOpen = !modeOpen; groupOpen = false; }}>
+						{modeLabel}
+						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+					</button>
+					{#if modeOpen}
+						<div class="dd-panel">
+							{#each modeOptions as opt}
+								<button class="dd-item" class:sel={mode === opt.value}
+									onclick={() => { mode = opt.value; modeOpen = false; }}>
+									{opt.label}
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
+		<!-- click-outside backdrop for dropdowns -->
+		{#if groupOpen || modeOpen}
+			<div class="dd-backdrop" onclick={() => { groupOpen = false; modeOpen = false; }}></div>
+		{/if}
 	</div>
 
 	<!-- Detail Panel -->
@@ -459,7 +505,7 @@
 													{#if sub.score===null}
 														<span class="na-label">N/A</span>
 													{:else}
-														<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div>
+														<div class="bar-track tc-bar"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div>
 														<span class="tc-score" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
 													{/if}
 												</div>
@@ -560,7 +606,7 @@
 												</div>
 												<div class="tc-l2">
 													{#if t.composite!==null}
-														<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div>
+														<div class="bar-track tc-bar"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div>
 														<span class="tc-score" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
 													{:else}
 														<span class="na-label">Pending</span>
@@ -709,14 +755,21 @@
 	.sb-no-trend { font-size: 10px; color: #ccc; font-style: italic; }
 	.sb-sep-v { width: 1px; height: 20px; background: #e5e7eb; flex-shrink: 0; }
 	.sb-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-	.sb-ctrl { display: inline-flex; align-items: center; gap: 5px; }
 	.sb-ctrl-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
-	.sb-select { font-family: inherit; font-size: 11px; font-weight: 600; color: #333; background: #fff; border: 1.5px solid #e5e7eb; border-radius: 20px; padding: 4px 26px 4px 12px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; outline: none; transition: border-color .15s, box-shadow .15s; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-	.sb-select:hover { border-color: #c5c5c5; background-color: #fafafa; }
-	.sb-select:focus { border-color: #00b189; box-shadow: 0 0 0 3px rgba(0,177,137,.1); }
+
+	/* ── Custom dropdown ── */
+	.dd-backdrop { position: fixed; inset: 0; z-index: 99; }
+	.dd-wrap { position: relative; }
+	.dd-trigger { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: 1.5px solid #e5e7eb; background: #fff; color: #333; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; transition: border-color .15s, box-shadow .15s; box-shadow: 0 1px 3px rgba(0,0,0,.05); white-space: nowrap; }
+	.dd-trigger:hover { border-color: #c5c5c5; background: #fafafa; }
+	.dd-wrap.open .dd-trigger { border-color: #00b189; box-shadow: 0 0 0 3px rgba(0,177,137,.1); }
+	.dd-panel { position: absolute; top: calc(100% + 6px); right: 0; background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.13); border: 1px solid #efefef; min-width: 150px; overflow: hidden; z-index: 100; }
+	.dd-item { display: block; width: 100%; padding: 9px 14px; border: none; background: transparent; color: #333; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; text-align: left; transition: background .1s; }
+	.dd-item:hover { background: #f5f5f5; }
+	.dd-item.sel { font-weight: 700; color: #00b189; background: rgba(0,177,137,.04); }
 
 	/* ── Test grid (By Test Number view) ── */
-	.test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 16px 20px 20px; }
+	.test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 14px 0 16px; }
 
 	.tc { height: 280px; display: flex; flex-direction: column; background: #fff; border-radius: 12px; border: 1px solid #efefef; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
 
@@ -749,9 +802,10 @@
 
 	.tc-l1 { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
 	.tc-l2 { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+	.tc-bar { flex: 1; height: 4px; }
 	.tc-date { font-size: 10px; color: #555; font-weight: 500; }
 	.tc-time { font-size: 10px; color: #bbb; }
-	.tc-score { font-size: 11px; font-weight: 700; min-width: 36px; }
+	.tc-score { font-size: 11px; font-weight: 700; flex-shrink: 0; }
 	.tc-pills { display: flex; gap: 3px; flex-wrap: wrap; }
 
 	.tc-load-more { display: block; width: 100%; padding: 7px; border: none; background: #f8f9fb; color: #00b189; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit; border-top: 1px solid #f0f0f0; transition: background .15s; }
@@ -785,7 +839,7 @@
 		.sub-details, .sec-chips { flex-basis: 100%; }
 		.group-header { padding: 8px 14px; }
 		.view-toggle-bar { padding: 7px 14px; }
-		.test-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px 14px; }
+		.test-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px 0; }
 	}
 	@media (max-width: 480px) {
 		.overview-row { grid-template-columns: repeat(2, 1fr); }
