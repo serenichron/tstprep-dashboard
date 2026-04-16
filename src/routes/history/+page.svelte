@@ -113,7 +113,7 @@
 	let mode    = $state<'all' | 'test' | 'practice'>('all');
 	let sec     = $state('Reading');
 	let expanded = $state<Record<string, boolean>>({});
-	let viewBy  = $state<'test' | 'date'>('test');
+	let viewBy  = $state<'test' | 'date'>('date');
 
 	/* ─── Derived — section stats ─── */
 	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
@@ -263,10 +263,21 @@
 				<span class="sb-count">{st.count} {isComplete ? 'attempt' : 'submission'}{st.count !== 1 ? 's' : ''}</span>
 				{#if isComplete && st.aiCount < st.count}<span class="sb-ai">· {st.aiCount} fully scored</span>{/if}
 				{#if !isComplete && needsAI}<span class="sb-ai">· {st.aiCount} AI-graded</span>{/if}
-				<select class="sb-select" bind:value={viewBy}>
-					<option value="test">Test #</option>
-					<option value="date">Date</option>
-				</select>
+				<span class="sb-ctrl">
+					<span class="sb-ctrl-label">Group</span>
+					<select class="sb-select" bind:value={viewBy}>
+						<option value="date">By Date</option>
+						<option value="test">By Test Number</option>
+					</select>
+				</span>
+				<span class="sb-ctrl">
+					<span class="sb-ctrl-label">Mode</span>
+					<select class="sb-select" bind:value={mode}>
+						<option value="all">All</option>
+						<option value="test">Test Mode</option>
+						<option value="practice">Practice Mode</option>
+					</select>
+				</span>
 			</div>
 			<div class="sb-mid">
 				{#if trendData}
@@ -286,13 +297,7 @@
 					<span class="sb-no-trend">No trend yet</span>
 				{/if}
 			</div>
-			<div class="sb-right">
-				<select class="sb-select" bind:value={mode}>
-					<option value="all">All</option>
-					<option value="test">Test Mode</option>
-					<option value="practice">Practice Mode</option>
-				</select>
-			</div>
+			<div class="sb-right"></div>
 		</div>
 	</div>
 
@@ -593,6 +598,8 @@
 	.sb-view-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; margin-right: 2px; white-space: nowrap; }
 	.sb-view-btn { padding: 3px 10px; border-radius: 99px; border: none; cursor: pointer; font-size: 11px; font-weight: 400; background: transparent; color: #888; transition: all .15s; font-family: inherit; white-space: nowrap; }
 	.sb-view-btn.active { font-weight: 600; background: #222; color: #fff; }
+	.sb-ctrl { display: inline-flex; align-items: center; gap: 4px; }
+	.sb-ctrl-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
 	.sb-select { font-family: inherit; font-size: 11px; font-weight: 600; color: #444; background: #f0f0f0; border: none; border-radius: 8px; padding: 3px 22px 3px 9px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; outline: none; transition: background .15s; white-space: nowrap; }
 	.sb-select:hover { background-color: #e5e5e5; }
 

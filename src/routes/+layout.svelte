@@ -8,12 +8,18 @@
 
 	let { children }: { children: Snippet } = $props();
 
-	// Starts closed; $effect opens it on desktop after mount
+	// Sidebar: open by default on first visit; persisted in localStorage thereafter
 	let sidebarOpen = $state(false);
 
 	$effect(() => {
-		sidebarOpen = window.matchMedia('(min-width: 1024px)').matches;
+		const saved = localStorage.getItem('sidebarOpen');
+		sidebarOpen = saved !== null ? saved === 'true' : window.matchMedia('(min-width: 1024px)').matches;
 	});
+
+	function setSidebar(val: boolean) {
+		sidebarOpen = val;
+		localStorage.setItem('sidebarOpen', String(val));
+	}
 
 	const levelColors: Record<string, string> = {
 		Beginner:     'bg-gray-400',
@@ -29,7 +35,7 @@
 
 	<!-- Sidebar toggle — mobile only (desktop uses the in-sidebar button) -->
 	<button
-		onclick={() => (sidebarOpen = !sidebarOpen)}
+		onclick={() => setSidebar(!sidebarOpen)}
 		class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500 flex-shrink-0"
 		aria-label="Toggle menu"
 	>
@@ -108,7 +114,7 @@
 
 <!-- ─── Layout body ───────────────────────────────────────────────────────── -->
 <div class="flex min-h-screen bg-gray-50 pt-14">
-	<Sidebar isOpen={sidebarOpen} onClose={() => (sidebarOpen = false)} onToggle={() => (sidebarOpen = !sidebarOpen)} />
+	<Sidebar isOpen={sidebarOpen} onClose={() => setSidebar(false)} onToggle={() => setSidebar(!sidebarOpen)} />
 	<main class="flex-1 min-h-screen transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : 'lg:ml-14'}">
 		{@render children()}
 	</main>
