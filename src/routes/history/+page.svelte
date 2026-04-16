@@ -80,7 +80,14 @@
 		{ id:'s3', section:'Speaking', testNumber:3, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-03-05T09:30:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
 		{ id:'s4', section:'Speaking', testNumber:4, mode:'practice', score:null, scoreAvailable:false, date:'2026-03-20T14:45:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
 		{ id:'s5', section:'Speaking', testNumber:5, mode:'test',     score:4.0,  scoreAvailable:true,  date:'2026-04-04T10:00:00', details:{'Listen and Repeat':'7/7','Take an Interview':'4/4'} },
-		{ id:'s6', section:'Speaking', testNumber:3, mode:'practice', score:3.5,  scoreAvailable:true,  date:'2026-04-10T09:00:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
+		{ id:'s6',  section:'Speaking', testNumber:3, mode:'practice', score:3.5,  scoreAvailable:true,  date:'2026-04-10T09:00:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
+		// extra Speaking test-2 entries — demo for load-more
+		{ id:'s7',  section:'Speaking', testNumber:2, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-02-20T11:00:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
+		{ id:'s8',  section:'Speaking', testNumber:2, mode:'practice', score:3.0,  scoreAvailable:true,  date:'2026-03-01T10:00:00', details:{'Listen and Repeat':'5/7','Take an Interview':'3/4'} },
+		{ id:'s9',  section:'Speaking', testNumber:2, mode:'test',     score:null, scoreAvailable:false, date:'2026-03-12T14:00:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
+		{ id:'s10', section:'Speaking', testNumber:2, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-03-20T09:30:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
+		{ id:'s11', section:'Speaking', testNumber:2, mode:'practice', score:4.0,  scoreAvailable:true,  date:'2026-04-01T11:00:00', details:{'Listen and Repeat':'7/7','Take an Interview':'3/4'} },
+		{ id:'s12', section:'Speaking', testNumber:2, mode:'test',     score:4.0,  scoreAvailable:true,  date:'2026-04-08T10:30:00', details:{'Listen and Repeat':'7/7','Take an Interview':'4/4'} },
 	];
 
 	/* ─── Complete test mock data ─── */
@@ -218,7 +225,7 @@
 	const isComplete     = $derived(sec === 'Complete Tests');
 	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st             = $derived(stats[sec]);
-	const trendData      = $derived(buildTrend(st.trend));
+	const trendData      = $derived(buildTrend(st.trend.slice(-10)));
 	const gaugeScore     = $derived(isComplete ? st.avg : genScore);
 	const gaugeNA        = $derived(gaugeScore === null || gaugeScore === undefined);
 	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
@@ -309,7 +316,7 @@
 			{/each}
 		</div>
 
-		<!-- Section bar: section info, trend sparkline, view filter -->
+		<!-- Section bar: section info + sparkline (left) | dropdowns (right) -->
 		<div class="section-bar">
 			<div class="sb-left">
 				<div class="sb-icon">
@@ -323,23 +330,8 @@
 				<span class="sb-count">{st.count} {isComplete ? 'attempt' : 'submission'}{st.count !== 1 ? 's' : ''}</span>
 				{#if isComplete && st.aiCount < st.count}<span class="sb-ai">· {st.aiCount} fully scored</span>{/if}
 				{#if !isComplete && needsAI}<span class="sb-ai">· {st.aiCount} AI-graded</span>{/if}
-				<span class="sb-ctrl">
-					<span class="sb-ctrl-label">Group</span>
-					<select class="sb-select" bind:value={viewBy}>
-						<option value="date">By Date</option>
-						<option value="test">By Test Number</option>
-					</select>
-				</span>
-				<span class="sb-ctrl">
-					<span class="sb-ctrl-label">Mode</span>
-					<select class="sb-select" bind:value={mode}>
-						<option value="all">All</option>
-						<option value="test">Test Mode</option>
-						<option value="practice">Practice Mode</option>
-					</select>
-				</span>
 			</div>
-			<div class="sb-mid">
+			<div class="sb-trend">
 				{#if trendData}
 					<svg width="72" height="22" viewBox="0 0 {trendData.W} {trendData.H}">
 						<defs><linearGradient id="sbg2" x1="0" y1="0" x2="0" y2="1">
@@ -357,7 +349,24 @@
 					<span class="sb-no-trend">No trend yet</span>
 				{/if}
 			</div>
-			<div class="sb-right"></div>
+			<div class="sb-sep-v"></div>
+			<div class="sb-right">
+				<span class="sb-ctrl">
+					<span class="sb-ctrl-label">Group</span>
+					<select class="sb-select" bind:value={viewBy}>
+						<option value="date">By Date</option>
+						<option value="test">By Test Number</option>
+					</select>
+				</span>
+				<span class="sb-ctrl">
+					<span class="sb-ctrl-label">Mode</span>
+					<select class="sb-select" bind:value={mode}>
+						<option value="all">All</option>
+						<option value="test">Test Mode</option>
+						<option value="practice">Practice Mode</option>
+					</select>
+				</span>
+			</div>
 		</div>
 	</div>
 
@@ -372,6 +381,7 @@
 				{#if byDateRows.length === 0}
 					<div class="empty"><div class="empty-icon">📝</div><div class="empty-title">No {sec.toLowerCase()} submissions yet</div><div class="empty-sub">Complete a practice test to see results here</div></div>
 				{:else}
+					<div class="date-list-card">
 					{#each pagedDateRows as sub, i}
 						<div class="sub-row" class:alt={i % 2 !== 0}>
 							<div class="sub-info wide">
@@ -395,6 +405,7 @@
 							<button class="pg-btn" disabled={datePage===totalDatePages} onclick={() => datePage++}>Next →</button>
 						</div>
 					{/if}
+					</div>
 				{/if}
 
 			{:else}
@@ -420,7 +431,7 @@
 										<span class="tc-sep">·</span>
 										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
 									{:else if cardSubs.length > 0}
-										<span class="tc-stat-na">Pending scores</span>
+										<span class="tc-stat-na">No graded submissions</span>
 									{:else}
 										<span class="tc-stat-na">No attempts yet</span>
 									{/if}
@@ -437,21 +448,24 @@
 								{:else}
 									{#each cardSubs.slice(0, shown) as sub}
 										<div class="tc-sub">
-											<div class="tc-l1">
-												<span class="tc-date">{fmtD(sub.date)}</span>
-												<span class="tc-time">{fmtT(sub.date)}</span>
-												<span class="badge sm" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test':'Practice'}</span>
-												{#if !sub.scoreAvailable}<span class="badge sm ai-off">AI off</span>{/if}
+											<div class="tc-sub-body">
+												<div class="tc-l1">
+													<span class="tc-date">{fmtD(sub.date)}</span>
+													<span class="tc-time">{fmtT(sub.date)}</span>
+													<span class="badge sm" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test':'Practice'}</span>
+													{#if !sub.scoreAvailable}<span class="badge sm ai-off">AI off</span>{/if}
+												</div>
+												<div class="tc-l2">
+													{#if sub.score===null}
+														<span class="na-label">N/A</span>
+													{:else}
+														<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div>
+														<span class="tc-score" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
+													{/if}
+												</div>
+												<div class="tc-pills">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill xs" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
 											</div>
-											<div class="tc-l2">
-												{#if sub.score===null}
-													<span class="na-label">N/A</span>
-												{:else}
-													<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div>
-													<span class="tc-score" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
-												{/if}
-											</div>
-											<div class="tc-pills">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill xs" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
+											<button class="tc-view">View →</button>
 										</div>
 									{/each}
 									{#if shown < cardSubs.length}
@@ -472,6 +486,7 @@
 				{#if ctByDate.length === 0}
 					<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-title">No complete test attempts yet</div><div class="empty-sub">Take a full 4-section practice test to see results here</div></div>
 				{:else}
+					<div class="date-list-card">
 					{#each pagedCtRows as t, i}
 						<div class="sub-row" class:alt={i % 2 !== 0}>
 							<div class="sub-info wide">
@@ -494,6 +509,7 @@
 							<button class="pg-btn" disabled={datePage===totalCtPages} onclick={() => datePage++}>Next →</button>
 						</div>
 					{/if}
+					</div>
 				{/if}
 
 			{:else}
@@ -519,7 +535,7 @@
 										<span class="tc-sep">·</span>
 										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
 									{:else if cardSubs.length > 0}
-										<span class="tc-stat-na">Pending scores</span>
+										<span class="tc-stat-na">No graded submissions</span>
 									{:else}
 										<span class="tc-stat-na">No attempts yet</span>
 									{/if}
@@ -536,20 +552,23 @@
 								{:else}
 									{#each cardSubs.slice(0, shown) as t}
 										<div class="tc-sub">
-											<div class="tc-l1">
-												<span class="tc-date">{fmtD(t.date)}</span>
-												<span class="tc-time">{fmtT(t.date)}</span>
-												<span class="sub-date" style="color:#bbb;font-size:10px">{t.duration}</span>
+											<div class="tc-sub-body">
+												<div class="tc-l1">
+													<span class="tc-date">{fmtD(t.date)}</span>
+													<span class="tc-time">{fmtT(t.date)}</span>
+													<span class="sub-date" style="color:#bbb;font-size:10px">{t.duration}</span>
+												</div>
+												<div class="tc-l2">
+													{#if t.composite!==null}
+														<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div>
+														<span class="tc-score" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
+													{:else}
+														<span class="na-label">Pending</span>
+													{/if}
+												</div>
+												<div class="tc-pills">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip xs" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
 											</div>
-											<div class="tc-l2">
-												{#if t.composite!==null}
-													<div class="bar-track" style="flex:1;max-width:60px;height:4px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div>
-													<span class="tc-score" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-												{:else}
-													<span class="na-label">Pending</span>
-												{/if}
-											</div>
-											<div class="tc-pills">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip xs" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
+											<button class="tc-view">View →</button>
 										</div>
 									{/each}
 									{#if shown < cardSubs.length}
@@ -617,7 +636,8 @@
 	.ov-foot { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
 	.ov-count { font-weight: 600; }
 
-	.panel { background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.04); overflow: hidden; }
+	.panel { overflow: visible; }
+	.date-list-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.04); overflow: hidden; }
 	.panel-header { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
 	.panel-title-row { display: flex; align-items: center; gap: 10px; }
 	.panel-icon { width: 34px; height: 34px; border-radius: 10px; background: rgba(0,177,137,.06); display: flex; align-items: center; justify-content: center; color: #00b189; }
@@ -677,24 +697,22 @@
 		.section-cards { grid-template-columns: repeat(3, 1fr); }
 	}
 	/* ── Section bar (sticky header strip) ── */
-	.section-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0 8px; border-top: 1px solid #ebebeb; margin-top: 8px; flex-wrap: wrap; }
+	.section-bar { display: flex; align-items: center; gap: 10px; padding: 7px 0 8px; border-top: 1px solid #ebebeb; margin-top: 8px; }
 	.sb-left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
 	.sb-icon { width: 22px; height: 22px; border-radius: 6px; background: rgba(0,177,137,.07); color: #00b189; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 	.sb-name { font-size: 12px; font-weight: 700; color: #222; white-space: nowrap; }
 	.sb-dot { color: #ddd; font-size: 12px; }
 	.sb-count { font-size: 11px; color: #999; white-space: nowrap; }
 	.sb-ai { font-size: 11px; color: #999; white-space: nowrap; }
-	.sb-mid { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+	.sb-trend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 	.sb-diff { font-size: 11px; font-weight: 700; white-space: nowrap; }
 	.sb-no-trend { font-size: 10px; color: #ccc; font-style: italic; }
-	.sb-right { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-	.sb-view-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; margin-right: 2px; white-space: nowrap; }
-	.sb-view-btn { padding: 3px 10px; border-radius: 99px; border: none; cursor: pointer; font-size: 11px; font-weight: 400; background: transparent; color: #888; transition: all .15s; font-family: inherit; white-space: nowrap; }
-	.sb-view-btn.active { font-weight: 600; background: #222; color: #fff; }
-	.sb-ctrl { display: inline-flex; align-items: center; gap: 4px; }
+	.sb-sep-v { width: 1px; height: 20px; background: #e5e7eb; flex-shrink: 0; }
+	.sb-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+	.sb-ctrl { display: inline-flex; align-items: center; gap: 5px; }
 	.sb-ctrl-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
-	.sb-select { font-family: inherit; font-size: 11px; font-weight: 600; color: #444; background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 3px 22px 3px 9px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; outline: none; transition: border-color .15s, box-shadow .15s; white-space: nowrap; }
-	.sb-select:hover { border-color: #d0d0d0; background-color: #fafafa; }
+	.sb-select { font-family: inherit; font-size: 11px; font-weight: 600; color: #333; background: #fff; border: 1.5px solid #e5e7eb; border-radius: 20px; padding: 4px 26px 4px 12px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; outline: none; transition: border-color .15s, box-shadow .15s; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+	.sb-select:hover { border-color: #c5c5c5; background-color: #fafafa; }
 	.sb-select:focus { border-color: #00b189; box-shadow: 0 0 0 3px rgba(0,177,137,.1); }
 
 	/* ── Test grid (By Test Number view) ── */
@@ -723,8 +741,11 @@
 
 	.tc-empty { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 11px; color: #ccc; font-style: italic; padding: 16px; text-align: center; }
 
-	.tc-sub { padding: 7px 12px; border-bottom: 1px solid #f4f4f4; }
+	.tc-sub { display: flex; align-items: flex-start; gap: 8px; padding: 7px 12px; border-bottom: 1px solid #f4f4f4; }
 	.tc-sub:last-of-type { border-bottom: none; }
+	.tc-sub-body { flex: 1; min-width: 0; }
+	.tc-view { flex-shrink: 0; align-self: center; padding: 3px 8px; border-radius: 99px; border: 1.5px solid #00b189; color: #00b189; background: transparent; font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; }
+	.tc-view:hover { background: #00b189; color: #fff; }
 
 	.tc-l1 { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
 	.tc-l2 { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
