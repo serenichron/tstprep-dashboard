@@ -4,6 +4,14 @@ export type ContentType = 'test' | 'practice' | 'course' | 'resource';
 
 export type AccessLevel = 'free' | 'locked';
 
+export type UserPlan =
+	| 'free'
+	| 'emergency_basic'
+	| 'emergency_premium'
+	| 'score_builder'
+	| 'private_lessons'
+	| 'unlock_all_tests';
+
 export interface PracticeTest {
 	id: number;
 	type: 'test';
@@ -75,7 +83,7 @@ export interface User {
 	name: string;
 	firstName: string;
 	email: string;
-	plan: 'free' | 'premium';
+	plan: UserPlan;
 	currentScore: number;
 	targetScore: number;
 	examDate: string | null;
@@ -83,4 +91,5 @@ export interface User {
 	xp: number;
 	level: string;
 	joinDate: string;
+	credits: number;
 }

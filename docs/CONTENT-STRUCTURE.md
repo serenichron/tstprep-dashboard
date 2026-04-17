@@ -98,12 +98,49 @@ Paid access: 15 tests. Free access: 2 tests (tests #1 and #2 are free).
 
 ---
 
+## TOEFL 2026 Question Types
+
+The 2026 TOEFL uses a 1–6 band scale (0.5 increments) and runs approximately 90 minutes total. The format is significantly different from the legacy TOEFL iBT. Question types are used as performance identifiers throughout the dashboard (Progress page, Submission History analytics).
+
+### Reading
+
+| ID | Label | Description |
+|---|---|---|
+| `reading_academic_passage` | Academic Passage | Shortened ~300-word academic texts with comprehension questions |
+| `reading_complete_the_words` | Complete the Words | Fill blanks in a passage by selecting from word choices |
+| `reading_daily_life` | Read in Daily Life | Real-world texts: emails, notices, social media posts |
+
+### Listening
+
+| ID | Label | Description |
+|---|---|---|
+| `listening_listen_and_choose` | Listen and Choose | Short audio clips; choose the best response from options |
+| `listening_conversation` | Conversation | Short conversations between two speakers; comprehension questions |
+| `listening_academic_talk` | Academic Talk | Shorter lecture-style audio; identify main ideas and details |
+
+### Speaking
+
+| ID | Label | Description |
+|---|---|---|
+| `speaking_listen_and_repeat` | Listen and Repeat | Hear a phrase or sentence and repeat it accurately (7 questions) |
+| `speaking_take_an_interview` | Take an Interview | Answer interview-style questions on familiar topics (4 questions) |
+
+### Writing
+
+| ID | Label | Description |
+|---|---|---|
+| `writing_build_a_sentence` | Build a Sentence | Arrange given words/phrases into a grammatically correct sentence |
+| `writing_write_an_email` | Write an Email | Compose a short email response to a given prompt |
+| `writing_academic_discussion` | Academic Discussion | Respond to an academic discussion prompt (retained from legacy format) |
+
+---
+
 ## Brand Identity
 
-- **Primary color:** Teal/green (~#009B77)
+- **Primary color:** Teal/green (~#009B77 / `brand-green` → `#00b189` in new dashboard)
 - **Logo:** TST Prep with shield/badge icon
-- **Typography:** Bold black headings, teal accent on key words (e.g., "TOEFL **Free Practices**")
-- **Style:** Clean, professional, stock photography for course thumbnails
+- **Typography:** Bold black headings, teal accent on key words
+- **Style:** Clean, professional, mobile-first
 
 ---
 
@@ -113,9 +150,9 @@ The new dashboard collapses all pages into one unified experience with clear con
 
 ### Content Type 1: Full Practice Tests
 
-**What it is:** A complete, timed, scored TOEFL or DET simulation. 4 sections taken as a unit, producing a single composite score (1.0–6.0).
+**What it is:** A complete, timed, scored TOEFL simulation. 4 sections taken as a unit, producing a single composite score (1.0–6.0).
 
-**Current backend:** 4 LearnDash courses per test (one per section), linked by test number. No native "test" post type yet — this is in progress on the WP side.
+**Current backend:** 4 LearnDash courses per test (one per section), linked by test number.
 
 **UX in new dashboard:**
 - Each test shown as a single card with section breakdown
@@ -134,25 +171,23 @@ The new dashboard collapses all pages into one unified experience with clear con
 
 **What it is:** Non-timed, interactive question sets for a specific section. Immediate feedback after each question.
 
-**Current backend:** LearnDash courses categorized as practice samples (the right column on the Free Practices page).
+**Current backend:** LearnDash courses categorized as practice samples.
 
 **UX in new dashboard:**
 - Cards organized by section (R / L / S / W)
 - Shows completion % and question count
-- Filter by section and question type
+- Filter by section and question type (using IDs above)
 - Instant feedback with explanation after each question
 
 **Access:**
-- Free: 1 set per section (4 total — current free interactive courses)
-- Paid: Full library (to be expanded)
+- Free: 1 set per section (4 total)
+- Paid: Full library
 
 ---
 
 ### Content Type 3: Skill Courses
 
-**What it is:** Structured learning paths with instructional content, tips, and exercises. The only content with real teaching (not just quizzes).
-
-**Current backend:** The 6 LearnDash courses on the Courses page.
+**What it is:** Structured learning paths with instructional content, tips, and exercises.
 
 **Current courses:**
 - Emergency Course (general)
@@ -163,8 +198,7 @@ The new dashboard collapses all pages into one unified experience with clear con
 - Clearly labeled as "Courses" or "Study Guides"
 - Section tagging (R / L / S / W / General)
 - Linear progression with lesson/unit count
-- Progress bar
-- Ratings
+- Progress bar + ratings
 
 **Access:**
 - Paid only (locked + upsell CTA for free users)
@@ -173,7 +207,7 @@ The new dashboard collapses all pages into one unified experience with clear con
 
 ### Content Type 4: Resource Library
 
-**What it is:** Downloadable PDF reference materials. Currently separate from the dashboard entirely.
+**What it is:** Downloadable PDF reference materials.
 
 **Current items:**
 - 2 PDF practice tests (full tests in PDF format)
@@ -184,7 +218,6 @@ The new dashboard collapses all pages into one unified experience with clear con
 - Free Writing practice questions (PDF)
 
 **UX in new dashboard:**
-- Brought into the dashboard as a dedicated section
 - Card grid with section tag, description, download button
 - Searchable
 - Free access for all users
@@ -200,13 +233,13 @@ The new dashboard collapses all pages into one unified experience with clear con
 | Full Practice Tests | ✅ Tests #1–#2 | ✅ Tests #1–#15 |
 | Skill Courses | 🔒 Visible, locked | ✅ All enrolled |
 
-**Visibility rule:** All content is always visible. Locked items show a card with a lock icon and upsell CTA. Nothing is hidden.
+**Visibility rule:** All content is always visible. Locked items show a lock icon and upsell CTA. Nothing is hidden.
 
 ---
 
 ## Scoring Model
 
-- **Scale:** 1.0 – 6.0 in 0.5 increments (TOEFL/DET style)
+- **Scale:** 1.0 – 6.0 in 0.5 increments (TOEFL 2026 band scale)
 - **Composite score:** Average of 4 section scores
 - **Displayed as:** `4.5 / 6` in the dashboard header and submission history
 - **Section scores:** Stored individually, combined for display
@@ -230,3 +263,4 @@ GET /wp-json/ldlms/v2/quizzes/{id}             Quiz detail
 - Store and retrieve star ratings per course/test
 - Gamification data: streaks, XP, badges, league rank
 - Submission history with filters and pagination
+- Question-type performance breakdown (keyed by IDs in this document)

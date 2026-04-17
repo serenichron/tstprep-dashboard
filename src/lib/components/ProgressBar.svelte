@@ -1,7 +1,13 @@
 <script lang="ts">
-	export let percent: number = 0;
-	export let color: string = 'bg-brand-green';
-	export let height: string = 'h-1.5';
+	let {
+		percent = 0,
+		color = 'bg-brand-green',
+		height = 'h-1.5'
+	}: {
+		percent?: number;
+		color?: string;
+		height?: string;
+	} = $props();
 </script>
 
 <div class="w-full bg-gray-100 rounded-full {height} overflow-hidden">

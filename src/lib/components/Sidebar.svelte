@@ -1,9 +1,17 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import type { User } from '$lib/types';
+	import { page } from '$app/state';
+	import { getUpsell } from '$lib/userState.svelte';
 
-	export let user: User;
-	export let currentPath: string = '/';
+	let {
+		isOpen = true,
+		onClose,
+		onToggle
+	}: {
+		isOpen?: boolean;
+		onClose?: () => void;
+		onToggle?: () => void;
+	} = $props();
 
 	const navItems = [
 		{
@@ -28,91 +36,93 @@
 		}
 	];
 
-	function isActive(href: string) {
-		const path = href.replace(base, '') || '/';
-		const current = currentPath.replace(base, '') || '/';
-		if (path === '/') return current === '/';
-		return current.startsWith(path);
-	}
+	// Fix: use exact match or startsWith(path + '/') to avoid /history matching /history2
+	const activeHref = $derived.by(() => {
+		const current = page.url.pathname.replace(base, '') || '/';
+		for (const item of navItems) {
+			const path = item.href.replace(base, '') || '/';
+			const matches = path === '/'
+				? current === '/'
+				: current === path || current.startsWith(path + '/');
+			if (matches) return item.href;
+		}
+		return '';
+	});
 
-	const levelColors: Record<string, string> = {
-		Beginner: 'bg-gray-400',
-		Practitioner: 'bg-blue-500',
-		Advanced: 'bg-brand-green',
-		Expert: 'bg-purple-500',
-		Master: 'bg-brand-pink'
-	};
+	function handleNavClick() {
+		// Only close (mobile overlay) when on a small screen; desktop keeps its state
+		if (window.innerWidth < 1024) onClose?.();
+	}
 </script>
 
-<aside class="fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-100 flex flex-col z-30 shadow-sm">
-	<!-- Logo -->
-	<div class="px-5 py-4 border-b border-gray-100">
-		<a href="{base}/" class="flex items-center gap-2">
-			<div class="w-8 h-8 bg-brand-green rounded-lg flex items-center justify-center flex-shrink-0">
-				<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-				</svg>
-			</div>
-			<div class="leading-none">
-				<span class="font-black text-gray-900 text-lg tracking-tight">TST</span><span class="font-black text-brand-green text-lg tracking-tight">Prep</span>
-			</div>
-		</a>
-	</div>
-
-	<!-- Score badge -->
-	<div class="mx-3 mt-3 bg-brand-green-light rounded-xl p-3">
-		<p class="text-xs text-gray-400 mb-1">Current Score</p>
-		<div class="flex items-center justify-between">
-			<p class="text-xl font-black text-brand-green">{user.currentScore.toFixed(1)} <span class="text-sm font-medium text-gray-400">/ 6.0</span></p>
-			<div class="w-9 h-9 bg-brand-green rounded-full flex items-center justify-center">
-				<span class="text-white font-black text-sm">{user.currentScore.toFixed(1)}</span>
-			</div>
-		</div>
-		<p class="text-xs text-gray-400 mt-1">Target: <span class="font-semibold text-gray-600">{user.targetScore.toFixed(1)}</span></p>
-	</div>
+<aside class="
+	fixed top-14 bottom-0 left-0 bg-white border-r border-gray-100 flex flex-col z-50 shadow-sm
+	transition-all duration-300 overflow-hidden
+	{isOpen
+		? 'w-60 translate-x-0'
+		: 'w-60 -translate-x-full lg:translate-x-0 lg:w-14'}
+">
+	<!-- ─── Collapse / expand toggle (desktop only) ─── -->
+	<button
+		onclick={onToggle}
+		class="hidden lg:flex items-center border-b border-gray-100 py-3 transition-colors hover:bg-gray-50 text-gray-400 hover:text-gray-600
+			{isOpen ? 'px-4 gap-2' : 'justify-center px-0'}"
+		aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+	>
+		<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+			{#if isOpen}
+				<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+			{:else}
+				<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+			{/if}
+		</svg>
+		{#if isOpen}
+			<span class="text-xs font-medium">Collapse</span>
+		{/if}
+	</button>
 
 	<!-- Navigation -->
-	<nav class="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+	<nav class="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
 		{#each navItems as item}
-			<a href={item.href} class="nav-link {isActive(item.href) ? 'active' : ''}">
-				<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+			<a
+				href={item.href}
+				class="nav-link {isOpen ? '' : 'lg:justify-center lg:px-0 lg:py-3'}"
+				class:active={item.href === activeHref}
+				title={item.label}
+				onclick={handleNavClick}
+			>
+				<svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
 					{@html item.icon}
 				</svg>
-				<span>{item.label}</span>
+				<span class="truncate {isOpen ? '' : 'lg:hidden'}">{item.label}</span>
 			</a>
 		{/each}
-
-		<div class="pt-3 pb-1">
-			<p class="px-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">Account</p>
-		</div>
-
-		{#if user.plan === 'free'}
-			<div class="mx-0.5 bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white">
-				<p class="text-xs font-bold mb-1">🚀 Go Premium</p>
-				<p class="text-xs opacity-90 mb-2.5 leading-relaxed">Unlock all 15 tests + Score Builder courses</p>
-				<button class="w-full bg-white text-brand-pink text-xs font-bold py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-					Upgrade Now
-				</button>
-			</div>
-		{/if}
 	</nav>
 
-	<!-- User profile -->
-	<div class="px-3 py-3 border-t border-gray-100">
-		<div class="flex items-center gap-2.5">
-			<div class="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center flex-shrink-0">
-				<span class="text-white font-bold text-sm">{user.firstName[0]}</span>
+	<!-- Upgrade CTA — dynamic per plan, full when open, icon-only when collapsed -->
+	{#if getUpsell()}
+		{@const upsell = getUpsell()!}
+		{#if isOpen}
+			<div class="px-3 pb-3">
+				<a href={upsell.href} target="_blank" rel="noopener noreferrer" class="block bg-gradient-to-br from-brand-pink to-orange-400 rounded-xl p-3 text-white no-underline hover:brightness-105 transition-all">
+					<p class="text-xs font-bold mb-1">{upsell.headline}</p>
+					<p class="text-xs opacity-90 mb-2.5 leading-relaxed">{upsell.body}</p>
+					<span class="block w-full bg-white text-brand-pink text-xs font-bold py-1.5 rounded-lg text-center hover:bg-gray-50 transition-colors">
+						{upsell.cta}
+					</span>
+				</a>
 			</div>
-			<div class="min-w-0 flex-1">
-				<p class="text-sm font-semibold text-gray-800 truncate">{user.firstName}</p>
-				<div class="flex items-center gap-1.5">
-					<span class="w-1.5 h-1.5 rounded-full {levelColors[user.level] ?? 'bg-gray-400'}"></span>
-					<span class="text-xs text-gray-400">{user.level}</span>
-				</div>
+		{:else}
+			<div class="pb-3 px-2 hidden lg:block">
+				<a href={upsell.href} target="_blank" rel="noopener noreferrer"
+					class="w-10 h-10 mx-auto rounded-xl bg-gradient-to-br from-brand-pink to-orange-400 flex items-center justify-center cursor-pointer"
+					title={upsell.headline}>
+					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z" />
+					</svg>
+				</a>
 			</div>
-			<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0">
-				{user.plan}
-			</span>
-		</div>
-	</div>
+		{/if}
+	{/if}
+
 </aside>

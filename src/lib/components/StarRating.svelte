@@ -1,7 +1,13 @@
 <script lang="ts">
-	export let rating: number = 0;
-	export let count: number = 0;
-	export let showCount: boolean = true;
+	let {
+		rating = 0,
+		count = 0,
+		showCount = true
+	}: {
+		rating?: number;
+		count?: number;
+		showCount?: boolean;
+	} = $props();
 </script>
 
 <div class="flex items-center gap-1">

@@ -13,7 +13,8 @@ export const mockUser: User = {
 	streak: 7,
 	xp: 1240,
 	level: 'Practitioner',
-	joinDate: '2026-02-10'
+	joinDate: '2026-02-10',
+	credits: 200
 };
 
 // ─── Score History (for chart) ────────────────────────────────────────────────
