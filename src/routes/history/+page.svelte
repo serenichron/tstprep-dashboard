@@ -505,7 +505,7 @@
 	.dashboard { font-family: 'DM Sans', sans-serif; padding: 0 32px 28px; color: #222; }
 
 	/* ── Sticky header ── */
-	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 0 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 14px; }
+	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 0 0; margin-bottom: 14px; }
 
 	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 	h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
@@ -534,9 +534,18 @@
 	/* Section cards */
 	.ov-sec { border: 2px solid transparent; cursor: pointer; text-align: left; font-family: inherit; transition: all .15s; }
 	.ov-sec.active { border-color: #00b189; box-shadow: 0 3px 12px rgba(0,177,137,.12); }
-	.ov-sec.ov-complete { background: linear-gradient(135deg, #f0fdf9 0%, #fff 60%); border: 1.5px solid rgba(0,177,137,.15); }
-	.ov-sec.ov-complete.active { background: #f0fdf9; border-color: #00b189; }
-	.ov-sec:hover:not(.active) { background: #f8f8f8; }
+	.ov-sec.ov-complete { background: linear-gradient(135deg, #00b189 0%, #00c99a 100%); border: none; color: #fff; box-shadow: 0 4px 16px rgba(0,177,137,.30); }
+	.ov-sec.ov-complete .ov-name { color: rgba(255,255,255,.85); }
+	.ov-sec.ov-complete .ov-val { color: #fff !important; }
+	.ov-sec.ov-complete .ov-denom, .ov-sec.ov-complete .ov-unit { color: rgba(255,255,255,.7); }
+	.ov-sec.ov-complete .ov-foot { color: rgba(255,255,255,.75); }
+	.ov-sec.ov-complete .ov-foot b { color: #fff !important; }
+	.ov-sec.ov-complete .ov-icon { background: rgba(255,255,255,.2); color: #fff; }
+	.ov-sec.ov-complete .ov-count { background: rgba(255,255,255,.2); color: #fff; }
+	.ov-sec.ov-complete .ov-bar { background: rgba(255,255,255,.4); }
+	.ov-sec.ov-complete.active { border: 1.5px solid rgba(255,255,255,.5); box-shadow: 0 6px 20px rgba(0,177,137,.4); }
+	.ov-sec.ov-complete:hover:not(.active) { background: linear-gradient(135deg, #00a87f 0%, #00b88d 100%); }
+	.ov-sec:not(.ov-complete):hover:not(.active) { background: #f8f8f8; }
 	.ov-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #00b189; }
 	.ov-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
 	.ov-icon { width: 22px; height: 22px; border-radius: 6px; background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
