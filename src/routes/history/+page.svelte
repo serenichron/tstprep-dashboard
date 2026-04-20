@@ -141,7 +141,7 @@
 	const TA = EA - SA;
 
 	/* ─── Trend helper ─── */
-	function buildTrend(pts: { v: number }[]) {
+	function buildTrend(pts: { v: number }[], allTimeAvg?: number | null) {
 		if (!pts || pts.length < 2) return null;
 		const W = 180, H = 42, px = 4, py = 4;
 		const mn = 0.5, mx = 6.5;
@@ -150,7 +150,10 @@
 			y: py + (1 - (p.v - mn) / (mx - mn)) * (H - py * 2)
 		}));
 		const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ');
-		const diff  = roundHalf(pts[pts.length - 1].v - pts[0].v);
+		const last10avg = pts.reduce((a, p) => a + p.v, 0) / pts.length;
+		const diff  = allTimeAvg != null
+			? roundHalf(last10avg - allTimeAvg)
+			: roundHalf(pts[pts.length - 1].v - pts[0].v);
 		const color = diff >= 0 ? '#00b189' : '#ff5859';
 		return {
 			W, H, coords, d, color,
@@ -168,6 +171,8 @@
 	let datePage   = $state(1);
 	let modeOpen   = $state(false);
 	let testOpen   = $state(false);
+	let trendOpen  = $state(false);
+	let trendHovIdx = $state<number | null>(null);
 
 	const modeOptions = [
 		{ value: 'all'      as const, label: 'All' },
@@ -185,20 +190,20 @@
 	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
 
 	const stats = $derived.by(() => {
-		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number }[] }> = {};
+		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number; date: string }[] }> = {};
 		secs.filter(s => s !== 'Complete Tests').forEach(sc => {
 			const all = data.filter(s => s.section === sc);
 			const ws  = all.filter(s => s.scoreAvailable && s.score !== null);
 			const avg  = ws.length ? roundHalf(ws.reduce((a, s) => a + (s.score as number), 0) / ws.length) : null;
 			const best = ws.length ? Math.max(...ws.map(s => s.score as number)) : null;
-			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number }));
+			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number, date: s.date as string }));
 			o[sc] = { avg, best, count: all.length, aiCount: ws.length, trend };
 		});
 		const ctFiltered = mode === 'all' ? COMPLETE : mode === 'test' ? COMPLETE : [];
 		const scored = ctFiltered.filter(t => t.composite !== null);
 		const avg  = scored.length ? roundHalf(scored.reduce((a, t) => a + (t.composite as number), 0) / scored.length) : null;
 		const best = scored.length ? Math.max(...scored.map(t => t.composite as number)) : null;
-		const trend = [...scored].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(t => ({ v: t.composite as number }));
+		const trend = [...scored].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(t => ({ v: t.composite as number, date: t.date as string }));
 		o['Complete Tests'] = { avg, best, count: ctFiltered.length, aiCount: scored.length, trend };
 		return o;
 	});
@@ -233,7 +238,35 @@
 	const isComplete     = $derived(sec === 'Complete Tests');
 	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st             = $derived(stats[sec]);
-	const trendData      = $derived(buildTrend(st.trend.slice(-10)));
+	const trendData      = $derived(buildTrend(st.trend.slice(-10), st.avg));
+	const trendPopupData = $derived.by(() => {
+		const pts = st.trend.slice(-10);
+		if (pts.length < 2) return null;
+		const last10avg   = roundHalf(pts.reduce((a, p) => a + p.v, 0) / pts.length);
+		const allTimeAvg  = st.avg;
+		const diff        = allTimeAvg !== null ? roundHalf(last10avg - allTimeAvg) : null;
+		const color       = diff === null || diff >= 0 ? '#00b189' : '#ff5859';
+		const CW = 400, CH = 160, pL = 32, pR = 14, pT = 16, pB = 32;
+		const iW = CW - pL - pR, iH = CH - pT - pB;
+		const mn = 0.5, mx = 6.5;
+		const yFor = (v: number) => pT + (1 - (v - mn) / (mx - mn)) * iH;
+		const coords = pts.map((p, i) => ({
+			x: pL + (pts.length > 1 ? (i / (pts.length - 1)) * iW : iW / 2),
+			y: yFor(p.v),
+			v: p.v, date: p.date
+		}));
+		const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+		return {
+			CW, CH, pL, pR, pT, pB,
+			color, coords, d,
+			area: `${d}L${coords.at(-1)!.x.toFixed(1)},${(CH - pB).toFixed(1)}L${coords[0].x.toFixed(1)},${(CH - pB).toFixed(1)}Z`,
+			last10avg, allTimeAvg, diff,
+			yLast10:  yFor(last10avg),
+			yAllTime: allTimeAvg !== null ? yFor(allTimeAvg) : null,
+			yTicks:   [1, 2, 3, 4, 5, 6].map(v => ({ v, y: yFor(v) })),
+			lx1: pL, lx2: CW - pR,
+		};
+	});
 	const gaugeScore     = $derived(genScore);
 	const gaugeNA        = $derived(gaugeScore === null || gaugeScore === undefined);
 	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
@@ -368,7 +401,7 @@
 					</span>
 				{/if}
 			</div>
-			<div class="sb-trend">
+			<button class="sb-trend" onclick={() => { if (trendData) { trendOpen = true; trendHovIdx = null; } }} disabled={!trendData} title="View progress chart">
 				{#if trendData}
 					<svg width="72" height="22" viewBox="0 0 {trendData.W} {trendData.H}">
 						<defs><linearGradient id="sbg2" x1="0" y1="0" x2="0" y2="1">
@@ -385,7 +418,7 @@
 				{:else}
 					<span class="sb-no-trend">No trend yet</span>
 				{/if}
-			</div>
+			</button>
 			<div class="sb-sep-v"></div>
 			<div class="sb-right">
 				<!-- Test no. dropdown -->
@@ -503,6 +536,106 @@
 		Scores follow the TOEFL 2026 scale (1–6){#if needsAI && !isComplete} · Non-AI submissions excluded from averages{/if}{#if isComplete} · Composite = average of all 4 section scores{/if}
 	</div>
 </div>
+
+<!-- ─── Trend popup ──────────────────────────────────────────────────────── -->
+{#if trendOpen && trendPopupData}
+	{@const d = trendPopupData}
+	<div class="tp-backdrop" onclick={() => { trendOpen = false; trendHovIdx = null; }}></div>
+	<div class="tp-popup">
+		<!-- Header -->
+		<div class="tp-head">
+			<div class="tp-title">
+				<span class="tp-sec-name">{sec}</span>
+				<span class="tp-subtitle">Last {d.coords.length} scored submissions · progress vs baseline</span>
+			</div>
+			<button class="tp-close" onclick={() => { trendOpen = false; trendHovIdx = null; }}>
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+			</button>
+		</div>
+
+		<!-- Chart -->
+		<div class="tp-chart-wrap">
+			<div class="tp-chart-inner">
+				<svg width={d.CW} height={d.CH} style="display:block;overflow:visible">
+					<defs>
+						<linearGradient id="tpgrd" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0%" stop-color={d.color} stop-opacity=".13" />
+							<stop offset="100%" stop-color={d.color} stop-opacity="0" />
+						</linearGradient>
+					</defs>
+
+					<!-- Grid lines + y-axis labels -->
+					{#each d.yTicks as t}
+						<line x1={d.lx1} y1={t.y} x2={d.lx2} y2={t.y} stroke="#f0f0f0" stroke-width="1" />
+						<text x={d.pL - 7} y={t.y + 3.5} text-anchor="end" font-size="9" fill="#ccc" font-family="DM Sans,sans-serif">{t.v}</text>
+					{/each}
+
+					<!-- All-time avg reference line -->
+					{#if d.yAllTime !== null}
+						<line x1={d.lx1} y1={d.yAllTime} x2={d.lx2} y2={d.yAllTime} stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="5,4" />
+						<text x={d.lx2 + 5} y={d.yAllTime + 3.5} font-size="8.5" fill="#94a3b8" font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.allTimeAvg)}</text>
+					{/if}
+
+					<!-- Last-10 avg reference line -->
+					<line x1={d.lx1} y1={d.yLast10} x2={d.lx2} y2={d.yLast10} stroke={d.color} stroke-width="1.3" stroke-dasharray="5,4" opacity=".55" />
+					<text x={d.lx2 + 5} y={d.yLast10 + 3.5} font-size="8.5" fill={d.color} font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.last10avg)}</text>
+
+					<!-- Area + line -->
+					<path d={d.area} fill="url(#tpgrd)" />
+					<path d={d.d} fill="none" stroke={d.color} stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+
+					<!-- Dots -->
+					{#each d.coords as c, i}
+						<circle
+							cx={c.x} cy={c.y}
+							r={trendHovIdx === i ? 5.5 : 3.5}
+							fill={trendHovIdx === i ? d.color : '#fff'}
+							stroke={d.color} stroke-width="2"
+							style="cursor:pointer;transition:r .1s,fill .1s"
+							onmouseenter={() => trendHovIdx = i}
+							onmouseleave={() => trendHovIdx = null}
+						/>
+					{/each}
+
+					<!-- X-axis date labels: first, mid, last -->
+					{#each d.coords as c, i}
+						{#if i === 0 || i === d.coords.length - 1 || i === Math.floor((d.coords.length - 1) / 2)}
+							<text x={c.x} y={d.CH - d.pB + 17} text-anchor="middle" font-size="8.5" fill="#bbb" font-family="DM Sans,sans-serif">
+								{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+							</text>
+						{/if}
+					{/each}
+				</svg>
+
+				<!-- Hover tooltip -->
+				{#if trendHovIdx !== null}
+					{@const c = d.coords[trendHovIdx]}
+					<div class="tp-tt" style="left:{c.x}px; top:{c.y}px">
+						<b style="color:{d.color}">{fmtScore(c.v)}/6</b>
+						<span>{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Legend -->
+		<div class="tp-legend">
+			<div class="tp-leg-item">
+				<span class="tp-leg-dash tp-leg-gray"></span>
+				All-time avg&nbsp;<b>{fmtScore(d.allTimeAvg)}/6</b>
+			</div>
+			<div class="tp-leg-item">
+				<span class="tp-leg-dash" style="background:{d.color};opacity:.55"></span>
+				Last {d.coords.length} avg&nbsp;<b style="color:{d.color}">{fmtScore(d.last10avg)}/6</b>
+			</div>
+			{#if d.diff !== null}
+				<div class="tp-leg-delta" style="color:{d.color}">
+					{d.diff >= 0 ? '+' : ''}{fmtScore(d.diff)} vs baseline
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
 
 <style>
 	* { box-sizing: border-box; margin: 0; padding: 0; }
@@ -632,7 +765,9 @@
 	.sb-count { font-size: 11px; color: #999; white-space: nowrap; }
 	.sb-ai { font-size: 11px; color: #999; white-space: nowrap; }
 	.sb-test-info { font-size: 11px; color: #666; white-space: nowrap; }
-	.sb-trend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+	.sb-trend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; background: none; border: none; padding: 4px 6px; margin: -4px -6px; border-radius: 8px; cursor: pointer; font-family: inherit; transition: background .15s; }
+	.sb-trend:hover:not(:disabled) { background: rgba(0,0,0,.04); }
+	.sb-trend:disabled { cursor: default; }
 	.sb-diff { font-size: 11px; font-weight: 700; white-space: nowrap; }
 	.sb-no-trend { font-size: 10px; color: #ccc; font-style: italic; }
 	.sb-sep-v { width: 1px; height: 20px; background: #e5e7eb; flex-shrink: 0; }
@@ -731,4 +866,28 @@
 		.test-grid { grid-template-columns: 1fr; }
 		.tc { height: 260px; }
 	}
+
+	/* ── Trend popup ── */
+	.tp-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.28); backdrop-filter: blur(2px); }
+	.tp-popup { position: fixed; z-index: 201; background: #fff; border-radius: 18px; box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08); width: 472px; max-width: calc(100vw - 32px); top: 50%; left: 50%; transform: translate(-50%, -50%); overflow: hidden; }
+
+	.tp-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 18px 14px; border-bottom: 1px solid #f3f4f6; }
+	.tp-title { display: flex; flex-direction: column; gap: 3px; }
+	.tp-sec-name { font-size: 15px; font-weight: 800; color: #1a1a1a; letter-spacing: -0.3px; }
+	.tp-subtitle { font-size: 11px; color: #aaa; }
+	.tp-close { width: 28px; height: 28px; border-radius: 8px; border: none; background: #f5f5f5; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s, color .15s; }
+	.tp-close:hover { background: #eee; color: #333; }
+
+	.tp-chart-wrap { padding: 16px 16px 4px; }
+	.tp-chart-inner { position: relative; display: inline-block; }
+	.tp-tt { position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 10px)); background: #1a1a1a; color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 11px; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 1px; z-index: 10; font-family: 'DM Sans', sans-serif; }
+	.tp-tt b { font-size: 13px; font-weight: 800; line-height: 1.2; }
+	.tp-tt span { font-size: 10px; color: rgba(255,255,255,.55); line-height: 1.2; }
+
+	.tp-legend { display: flex; align-items: center; gap: 14px; padding: 12px 18px 16px; border-top: 1px solid #f3f4f6; flex-wrap: wrap; }
+	.tp-leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #888; }
+	.tp-leg-item b { color: #222; font-weight: 700; }
+	.tp-leg-dash { display: inline-block; width: 20px; height: 2px; border-radius: 2px; flex-shrink: 0; }
+	.tp-leg-gray { background: #cbd5e1; }
+	.tp-leg-delta { margin-left: auto; font-size: 13px; font-weight: 800; letter-spacing: -0.4px; }
 </style>
