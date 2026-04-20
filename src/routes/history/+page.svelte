@@ -205,20 +205,20 @@
 	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
 
 	const stats = $derived.by(() => {
-		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number; date: string }[] }> = {};
+		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number; date: string; testNumber: number }[] }> = {};
 		secs.filter(s => s !== 'Complete Tests').forEach(sc => {
 			const all = data.filter(s => s.section === sc);
 			const ws  = all.filter(s => s.scoreAvailable && s.score !== null);
 			const avg  = ws.length ? roundHalf(ws.reduce((a, s) => a + (s.score as number), 0) / ws.length) : null;
 			const best = ws.length ? Math.max(...ws.map(s => s.score as number)) : null;
-			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number, date: s.date as string }));
+			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number, date: s.date as string, testNumber: s.testNumber as number }));
 			o[sc] = { avg, best, count: all.length, aiCount: ws.length, trend };
 		});
 		const ctFiltered = mode === 'all' ? COMPLETE : mode === 'test' ? COMPLETE : [];
 		const scored = ctFiltered.filter(t => t.composite !== null);
 		const avg  = scored.length ? roundHalf(scored.reduce((a, t) => a + (t.composite as number), 0) / scored.length) : null;
 		const best = scored.length ? Math.max(...scored.map(t => t.composite as number)) : null;
-		const trend = [...scored].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(t => ({ v: t.composite as number, date: t.date as string }));
+		const trend = [...scored].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(t => ({ v: t.composite as number, date: t.date as string, testNumber: t.testNumber as number }));
 		o['Complete Tests'] = { avg, best, count: ctFiltered.length, aiCount: scored.length, trend };
 		return o;
 	});
@@ -253,12 +253,15 @@
 	const isComplete     = $derived(sec === 'Complete Tests');
 	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st             = $derived(stats[sec]);
-	const trendData      = $derived(buildTrend(st.trend.slice(-10), st.avg));
+	// Trend filtered by testFilter (all tests or just the selected one)
+	const trendAllPts    = $derived(testFilter === 'all' ? st.trend : st.trend.filter(p => p.testNumber === (testFilter as number)));
+	const trendAllAvg    = $derived(trendAllPts.length ? roundHalf(trendAllPts.reduce((a, p) => a + p.v, 0) / trendAllPts.length) : null);
+	const trendData      = $derived(buildTrend(trendAllPts.slice(-10), trendAllAvg));
 	const trendPopupData = $derived.by(() => {
-		const pts = st.trend.slice(-10);
+		const pts = trendAllPts.slice(-10);
 		if (pts.length < 2) return null;
 		const last10avg   = roundHalf(pts.reduce((a, p) => a + p.v, 0) / pts.length);
-		const allTimeAvg  = st.avg;
+		const allTimeAvg  = trendAllAvg;
 		const diff        = allTimeAvg !== null ? roundHalf(last10avg - allTimeAvg) : null;
 		const color       = diff === null || diff >= 0 ? '#00b189' : '#ff5859';
 		const CW = 400, CH = 160, pL = 32, pR = 14, pT = 16, pB = 32;
