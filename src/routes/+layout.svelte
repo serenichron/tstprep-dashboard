@@ -31,7 +31,7 @@
 </script>
 
 <!-- ─── Sticky Header ──────────────────────────────────────────────────────── -->
-<header class="fixed top-0 inset-x-0 h-14 bg-white border-b border-gray-100 z-50 flex items-center px-4 gap-3 shadow-sm">
+<header class="fixed top-0 inset-x-0 h-14 bg-white border-b border-gray-100 z-50 flex items-center px-4 gap-3">
 
 	<!-- Sidebar toggle — mobile only (desktop uses the in-sidebar button) -->
 	<button
