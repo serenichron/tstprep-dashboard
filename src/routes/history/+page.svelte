@@ -160,29 +160,26 @@
 	}
 
 	/* ─── State ─── */
-	const secs = ['Reading', 'Listening', 'Writing', 'Speaking', 'Complete Tests'];
-	const GRID_TESTS = 15; // 3 cols × 5 rows
+	const secs = ['Complete Tests', 'Reading', 'Listening', 'Writing', 'Speaking'];
 	const PAGE_SIZE  = 20;
 	let mode       = $state<'all' | 'test' | 'practice'>('all');
 	let sec        = $state('Reading');
-	let viewBy     = $state<'test' | 'date'>('date');
+	let testFilter = $state<number | 'all'>('all');
 	let datePage   = $state(1);
-	let cardLoaded = $state<Record<string, boolean>>({});
-	let cardShown  = $state<Record<string, number>>({});
-	let groupOpen  = $state(false);
 	let modeOpen   = $state(false);
+	let testOpen   = $state(false);
 
-	const groupOptions = [
-		{ value: 'date' as const,  label: 'By Date' },
-		{ value: 'test' as const,  label: 'By Test Number' },
-	];
 	const modeOptions = [
 		{ value: 'all'      as const, label: 'All' },
 		{ value: 'test'     as const, label: 'Test Mode' },
 		{ value: 'practice' as const, label: 'Practice Mode' },
 	];
-	const groupLabel = $derived(groupOptions.find(o => o.value === viewBy)!.label);
-	const modeLabel  = $derived(modeOptions.find(o => o.value === mode)!.label);
+	const testOptions: { value: number | 'all'; label: string }[] = [
+		{ value: 'all', label: 'All' },
+		...Array.from({length: 15}, (_, i) => ({ value: i + 1, label: String(i + 1) }))
+	];
+	const modeLabel = $derived(modeOptions.find(o => o.value === mode)!.label);
+	const testLabel = $derived(testFilter === 'all' ? 'All' : String(testFilter));
 
 	/* ─── Derived — section stats ─── */
 	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
@@ -197,7 +194,6 @@
 			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number }));
 			o[sc] = { avg, best, count: all.length, aiCount: ws.length, trend };
 		});
-		// Complete Tests stats
 		const ctFiltered = mode === 'all' ? COMPLETE : mode === 'test' ? COMPLETE : [];
 		const scored = ctFiltered.filter(t => t.composite !== null);
 		const avg  = scored.length ? roundHalf(scored.reduce((a, t) => a + (t.composite as number), 0) / scored.length) : null;
@@ -218,22 +214,15 @@
 		data.filter(s => s.section === sec)
 			.sort((a, b) => a.testNumber !== b.testNumber ? a.testNumber - b.testNumber : new Date(b.date).getTime() - new Date(a.date).getTime())
 	);
-	const groups = $derived.by(() => {
-		const g: Record<string, typeof rows> = {};
-		rows.forEach(s => { if (!g[s.testNumber]) g[s.testNumber] = []; g[s.testNumber].push(s); });
-		return g;
-	});
 	const byDateRows = $derived([...rows].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
 	/* ─── Derived — complete test rows ─── */
-	const ctData = $derived(mode === 'practice' ? [] : COMPLETE);
-	const ctGroups = $derived.by(() => {
-		const g: Record<number, CompleteSub[]> = {};
-		[...ctData].sort((a, b) => a.testNumber - b.testNumber || new Date(b.date).getTime() - new Date(a.date).getTime())
-			.forEach(t => { if (!g[t.testNumber]) g[t.testNumber] = []; g[t.testNumber].push(t); });
-		return g;
-	});
+	const ctData   = $derived(mode === 'practice' ? [] : COMPLETE);
 	const ctByDate = $derived([...ctData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
+	/* ─── Derived — test-number filter ─── */
+	const filteredByDate   = $derived(testFilter === 'all' ? byDateRows : byDateRows.filter(s => s.testNumber === (testFilter as number)));
+	const filteredCtByDate = $derived(testFilter === 'all' ? ctByDate   : ctByDate.filter(t => t.testNumber  === (testFilter as number)));
 
 	/* ─── Derived — panel helpers ─── */
 	const isComplete     = $derived(sec === 'Complete Tests');
@@ -246,28 +235,35 @@
 	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeScore as number) - 1) / 5) * TA);
 	const gaugeBest      = $derived(isComplete ? st.best : genBest);
 
-	// Paginated date view
-	const pagedDateRows  = $derived(byDateRows.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
-	const totalDatePages = $derived(Math.ceil(byDateRows.length / PAGE_SIZE) || 1);
-	const pagedCtRows    = $derived(ctByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
-	const totalCtPages   = $derived(Math.ceil(ctByDate.length / PAGE_SIZE) || 1);
+	// Paginated date view (uses filtered rows)
+	const pagedDateRows  = $derived(filteredByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
+	const totalDatePages = $derived(Math.ceil(filteredByDate.length / PAGE_SIZE) || 1);
+	const pagedCtRows    = $derived(filteredCtByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
+	const totalCtPages   = $derived(Math.ceil(filteredCtByDate.length / PAGE_SIZE) || 1);
 
-	// Reset pagination when section, mode or view changes
-	$effect(() => {
-		void sec; void mode; void viewBy;
-		datePage = 1;
+	// Stats for the selected test shown in the section bar
+	const selectedTestStats = $derived.by(() => {
+		if (testFilter === 'all') return null;
+		const n = testFilter as number;
+		if (isComplete) {
+			const r  = ctData.filter(t => t.testNumber === n);
+			const sc = r.filter(t => t.composite !== null);
+			return {
+				avg:  sc.length ? roundHalf(sc.reduce((a, t) => a + (t.composite as number), 0) / sc.length) : null,
+				best: sc.length ? Math.max(...sc.map(t => t.composite as number)) : null,
+			};
+		}
+		const r  = data.filter(s => s.section === sec && s.testNumber === n);
+		const sc = r.filter(s => s.scoreAvailable && s.score !== null);
+		return {
+			avg:  sc.length ? roundHalf(sc.reduce((a, s) => a + (s.score as number), 0) / sc.length) : null,
+			best: sc.length ? Math.max(...sc.map(s => s.score as number)) : null,
+		};
 	});
 
-	// Persist viewBy across in-session navigation (resets on full page refresh)
-	$effect(() => {
-		const saved = sessionStorage.getItem('historyViewBy');
-		if (saved === 'test' || saved === 'date') viewBy = saved;
-	});
-	$effect(() => { sessionStorage.setItem('historyViewBy', viewBy); });
-
-	// Lazy-load helpers
-	function loadTestHistory(key: string) { cardLoaded[key] = true; cardShown[key] = 5; }
-	function loadMoreTest(key: string)    { cardShown[key] = (cardShown[key] ?? 5) + 5; }
+	// Reset testFilter when section changes; reset datePage when any filter changes
+	$effect(() => { void sec; testFilter = 'all'; });
+	$effect(() => { void sec; void mode; void testFilter; datePage = 1; });
 </script>
 
 <svelte:head>
@@ -314,7 +310,7 @@
 			{#each secs as sc}
 				{@const s = stats[sc]}
 				{@const act = sec === sc}
-				<button class="ov-card ov-sec" class:active={act} onclick={() => (sec = sc)}>
+				<button class="ov-card ov-sec" class:active={act} class:ov-complete={sc === 'Complete Tests'} onclick={() => (sec = sc)}>
 					{#if act}<div class="ov-bar"></div>{/if}
 					<div class="ov-head">
 						<div class="ov-icon" class:active={act}>
@@ -348,9 +344,24 @@
 				</div>
 				<span class="sb-name">{sec}</span>
 				<span class="sb-dot">·</span>
-				<span class="sb-count">{st.count} {isComplete ? 'attempt' : 'submission'}{st.count !== 1 ? 's' : ''}</span>
+				<span class="sb-count">
+					{isComplete ? filteredCtByDate.length : filteredByDate.length}
+					{isComplete ? 'attempt' : 'submission'}{(isComplete ? filteredCtByDate.length : filteredByDate.length) !== 1 ? 's' : ''}
+				</span>
 				{#if isComplete && st.aiCount < st.count}<span class="sb-ai">· {st.aiCount} fully scored</span>{/if}
 				{#if !isComplete && needsAI}<span class="sb-ai">· {st.aiCount} AI-graded</span>{/if}
+				{#if testFilter !== 'all' && selectedTestStats}
+					<span class="sb-dot">·</span>
+					<span class="sb-test-info">
+						Test #{testFilter}
+						{#if selectedTestStats.avg !== null}
+							· Avg <b style="color:{scoreColor(selectedTestStats.avg)}">{fmtScore(selectedTestStats.avg)}/6</b>
+							· Best <b style="color:{scoreColor(selectedTestStats.best!)}">{fmtScore(selectedTestStats.best!)}/6</b>
+						{:else}
+							· No scored submissions
+						{/if}
+					</span>
+				{/if}
 			</div>
 			<div class="sb-trend">
 				{#if trendData}
@@ -372,18 +383,18 @@
 			</div>
 			<div class="sb-sep-v"></div>
 			<div class="sb-right">
-				<!-- Group dropdown -->
-				<span class="sb-ctrl-label">Group</span>
-				<div class="dd-wrap" class:open={groupOpen}>
-					<button class="dd-trigger" onclick={() => { groupOpen = !groupOpen; modeOpen = false; }}>
-						{groupLabel}
+				<!-- Test no. dropdown -->
+				<span class="sb-ctrl-label">Test no.</span>
+				<div class="dd-wrap" class:open={testOpen}>
+					<button class="dd-trigger" onclick={() => { testOpen = !testOpen; modeOpen = false; }}>
+						{testLabel}
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 					</button>
-					{#if groupOpen}
+					{#if testOpen}
 						<div class="dd-panel">
-							{#each groupOptions as opt}
-								<button class="dd-item" class:sel={viewBy === opt.value}
-									onclick={() => { viewBy = opt.value; groupOpen = false; }}>
+							{#each testOptions as opt}
+								<button class="dd-item" class:sel={testFilter === opt.value}
+									onclick={() => { testFilter = opt.value; testOpen = false; }}>
 									{opt.label}
 								</button>
 							{/each}
@@ -393,7 +404,7 @@
 				<!-- Mode dropdown -->
 				<span class="sb-ctrl-label">Mode</span>
 				<div class="dd-wrap" class:open={modeOpen}>
-					<button class="dd-trigger" onclick={() => { modeOpen = !modeOpen; groupOpen = false; }}>
+					<button class="dd-trigger" onclick={() => { modeOpen = !modeOpen; testOpen = false; }}>
 						{modeLabel}
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 					</button>
@@ -410,9 +421,8 @@
 				</div>
 			</div>
 		</div>
-		<!-- click-outside backdrop for dropdowns -->
-		{#if groupOpen || modeOpen}
-			<div class="dd-backdrop" onclick={() => { groupOpen = false; modeOpen = false; }}></div>
+		{#if testOpen || modeOpen}
+			<div class="dd-backdrop" onclick={() => { testOpen = false; modeOpen = false; }}></div>
 		{/if}
 	</div>
 
@@ -421,209 +431,64 @@
 
 		<!-- ═══ SECTION VIEW (Reading / Listening / Writing / Speaking) ═══ -->
 		{#if !isComplete}
-
-			{#if viewBy === 'date'}
-				<!-- ── By Date: paginated flat list ── -->
-				{#if byDateRows.length === 0}
-					<div class="empty"><div class="empty-icon">📝</div><div class="empty-title">No {sec.toLowerCase()} submissions yet</div><div class="empty-sub">Complete a practice test to see results here</div></div>
-				{:else}
-					<div class="date-list-card">
-					{#each pagedDateRows as sub, i}
-						<div class="sub-row" class:alt={i % 2 !== 0}>
-							<div class="sub-info wide">
-								<span class="test-pill">Test #{sub.testNumber}</span>
-								<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
-								<span class="badge" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test Mode':'Practice Mode'}</span>
-								{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
-							</div>
-							<div class="sub-score">
-								{#if sub.score===null}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">N/A</span>
-								{:else}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div><span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>{/if}
-							</div>
-							<div class="sub-details">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
-							<button class="view-btn-row">View →</button>
+			{#if filteredByDate.length === 0}
+				<div class="empty"><div class="empty-icon">📝</div><div class="empty-title">No {sec.toLowerCase()} submissions{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div><div class="empty-sub">Complete a practice test to see results here</div></div>
+			{:else}
+				<div class="date-list-card">
+				{#each pagedDateRows as sub, i}
+					<div class="sub-row" class:alt={i % 2 !== 0}>
+						<div class="sub-info wide">
+							<span class="test-pill">Test #{sub.testNumber}</span>
+							<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
+							<span class="badge" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test Mode':'Practice Mode'}</span>
+							{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
 						</div>
-					{/each}
-					{#if totalDatePages > 1}
-						<div class="pagination">
-							<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
-							<span class="pg-info">Page {datePage} of {totalDatePages} · {byDateRows.length} submissions</span>
-							<button class="pg-btn" disabled={datePage===totalDatePages} onclick={() => datePage++}>Next →</button>
+						<div class="sub-score">
+							{#if sub.score===null}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">N/A</span>
+							{:else}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div><span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>{/if}
 						</div>
-					{/if}
+						<div class="sub-details">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
+						<button class="view-btn-row">View →</button>
+					</div>
+				{/each}
+				{#if totalDatePages > 1}
+					<div class="pagination">
+						<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
+						<span class="pg-info">Page {datePage} of {totalDatePages} · {filteredByDate.length} submissions</span>
+						<button class="pg-btn" disabled={datePage===totalDatePages} onclick={() => datePage++}>Next →</button>
 					</div>
 				{/if}
-
-			{:else}
-				<!-- ── By Test Number: 3×5 card grid ── -->
-				<div class="test-grid">
-					{#each Array.from({length: GRID_TESTS}, (_, i) => i + 1) as num}
-						{@const cardSubs = data.filter(s => s.section === sec && s.testNumber === num).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-						{@const scored   = cardSubs.filter(s => s.scoreAvailable && s.score !== null)}
-						{@const cardAvg  = scored.length ? roundHalf(scored.reduce((a,s) => a+(s.score as number),0)/scored.length) : null}
-						{@const cardBest = scored.length ? Math.max(...scored.map(s => s.score as number)) : null}
-						{@const key      = sec + '_' + num}
-						{@const loaded   = cardLoaded[key]}
-						{@const shown    = cardShown[key] ?? 5}
-						<div class="tc">
-							<div class="tc-head">
-								<div class="tc-title-row">
-									<span class="tc-num">Test #{num}</span>
-									<span class="tc-attempts">{cardSubs.length} attempt{cardSubs.length!==1?'s':''}</span>
-								</div>
-								<div class="tc-stats">
-									{#if cardAvg !== null}
-										<span class="tc-stat">Avg <b style="color:{scoreColor(cardAvg)}">{fmtScore(cardAvg)}/6</b></span>
-										<span class="tc-sep">·</span>
-										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
-									{:else if cardSubs.length > 0}
-										<span class="tc-stat-na">No graded submissions</span>
-									{:else}
-										<span class="tc-stat-na">No attempts yet</span>
-									{/if}
-								</div>
-							</div>
-							<div class="tc-body">
-								{#if cardSubs.length === 0}
-									<div class="tc-empty">No attempts for this test yet</div>
-								{:else if !loaded}
-									<button class="tc-overlay" onclick={() => loadTestHistory(key)}>
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-										<span>Load history</span>
-									</button>
-								{:else}
-									{#each cardSubs.slice(0, shown) as sub}
-										<div class="tc-sub">
-											<div class="tc-sub-body">
-												<div class="tc-l1">
-													<span class="tc-date">{fmtD(sub.date)}</span>
-													<span class="tc-time">{fmtT(sub.date)}</span>
-													<span class="badge sm" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test':'Practice'}</span>
-													{#if !sub.scoreAvailable}<span class="badge sm ai-off">AI off</span>{/if}
-												</div>
-												<div class="tc-l2">
-													{#if sub.score===null}
-														<span class="na-label">N/A</span>
-													{:else}
-														<div class="bar-track tc-bar"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div>
-														<span class="tc-score" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
-													{/if}
-												</div>
-												<div class="tc-pills">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill xs" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
-											</div>
-											<button class="tc-view">View →</button>
-										</div>
-									{/each}
-									{#if shown < cardSubs.length}
-										<button class="tc-load-more" onclick={() => loadMoreTest(key)}>Load {Math.min(5, cardSubs.length - shown)} more</button>
-									{/if}
-								{/if}
-							</div>
-						</div>
-					{/each}
 				</div>
 			{/if}
 
 		<!-- ═══ COMPLETE TESTS VIEW ═══ -->
 		{:else}
-
-			{#if viewBy === 'date'}
-				<!-- ── By Date: paginated flat list ── -->
-				{#if ctByDate.length === 0}
-					<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-title">No complete test attempts yet</div><div class="empty-sub">Take a full 4-section practice test to see results here</div></div>
-				{:else}
-					<div class="date-list-card">
-					{#each pagedCtRows as t, i}
-						<div class="sub-row" class:alt={i % 2 !== 0}>
-							<div class="sub-info wide">
-								<span class="test-pill">Test #{t.testNumber}</span>
-								<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
-								<span class="sub-date" style="color:#bbb">{t.duration}</span>
-							</div>
-							<div class="sec-chips">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
-							<div class="sub-score">
-								{#if t.composite!==null}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div><span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-								{:else}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">Pending</span>{/if}
-							</div>
-							<button class="view-btn-row">View →</button>
+			{#if filteredCtByDate.length === 0}
+				<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-title">No complete test attempts{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div><div class="empty-sub">Take a full 4-section practice test to see results here</div></div>
+			{:else}
+				<div class="date-list-card">
+				{#each pagedCtRows as t, i}
+					<div class="sub-row" class:alt={i % 2 !== 0}>
+						<div class="sub-info wide">
+							<span class="test-pill">Test #{t.testNumber}</span>
+							<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
+							<span class="sub-date" style="color:#bbb">{t.duration}</span>
 						</div>
-					{/each}
-					{#if totalCtPages > 1}
-						<div class="pagination">
-							<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
-							<span class="pg-info">Page {datePage} of {totalCtPages} · {ctByDate.length} attempts</span>
-							<button class="pg-btn" disabled={datePage===totalCtPages} onclick={() => datePage++}>Next →</button>
+						<div class="sec-chips">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
+						<div class="sub-score">
+							{#if t.composite!==null}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div><span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
+							{:else}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">Pending</span>{/if}
 						</div>
-					{/if}
+						<button class="view-btn-row">View →</button>
+					</div>
+				{/each}
+				{#if totalCtPages > 1}
+					<div class="pagination">
+						<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
+						<span class="pg-info">Page {datePage} of {totalCtPages} · {filteredCtByDate.length} attempts</span>
+						<button class="pg-btn" disabled={datePage===totalCtPages} onclick={() => datePage++}>Next →</button>
 					</div>
 				{/if}
-
-			{:else}
-				<!-- ── By Test Number: 3×5 card grid (Complete Tests) ── -->
-				<div class="test-grid">
-					{#each Array.from({length: GRID_TESTS}, (_, i) => i + 1) as num}
-						{@const cardSubs = ctData.filter(t => t.testNumber === num).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-						{@const scored   = cardSubs.filter(t => t.composite !== null)}
-						{@const cardAvg  = scored.length ? roundHalf(scored.reduce((a,t) => a+(t.composite as number),0)/scored.length) : null}
-						{@const cardBest = scored.length ? Math.max(...scored.map(t => t.composite as number)) : null}
-						{@const key      = 'ct_' + num}
-						{@const loaded   = cardLoaded[key]}
-						{@const shown    = cardShown[key] ?? 5}
-						<div class="tc">
-							<div class="tc-head">
-								<div class="tc-title-row">
-									<span class="tc-num">Test #{num}</span>
-									<span class="tc-attempts">{cardSubs.length} attempt{cardSubs.length!==1?'s':''}</span>
-								</div>
-								<div class="tc-stats">
-									{#if cardAvg !== null}
-										<span class="tc-stat">Comp avg <b style="color:{scoreColor(cardAvg)}">{fmtScore(cardAvg)}/6</b></span>
-										<span class="tc-sep">·</span>
-										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
-									{:else if cardSubs.length > 0}
-										<span class="tc-stat-na">No graded submissions</span>
-									{:else}
-										<span class="tc-stat-na">No attempts yet</span>
-									{/if}
-								</div>
-							</div>
-							<div class="tc-body">
-								{#if cardSubs.length === 0}
-									<div class="tc-empty">No attempts for this test yet</div>
-								{:else if !loaded}
-									<button class="tc-overlay" onclick={() => loadTestHistory(key)}>
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-										<span>Load history</span>
-									</button>
-								{:else}
-									{#each cardSubs.slice(0, shown) as t}
-										<div class="tc-sub">
-											<div class="tc-sub-body">
-												<div class="tc-l1">
-													<span class="tc-date">{fmtD(t.date)}</span>
-													<span class="tc-time">{fmtT(t.date)}</span>
-													<span class="sub-date" style="color:#bbb;font-size:10px">{t.duration}</span>
-												</div>
-												<div class="tc-l2">
-													{#if t.composite!==null}
-														<div class="bar-track tc-bar"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div>
-														<span class="tc-score" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-													{:else}
-														<span class="na-label">Pending</span>
-													{/if}
-												</div>
-												<div class="tc-pills">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip xs" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
-											</div>
-											<button class="tc-view">View →</button>
-										</div>
-									{/each}
-									{#if shown < cardSubs.length}
-										<button class="tc-load-more" onclick={() => loadMoreTest(key)}>Load {Math.min(5, cardSubs.length - shown)} more</button>
-									{/if}
-								{/if}
-							</div>
-						</div>
-					{/each}
 				</div>
 			{/if}
 		{/if}
@@ -669,6 +534,8 @@
 	/* Section cards */
 	.ov-sec { border: 2px solid transparent; cursor: pointer; text-align: left; font-family: inherit; transition: all .15s; }
 	.ov-sec.active { border-color: #00b189; box-shadow: 0 3px 12px rgba(0,177,137,.12); }
+	.ov-sec.ov-complete { background: linear-gradient(135deg, #f0fdf9 0%, #fff 60%); border: 1.5px solid rgba(0,177,137,.15); }
+	.ov-sec.ov-complete.active { background: #f0fdf9; border-color: #00b189; }
 	.ov-sec:hover:not(.active) { background: #f8f8f8; }
 	.ov-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #00b189; }
 	.ov-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
@@ -750,6 +617,7 @@
 	.sb-dot { color: #ddd; font-size: 12px; }
 	.sb-count { font-size: 11px; color: #999; white-space: nowrap; }
 	.sb-ai { font-size: 11px; color: #999; white-space: nowrap; }
+	.sb-test-info { font-size: 11px; color: #666; white-space: nowrap; }
 	.sb-trend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 	.sb-diff { font-size: 11px; font-weight: 700; white-space: nowrap; }
 	.sb-no-trend { font-size: 10px; color: #ccc; font-style: italic; }
