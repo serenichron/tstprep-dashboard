@@ -204,7 +204,12 @@
 	});
 
 	const allAvg   = $derived((['Reading','Listening','Writing','Speaking'] as const).map(s => stats[s].avg));
-	const genScore = $derived(allAvg.every(v => v !== null) ? roundHalf((allAvg as number[]).reduce((a, b) => a + b, 0) / 4) : null);
+	const secAvg   = $derived(allAvg.every(v => v !== null) ? roundHalf((allAvg as number[]).reduce((a, b) => a + b, 0) / 4) : null);
+	const ctAvg    = $derived(stats['Complete Tests'].avg);
+	const genScore = $derived(
+		secAvg !== null && ctAvg !== null ? roundHalf((secAvg + ctAvg) / 2) :
+		secAvg !== null ? secAvg : null
+	);
 	const genBest  = $derived((['Reading','Listening','Writing','Speaking'] as const).every(s => stats[s].best !== null)
 		? roundHalf((['Reading','Listening','Writing','Speaking'] as const).reduce((a, s) => a + (stats[s].best as number), 0) / 4)
 		: null);
@@ -229,11 +234,11 @@
 	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st             = $derived(stats[sec]);
 	const trendData      = $derived(buildTrend(st.trend.slice(-10)));
-	const gaugeScore     = $derived(isComplete ? st.avg : genScore);
+	const gaugeScore     = $derived(genScore);
 	const gaugeNA        = $derived(gaugeScore === null || gaugeScore === undefined);
 	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
 	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeScore as number) - 1) / 5) * TA);
-	const gaugeBest      = $derived(isComplete ? st.best : genBest);
+	const gaugeBest      = $derived(genBest);
 
 	// Paginated date view (uses filtered rows)
 	const pagedDateRows  = $derived(filteredByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
@@ -505,7 +510,7 @@
 	.dashboard { font-family: 'DM Sans', sans-serif; padding: 0 32px 28px; color: #222; }
 
 	/* ── Sticky header ── */
-	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 0 0; margin-bottom: 14px; }
+	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 32px 0; margin: 0 -32px 14px; border-bottom: 1px solid #ebebeb; }
 
 	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 	h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
@@ -702,7 +707,7 @@
 
 	@media (max-width: 767px) {
 		.dashboard { padding: 0 16px 20px; }
-		.sticky-header { top: 56px; padding: 10px 0 0; }
+		.sticky-header { top: 56px; padding: 10px 16px 0; margin: 0 -16px 14px; }
 		h1 { font-size: 18px; }
 		.header { flex-direction: column; align-items: flex-start; gap: 10px; }
 		.overview-row { grid-template-columns: repeat(3, 1fr); }
