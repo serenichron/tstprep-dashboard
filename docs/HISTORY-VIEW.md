@@ -7,6 +7,8 @@ This document describes the design, data model, state management, and component 
 - `src/routes/history/+page.svelte` — all UI, state, and inline mock data
 - `src/routes/history/+page.ts` — sets `prerender = true`
 
+> **Note:** All data in this view is currently mock (hardcoded in `+page.svelte`). When the LearnDash REST API is wired up, `MOCK` and `COMPLETE` will be replaced by API responses — see [CONTENT-STRUCTURE.md](./CONTENT-STRUCTURE.md) for the endpoint reference.
+
 ---
 
 ## Purpose
