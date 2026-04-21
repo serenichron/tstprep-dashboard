@@ -65,6 +65,21 @@
 		{ id:'l20', section:'Listening', testNumber:7, mode:'test',     score:5.0, scoreAvailable:true, date:'2026-04-07T10:00:00', details:{'Part 1':'14/14','Part 2':'13/14'} },
 		{ id:'l21', section:'Listening', testNumber:7, mode:'practice', score:4.5, scoreAvailable:true, date:'2026-04-11T11:00:00', details:{'Part 1':'13/14','Part 2':'12/14'} },
 		// ── Writing ──
+		{ id:'wh0',  section:'Writing', testNumber:1, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-08-10T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh1',  section:'Writing', testNumber:2, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-08-24T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh2',  section:'Writing', testNumber:3, mode:'test',     score:5.5, scoreAvailable:true, date:'2024-09-07T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
+		{ id:'wh3',  section:'Writing', testNumber:4, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-09-21T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh4',  section:'Writing', testNumber:5, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-10-05T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh5',  section:'Writing', testNumber:6, mode:'test',     score:5.5, scoreAvailable:true, date:'2024-10-19T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
+		{ id:'wh6',  section:'Writing', testNumber:7, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-11-02T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh7',  section:'Writing', testNumber:8, mode:'test',     score:6.0, scoreAvailable:true, date:'2024-11-16T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
+		{ id:'wh8',  section:'Writing', testNumber:1, mode:'practice', score:5.0, scoreAvailable:true, date:'2024-11-30T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh9',  section:'Writing', testNumber:2, mode:'practice', score:5.5, scoreAvailable:true, date:'2024-12-14T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
+		{ id:'wh10', section:'Writing', testNumber:3, mode:'test',     score:5.0, scoreAvailable:true, date:'2025-01-11T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh11', section:'Writing', testNumber:4, mode:'test',     score:5.5, scoreAvailable:true, date:'2025-01-25T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
+		{ id:'wh12', section:'Writing', testNumber:5, mode:'test',     score:5.0, scoreAvailable:true, date:'2025-02-08T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh13', section:'Writing', testNumber:6, mode:'test',     score:5.0, scoreAvailable:true, date:'2025-02-22T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
+		{ id:'wh14', section:'Writing', testNumber:7, mode:'test',     score:5.5, scoreAvailable:true, date:'2025-03-08T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
 		{ id:'w0', section:'Writing', testNumber:1, mode:'test',     score:3.0,  scoreAvailable:true,  date:'2026-01-14T10:30:00', details:{'Build a Sentence':'6/10','Write an Email':'3/5','Academic Discussion':'2/5'} },
 		{ id:'w1', section:'Writing', testNumber:1, mode:'practice', score:null, scoreAvailable:false, date:'2026-01-22T14:00:00', details:{'Build a Sentence':'7/10','Write an Email':'not graded','Academic Discussion':'not graded'} },
 		{ id:'w2', section:'Writing', testNumber:2, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-02-08T09:30:00', details:{'Build a Sentence':'7/10','Write an Email':'3/5','Academic Discussion':'3/5'} },
@@ -141,7 +156,7 @@
 	const TA = EA - SA;
 
 	/* ─── Trend helper ─── */
-	function buildTrend(pts: { v: number }[]) {
+	function buildTrend(pts: { v: number }[], allTimeAvg?: number | null) {
 		if (!pts || pts.length < 2) return null;
 		const W = 180, H = 42, px = 4, py = 4;
 		const mn = 0.5, mx = 6.5;
@@ -150,7 +165,10 @@
 			y: py + (1 - (p.v - mn) / (mx - mn)) * (H - py * 2)
 		}));
 		const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ');
-		const diff  = roundHalf(pts[pts.length - 1].v - pts[0].v);
+		const last10avg = pts.reduce((a, p) => a + p.v, 0) / pts.length;
+		const diff  = allTimeAvg != null
+			? roundHalf(last10avg - allTimeAvg)
+			: roundHalf(pts[pts.length - 1].v - pts[0].v);
 		const color = diff >= 0 ? '#00b189' : '#ff5859';
 		return {
 			W, H, coords, d, color,
@@ -160,55 +178,58 @@
 	}
 
 	/* ─── State ─── */
-	const secs = ['Reading', 'Listening', 'Writing', 'Speaking', 'Complete Tests'];
-	const GRID_TESTS = 15; // 3 cols × 5 rows
+	const secs = ['Complete Tests', 'Reading', 'Listening', 'Writing', 'Speaking'];
 	const PAGE_SIZE  = 20;
 	let mode       = $state<'all' | 'test' | 'practice'>('all');
 	let sec        = $state('Reading');
-	let viewBy     = $state<'test' | 'date'>('date');
+	let testFilter = $state<number | 'all'>('all');
 	let datePage   = $state(1);
-	let cardLoaded = $state<Record<string, boolean>>({});
-	let cardShown  = $state<Record<string, number>>({});
-	let groupOpen  = $state(false);
 	let modeOpen   = $state(false);
+	let testOpen   = $state(false);
+	let trendOpen  = $state(false);
+	let trendHovIdx = $state<number | null>(null);
 
-	const groupOptions = [
-		{ value: 'date' as const,  label: 'By Date' },
-		{ value: 'test' as const,  label: 'By Test Number' },
-	];
 	const modeOptions = [
 		{ value: 'all'      as const, label: 'All' },
 		{ value: 'test'     as const, label: 'Test Mode' },
 		{ value: 'practice' as const, label: 'Practice Mode' },
 	];
-	const groupLabel = $derived(groupOptions.find(o => o.value === viewBy)!.label);
-	const modeLabel  = $derived(modeOptions.find(o => o.value === mode)!.label);
+	const testOptions: { value: number | 'all'; label: string }[] = [
+		{ value: 'all', label: 'All' },
+		...Array.from({length: 15}, (_, i) => ({ value: i + 1, label: String(i + 1) }))
+	];
+	const modeLabel = $derived(modeOptions.find(o => o.value === mode)!.label);
+	const testLabel = $derived(testFilter === 'all' ? 'All' : String(testFilter));
 
 	/* ─── Derived — section stats ─── */
 	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
 
 	const stats = $derived.by(() => {
-		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number }[] }> = {};
+		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number; date: string; testNumber: number }[] }> = {};
 		secs.filter(s => s !== 'Complete Tests').forEach(sc => {
 			const all = data.filter(s => s.section === sc);
 			const ws  = all.filter(s => s.scoreAvailable && s.score !== null);
 			const avg  = ws.length ? roundHalf(ws.reduce((a, s) => a + (s.score as number), 0) / ws.length) : null;
 			const best = ws.length ? Math.max(...ws.map(s => s.score as number)) : null;
-			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number }));
+			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number, date: s.date as string, testNumber: s.testNumber as number }));
 			o[sc] = { avg, best, count: all.length, aiCount: ws.length, trend };
 		});
-		// Complete Tests stats
 		const ctFiltered = mode === 'all' ? COMPLETE : mode === 'test' ? COMPLETE : [];
 		const scored = ctFiltered.filter(t => t.composite !== null);
 		const avg  = scored.length ? roundHalf(scored.reduce((a, t) => a + (t.composite as number), 0) / scored.length) : null;
 		const best = scored.length ? Math.max(...scored.map(t => t.composite as number)) : null;
-		const trend = [...scored].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(t => ({ v: t.composite as number }));
+		const trend = [...scored].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(t => ({ v: t.composite as number, date: t.date as string, testNumber: t.testNumber as number }));
 		o['Complete Tests'] = { avg, best, count: ctFiltered.length, aiCount: scored.length, trend };
 		return o;
 	});
 
 	const allAvg   = $derived((['Reading','Listening','Writing','Speaking'] as const).map(s => stats[s].avg));
-	const genScore = $derived(allAvg.every(v => v !== null) ? roundHalf((allAvg as number[]).reduce((a, b) => a + b, 0) / 4) : null);
+	const secAvg   = $derived(allAvg.every(v => v !== null) ? roundHalf((allAvg as number[]).reduce((a, b) => a + b, 0) / 4) : null);
+	const ctAvg    = $derived(stats['Complete Tests'].avg);
+	const genScore = $derived(
+		secAvg !== null && ctAvg !== null ? roundHalf((secAvg + ctAvg) / 2) :
+		secAvg !== null ? secAvg : null
+	);
 	const genBest  = $derived((['Reading','Listening','Writing','Speaking'] as const).every(s => stats[s].best !== null)
 		? roundHalf((['Reading','Listening','Writing','Speaking'] as const).reduce((a, s) => a + (stats[s].best as number), 0) / 4)
 		: null);
@@ -218,56 +239,87 @@
 		data.filter(s => s.section === sec)
 			.sort((a, b) => a.testNumber !== b.testNumber ? a.testNumber - b.testNumber : new Date(b.date).getTime() - new Date(a.date).getTime())
 	);
-	const groups = $derived.by(() => {
-		const g: Record<string, typeof rows> = {};
-		rows.forEach(s => { if (!g[s.testNumber]) g[s.testNumber] = []; g[s.testNumber].push(s); });
-		return g;
-	});
 	const byDateRows = $derived([...rows].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
 	/* ─── Derived — complete test rows ─── */
-	const ctData = $derived(mode === 'practice' ? [] : COMPLETE);
-	const ctGroups = $derived.by(() => {
-		const g: Record<number, CompleteSub[]> = {};
-		[...ctData].sort((a, b) => a.testNumber - b.testNumber || new Date(b.date).getTime() - new Date(a.date).getTime())
-			.forEach(t => { if (!g[t.testNumber]) g[t.testNumber] = []; g[t.testNumber].push(t); });
-		return g;
-	});
+	const ctData   = $derived(mode === 'practice' ? [] : COMPLETE);
 	const ctByDate = $derived([...ctData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
+	/* ─── Derived — test-number filter ─── */
+	const filteredByDate   = $derived(testFilter === 'all' ? byDateRows : byDateRows.filter(s => s.testNumber === (testFilter as number)));
+	const filteredCtByDate = $derived(testFilter === 'all' ? ctByDate   : ctByDate.filter(t => t.testNumber  === (testFilter as number)));
 
 	/* ─── Derived — panel helpers ─── */
 	const isComplete     = $derived(sec === 'Complete Tests');
 	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st             = $derived(stats[sec]);
-	const trendData      = $derived(buildTrend(st.trend.slice(-10)));
-	const gaugeScore     = $derived(isComplete ? st.avg : genScore);
+	// Trend filtered by testFilter (all tests or just the selected one)
+	const trendAllPts    = $derived(testFilter === 'all' ? st.trend : st.trend.filter(p => p.testNumber === (testFilter as number)));
+	const trendAllAvg    = $derived(trendAllPts.length ? roundHalf(trendAllPts.reduce((a, p) => a + p.v, 0) / trendAllPts.length) : null);
+	const trendData      = $derived(buildTrend(trendAllPts.slice(-10), trendAllAvg));
+	const trendPopupData = $derived.by(() => {
+		const pts = trendAllPts.slice(-10);
+		if (pts.length < 2) return null;
+		const last10avg   = roundHalf(pts.reduce((a, p) => a + p.v, 0) / pts.length);
+		const allTimeAvg  = trendAllAvg;
+		const diff        = allTimeAvg !== null ? roundHalf(last10avg - allTimeAvg) : null;
+		const color       = diff === null || diff >= 0 ? '#00b189' : '#ff5859';
+		const CW = 400, CH = 160, pL = 32, pR = 14, pT = 16, pB = 32;
+		const iW = CW - pL - pR, iH = CH - pT - pB;
+		const mn = 0.5, mx = 6.5;
+		const yFor = (v: number) => pT + (1 - (v - mn) / (mx - mn)) * iH;
+		const coords = pts.map((p, i) => ({
+			x: pL + (pts.length > 1 ? (i / (pts.length - 1)) * iW : iW / 2),
+			y: yFor(p.v),
+			v: p.v, date: p.date
+		}));
+		const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+		return {
+			CW, CH, pL, pR, pT, pB,
+			color, coords, d,
+			area: `${d}L${coords.at(-1)!.x.toFixed(1)},${(CH - pB).toFixed(1)}L${coords[0].x.toFixed(1)},${(CH - pB).toFixed(1)}Z`,
+			last10avg, allTimeAvg, diff,
+			yLast10:  yFor(last10avg),
+			yAllTime: allTimeAvg !== null ? yFor(allTimeAvg) : null,
+			yTicks:   [1, 2, 3, 4, 5, 6].map(v => ({ v, y: yFor(v) })),
+			lx1: pL, lx2: CW - pR,
+		};
+	});
+	const gaugeScore     = $derived(genScore);
 	const gaugeNA        = $derived(gaugeScore === null || gaugeScore === undefined);
 	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
 	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeScore as number) - 1) / 5) * TA);
-	const gaugeBest      = $derived(isComplete ? st.best : genBest);
+	const gaugeBest      = $derived(genBest);
 
-	// Paginated date view
-	const pagedDateRows  = $derived(byDateRows.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
-	const totalDatePages = $derived(Math.ceil(byDateRows.length / PAGE_SIZE) || 1);
-	const pagedCtRows    = $derived(ctByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
-	const totalCtPages   = $derived(Math.ceil(ctByDate.length / PAGE_SIZE) || 1);
+	// Paginated date view (uses filtered rows)
+	const pagedDateRows  = $derived(filteredByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
+	const totalDatePages = $derived(Math.ceil(filteredByDate.length / PAGE_SIZE) || 1);
+	const pagedCtRows    = $derived(filteredCtByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
+	const totalCtPages   = $derived(Math.ceil(filteredCtByDate.length / PAGE_SIZE) || 1);
 
-	// Reset pagination when section, mode or view changes
-	$effect(() => {
-		void sec; void mode; void viewBy;
-		datePage = 1;
+	// Stats for the selected test shown in the section bar
+	const selectedTestStats = $derived.by(() => {
+		if (testFilter === 'all') return null;
+		const n = testFilter as number;
+		if (isComplete) {
+			const r  = ctData.filter(t => t.testNumber === n);
+			const sc = r.filter(t => t.composite !== null);
+			return {
+				avg:  sc.length ? roundHalf(sc.reduce((a, t) => a + (t.composite as number), 0) / sc.length) : null,
+				best: sc.length ? Math.max(...sc.map(t => t.composite as number)) : null,
+			};
+		}
+		const r  = data.filter(s => s.section === sec && s.testNumber === n);
+		const sc = r.filter(s => s.scoreAvailable && s.score !== null);
+		return {
+			avg:  sc.length ? roundHalf(sc.reduce((a, s) => a + (s.score as number), 0) / sc.length) : null,
+			best: sc.length ? Math.max(...sc.map(s => s.score as number)) : null,
+		};
 	});
 
-	// Persist viewBy across in-session navigation (resets on full page refresh)
-	$effect(() => {
-		const saved = sessionStorage.getItem('historyViewBy');
-		if (saved === 'test' || saved === 'date') viewBy = saved;
-	});
-	$effect(() => { sessionStorage.setItem('historyViewBy', viewBy); });
-
-	// Lazy-load helpers
-	function loadTestHistory(key: string) { cardLoaded[key] = true; cardShown[key] = 5; }
-	function loadMoreTest(key: string)    { cardShown[key] = (cardShown[key] ?? 5) + 5; }
+	// Reset testFilter when section changes; reset datePage when any filter changes
+	$effect(() => { void sec; testFilter = 'all'; });
+	$effect(() => { void sec; void mode; void testFilter; datePage = 1; });
 </script>
 
 <svelte:head>
@@ -314,7 +366,7 @@
 			{#each secs as sc}
 				{@const s = stats[sc]}
 				{@const act = sec === sc}
-				<button class="ov-card ov-sec" class:active={act} onclick={() => (sec = sc)}>
+				<button class="ov-card ov-sec" class:active={act} class:ov-complete={sc === 'Complete Tests'} onclick={() => (sec = sc)}>
 					{#if act}<div class="ov-bar"></div>{/if}
 					<div class="ov-head">
 						<div class="ov-icon" class:active={act}>
@@ -348,11 +400,26 @@
 				</div>
 				<span class="sb-name">{sec}</span>
 				<span class="sb-dot">·</span>
-				<span class="sb-count">{st.count} {isComplete ? 'attempt' : 'submission'}{st.count !== 1 ? 's' : ''}</span>
+				<span class="sb-count">
+					{isComplete ? filteredCtByDate.length : filteredByDate.length}
+					{isComplete ? 'attempt' : 'submission'}{(isComplete ? filteredCtByDate.length : filteredByDate.length) !== 1 ? 's' : ''}
+				</span>
 				{#if isComplete && st.aiCount < st.count}<span class="sb-ai">· {st.aiCount} fully scored</span>{/if}
 				{#if !isComplete && needsAI}<span class="sb-ai">· {st.aiCount} AI-graded</span>{/if}
+				{#if testFilter !== 'all' && selectedTestStats}
+					<span class="sb-dot">·</span>
+					<span class="sb-test-info">
+						Test #{testFilter}
+						{#if selectedTestStats.avg !== null}
+							· Avg <b style="color:{scoreColor(selectedTestStats.avg)}">{fmtScore(selectedTestStats.avg)}/6</b>
+							· Best <b style="color:{scoreColor(selectedTestStats.best!)}">{fmtScore(selectedTestStats.best!)}/6</b>
+						{:else}
+							· No scored submissions
+						{/if}
+					</span>
+				{/if}
 			</div>
-			<div class="sb-trend">
+			<button class="sb-trend" onclick={() => { if (trendData) { trendOpen = true; trendHovIdx = null; } }} disabled={!trendData} title="View progress chart">
 				{#if trendData}
 					<svg width="72" height="22" viewBox="0 0 {trendData.W} {trendData.H}">
 						<defs><linearGradient id="sbg2" x1="0" y1="0" x2="0" y2="1">
@@ -369,21 +436,21 @@
 				{:else}
 					<span class="sb-no-trend">No trend yet</span>
 				{/if}
-			</div>
+			</button>
 			<div class="sb-sep-v"></div>
 			<div class="sb-right">
-				<!-- Group dropdown -->
-				<span class="sb-ctrl-label">Group</span>
-				<div class="dd-wrap" class:open={groupOpen}>
-					<button class="dd-trigger" onclick={() => { groupOpen = !groupOpen; modeOpen = false; }}>
-						{groupLabel}
+				<!-- Test no. dropdown -->
+				<span class="sb-ctrl-label">Test no.</span>
+				<div class="dd-wrap" class:open={testOpen}>
+					<button class="dd-trigger" onclick={() => { testOpen = !testOpen; modeOpen = false; }}>
+						{testLabel}
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 					</button>
-					{#if groupOpen}
+					{#if testOpen}
 						<div class="dd-panel">
-							{#each groupOptions as opt}
-								<button class="dd-item" class:sel={viewBy === opt.value}
-									onclick={() => { viewBy = opt.value; groupOpen = false; }}>
+							{#each testOptions as opt}
+								<button class="dd-item" class:sel={testFilter === opt.value}
+									onclick={() => { testFilter = opt.value; testOpen = false; }}>
 									{opt.label}
 								</button>
 							{/each}
@@ -393,7 +460,7 @@
 				<!-- Mode dropdown -->
 				<span class="sb-ctrl-label">Mode</span>
 				<div class="dd-wrap" class:open={modeOpen}>
-					<button class="dd-trigger" onclick={() => { modeOpen = !modeOpen; groupOpen = false; }}>
+					<button class="dd-trigger" onclick={() => { modeOpen = !modeOpen; testOpen = false; }}>
 						{modeLabel}
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 					</button>
@@ -410,9 +477,8 @@
 				</div>
 			</div>
 		</div>
-		<!-- click-outside backdrop for dropdowns -->
-		{#if groupOpen || modeOpen}
-			<div class="dd-backdrop" onclick={() => { groupOpen = false; modeOpen = false; }}></div>
+		{#if testOpen || modeOpen}
+			<div class="dd-backdrop" onclick={() => { testOpen = false; modeOpen = false; }}></div>
 		{/if}
 	</div>
 
@@ -421,209 +487,64 @@
 
 		<!-- ═══ SECTION VIEW (Reading / Listening / Writing / Speaking) ═══ -->
 		{#if !isComplete}
-
-			{#if viewBy === 'date'}
-				<!-- ── By Date: paginated flat list ── -->
-				{#if byDateRows.length === 0}
-					<div class="empty"><div class="empty-icon">📝</div><div class="empty-title">No {sec.toLowerCase()} submissions yet</div><div class="empty-sub">Complete a practice test to see results here</div></div>
-				{:else}
-					<div class="date-list-card">
-					{#each pagedDateRows as sub, i}
-						<div class="sub-row" class:alt={i % 2 !== 0}>
-							<div class="sub-info wide">
-								<span class="test-pill">Test #{sub.testNumber}</span>
-								<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
-								<span class="badge" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test Mode':'Practice Mode'}</span>
-								{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
-							</div>
-							<div class="sub-score">
-								{#if sub.score===null}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">N/A</span>
-								{:else}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div><span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>{/if}
-							</div>
-							<div class="sub-details">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
-							<button class="view-btn-row">View →</button>
+			{#if filteredByDate.length === 0}
+				<div class="empty"><div class="empty-icon">📝</div><div class="empty-title">No {sec.toLowerCase()} submissions{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div><div class="empty-sub">Complete a practice test to see results here</div></div>
+			{:else}
+				<div class="date-list-card">
+				{#each pagedDateRows as sub, i}
+					<div class="sub-row" class:alt={i % 2 !== 0}>
+						<div class="sub-info wide">
+							<span class="test-pill">Test #{sub.testNumber}</span>
+							<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
+							<span class="badge" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test Mode':'Practice Mode'}</span>
+							{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
 						</div>
-					{/each}
-					{#if totalDatePages > 1}
-						<div class="pagination">
-							<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
-							<span class="pg-info">Page {datePage} of {totalDatePages} · {byDateRows.length} submissions</span>
-							<button class="pg-btn" disabled={datePage===totalDatePages} onclick={() => datePage++}>Next →</button>
+						<div class="sub-score">
+							{#if sub.score===null}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">N/A</span>
+							{:else}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div><span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>{/if}
 						</div>
-					{/if}
+						<div class="sub-details">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
+						<button class="view-btn-row">View →</button>
+					</div>
+				{/each}
+				{#if totalDatePages > 1}
+					<div class="pagination">
+						<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
+						<span class="pg-info">Page {datePage} of {totalDatePages} · {filteredByDate.length} submissions</span>
+						<button class="pg-btn" disabled={datePage===totalDatePages} onclick={() => datePage++}>Next →</button>
 					</div>
 				{/if}
-
-			{:else}
-				<!-- ── By Test Number: 3×5 card grid ── -->
-				<div class="test-grid">
-					{#each Array.from({length: GRID_TESTS}, (_, i) => i + 1) as num}
-						{@const cardSubs = data.filter(s => s.section === sec && s.testNumber === num).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-						{@const scored   = cardSubs.filter(s => s.scoreAvailable && s.score !== null)}
-						{@const cardAvg  = scored.length ? roundHalf(scored.reduce((a,s) => a+(s.score as number),0)/scored.length) : null}
-						{@const cardBest = scored.length ? Math.max(...scored.map(s => s.score as number)) : null}
-						{@const key      = sec + '_' + num}
-						{@const loaded   = cardLoaded[key]}
-						{@const shown    = cardShown[key] ?? 5}
-						<div class="tc">
-							<div class="tc-head">
-								<div class="tc-title-row">
-									<span class="tc-num">Test #{num}</span>
-									<span class="tc-attempts">{cardSubs.length} attempt{cardSubs.length!==1?'s':''}</span>
-								</div>
-								<div class="tc-stats">
-									{#if cardAvg !== null}
-										<span class="tc-stat">Avg <b style="color:{scoreColor(cardAvg)}">{fmtScore(cardAvg)}/6</b></span>
-										<span class="tc-sep">·</span>
-										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
-									{:else if cardSubs.length > 0}
-										<span class="tc-stat-na">No graded submissions</span>
-									{:else}
-										<span class="tc-stat-na">No attempts yet</span>
-									{/if}
-								</div>
-							</div>
-							<div class="tc-body">
-								{#if cardSubs.length === 0}
-									<div class="tc-empty">No attempts for this test yet</div>
-								{:else if !loaded}
-									<button class="tc-overlay" onclick={() => loadTestHistory(key)}>
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-										<span>Load history</span>
-									</button>
-								{:else}
-									{#each cardSubs.slice(0, shown) as sub}
-										<div class="tc-sub">
-											<div class="tc-sub-body">
-												<div class="tc-l1">
-													<span class="tc-date">{fmtD(sub.date)}</span>
-													<span class="tc-time">{fmtT(sub.date)}</span>
-													<span class="badge sm" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test':'Practice'}</span>
-													{#if !sub.scoreAvailable}<span class="badge sm ai-off">AI off</span>{/if}
-												</div>
-												<div class="tc-l2">
-													{#if sub.score===null}
-														<span class="na-label">N/A</span>
-													{:else}
-														<div class="bar-track tc-bar"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div>
-														<span class="tc-score" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
-													{/if}
-												</div>
-												<div class="tc-pills">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill xs" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
-											</div>
-											<button class="tc-view">View →</button>
-										</div>
-									{/each}
-									{#if shown < cardSubs.length}
-										<button class="tc-load-more" onclick={() => loadMoreTest(key)}>Load {Math.min(5, cardSubs.length - shown)} more</button>
-									{/if}
-								{/if}
-							</div>
-						</div>
-					{/each}
 				</div>
 			{/if}
 
 		<!-- ═══ COMPLETE TESTS VIEW ═══ -->
 		{:else}
-
-			{#if viewBy === 'date'}
-				<!-- ── By Date: paginated flat list ── -->
-				{#if ctByDate.length === 0}
-					<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-title">No complete test attempts yet</div><div class="empty-sub">Take a full 4-section practice test to see results here</div></div>
-				{:else}
-					<div class="date-list-card">
-					{#each pagedCtRows as t, i}
-						<div class="sub-row" class:alt={i % 2 !== 0}>
-							<div class="sub-info wide">
-								<span class="test-pill">Test #{t.testNumber}</span>
-								<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
-								<span class="sub-date" style="color:#bbb">{t.duration}</span>
-							</div>
-							<div class="sec-chips">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
-							<div class="sub-score">
-								{#if t.composite!==null}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div><span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-								{:else}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">Pending</span>{/if}
-							</div>
-							<button class="view-btn-row">View →</button>
+			{#if filteredCtByDate.length === 0}
+				<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-title">No complete test attempts{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div><div class="empty-sub">Take a full 4-section practice test to see results here</div></div>
+			{:else}
+				<div class="date-list-card">
+				{#each pagedCtRows as t, i}
+					<div class="sub-row" class:alt={i % 2 !== 0}>
+						<div class="sub-info wide">
+							<span class="test-pill">Test #{t.testNumber}</span>
+							<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
+							<span class="sub-date" style="color:#bbb">{t.duration}</span>
 						</div>
-					{/each}
-					{#if totalCtPages > 1}
-						<div class="pagination">
-							<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
-							<span class="pg-info">Page {datePage} of {totalCtPages} · {ctByDate.length} attempts</span>
-							<button class="pg-btn" disabled={datePage===totalCtPages} onclick={() => datePage++}>Next →</button>
+						<div class="sec-chips">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
+						<div class="sub-score">
+							{#if t.composite!==null}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div><span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
+							{:else}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">Pending</span>{/if}
 						</div>
-					{/if}
+						<button class="view-btn-row">View →</button>
+					</div>
+				{/each}
+				{#if totalCtPages > 1}
+					<div class="pagination">
+						<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
+						<span class="pg-info">Page {datePage} of {totalCtPages} · {filteredCtByDate.length} attempts</span>
+						<button class="pg-btn" disabled={datePage===totalCtPages} onclick={() => datePage++}>Next →</button>
 					</div>
 				{/if}
-
-			{:else}
-				<!-- ── By Test Number: 3×5 card grid (Complete Tests) ── -->
-				<div class="test-grid">
-					{#each Array.from({length: GRID_TESTS}, (_, i) => i + 1) as num}
-						{@const cardSubs = ctData.filter(t => t.testNumber === num).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())}
-						{@const scored   = cardSubs.filter(t => t.composite !== null)}
-						{@const cardAvg  = scored.length ? roundHalf(scored.reduce((a,t) => a+(t.composite as number),0)/scored.length) : null}
-						{@const cardBest = scored.length ? Math.max(...scored.map(t => t.composite as number)) : null}
-						{@const key      = 'ct_' + num}
-						{@const loaded   = cardLoaded[key]}
-						{@const shown    = cardShown[key] ?? 5}
-						<div class="tc">
-							<div class="tc-head">
-								<div class="tc-title-row">
-									<span class="tc-num">Test #{num}</span>
-									<span class="tc-attempts">{cardSubs.length} attempt{cardSubs.length!==1?'s':''}</span>
-								</div>
-								<div class="tc-stats">
-									{#if cardAvg !== null}
-										<span class="tc-stat">Comp avg <b style="color:{scoreColor(cardAvg)}">{fmtScore(cardAvg)}/6</b></span>
-										<span class="tc-sep">·</span>
-										<span class="tc-stat">Best <b style="color:{scoreColor(cardBest!)}">{fmtScore(cardBest!)}/6</b></span>
-									{:else if cardSubs.length > 0}
-										<span class="tc-stat-na">No graded submissions</span>
-									{:else}
-										<span class="tc-stat-na">No attempts yet</span>
-									{/if}
-								</div>
-							</div>
-							<div class="tc-body">
-								{#if cardSubs.length === 0}
-									<div class="tc-empty">No attempts for this test yet</div>
-								{:else if !loaded}
-									<button class="tc-overlay" onclick={() => loadTestHistory(key)}>
-										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-										<span>Load history</span>
-									</button>
-								{:else}
-									{#each cardSubs.slice(0, shown) as t}
-										<div class="tc-sub">
-											<div class="tc-sub-body">
-												<div class="tc-l1">
-													<span class="tc-date">{fmtD(t.date)}</span>
-													<span class="tc-time">{fmtT(t.date)}</span>
-													<span class="sub-date" style="color:#bbb;font-size:10px">{t.duration}</span>
-												</div>
-												<div class="tc-l2">
-													{#if t.composite!==null}
-														<div class="bar-track tc-bar"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div>
-														<span class="tc-score" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-													{:else}
-														<span class="na-label">Pending</span>
-													{/if}
-												</div>
-												<div class="tc-pills">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip xs" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
-											</div>
-											<button class="tc-view">View →</button>
-										</div>
-									{/each}
-									{#if shown < cardSubs.length}
-										<button class="tc-load-more" onclick={() => loadMoreTest(key)}>Load {Math.min(5, cardSubs.length - shown)} more</button>
-									{/if}
-								{/if}
-							</div>
-						</div>
-					{/each}
 				</div>
 			{/if}
 		{/if}
@@ -634,13 +555,113 @@
 	</div>
 </div>
 
+<!-- ─── Trend popup ──────────────────────────────────────────────────────── -->
+{#if trendOpen && trendPopupData}
+	{@const d = trendPopupData}
+	<div class="tp-backdrop" onclick={() => { trendOpen = false; trendHovIdx = null; }}></div>
+	<div class="tp-popup">
+		<!-- Header -->
+		<div class="tp-head">
+			<div class="tp-title">
+				<span class="tp-sec-name">{sec}</span>
+				<span class="tp-subtitle">Last {d.coords.length} scored submissions · progress vs baseline</span>
+			</div>
+			<button class="tp-close" onclick={() => { trendOpen = false; trendHovIdx = null; }}>
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+			</button>
+		</div>
+
+		<!-- Chart -->
+		<div class="tp-chart-wrap">
+			<div class="tp-chart-inner">
+				<svg width={d.CW} height={d.CH} style="display:block;overflow:visible">
+					<defs>
+						<linearGradient id="tpgrd" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0%" stop-color={d.color} stop-opacity=".13" />
+							<stop offset="100%" stop-color={d.color} stop-opacity="0" />
+						</linearGradient>
+					</defs>
+
+					<!-- Grid lines + y-axis labels -->
+					{#each d.yTicks as t}
+						<line x1={d.lx1} y1={t.y} x2={d.lx2} y2={t.y} stroke="#f0f0f0" stroke-width="1" />
+						<text x={d.pL - 7} y={t.y + 3.5} text-anchor="end" font-size="9" fill="#ccc" font-family="DM Sans,sans-serif">{t.v}</text>
+					{/each}
+
+					<!-- All-time avg reference line -->
+					{#if d.yAllTime !== null}
+						<line x1={d.lx1} y1={d.yAllTime} x2={d.lx2} y2={d.yAllTime} stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="5,4" />
+						<text x={d.lx2 + 5} y={d.yAllTime + 3.5} font-size="8.5" fill="#94a3b8" font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.allTimeAvg)}</text>
+					{/if}
+
+					<!-- Last-10 avg reference line -->
+					<line x1={d.lx1} y1={d.yLast10} x2={d.lx2} y2={d.yLast10} stroke={d.color} stroke-width="1.3" stroke-dasharray="5,4" opacity=".55" />
+					<text x={d.lx2 + 5} y={d.yLast10 + 3.5} font-size="8.5" fill={d.color} font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.last10avg)}</text>
+
+					<!-- Area + line -->
+					<path d={d.area} fill="url(#tpgrd)" />
+					<path d={d.d} fill="none" stroke={d.color} stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+
+					<!-- Dots -->
+					{#each d.coords as c, i}
+						<circle
+							cx={c.x} cy={c.y}
+							r={trendHovIdx === i ? 5.5 : 3.5}
+							fill={trendHovIdx === i ? d.color : '#fff'}
+							stroke={d.color} stroke-width="2"
+							style="cursor:pointer;transition:r .1s,fill .1s"
+							onmouseenter={() => trendHovIdx = i}
+							onmouseleave={() => trendHovIdx = null}
+						/>
+					{/each}
+
+					<!-- X-axis date labels: first, mid, last -->
+					{#each d.coords as c, i}
+						{#if i === 0 || i === d.coords.length - 1 || i === Math.floor((d.coords.length - 1) / 2)}
+							<text x={c.x} y={d.CH - d.pB + 17} text-anchor="middle" font-size="8.5" fill="#bbb" font-family="DM Sans,sans-serif">
+								{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+							</text>
+						{/if}
+					{/each}
+				</svg>
+
+				<!-- Hover tooltip -->
+				{#if trendHovIdx !== null}
+					{@const c = d.coords[trendHovIdx]}
+					<div class="tp-tt" style="left:{c.x}px; top:{c.y}px">
+						<b style="color:{d.color}">{fmtScore(c.v)}/6</b>
+						<span>{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Legend -->
+		<div class="tp-legend">
+			<div class="tp-leg-item">
+				<span class="tp-leg-dash tp-leg-gray"></span>
+				All-time avg&nbsp;<b>{fmtScore(d.allTimeAvg)}/6</b>
+			</div>
+			<div class="tp-leg-item">
+				<span class="tp-leg-dash" style="background:{d.color};opacity:.55"></span>
+				Last {d.coords.length} avg&nbsp;<b style="color:{d.color}">{fmtScore(d.last10avg)}/6</b>
+			</div>
+			{#if d.diff !== null}
+				<div class="tp-leg-delta" style="color:{d.color}">
+					{d.diff >= 0 ? '+' : ''}{fmtScore(d.diff)} vs baseline
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}
+
 <style>
 	* { box-sizing: border-box; margin: 0; padding: 0; }
 
 	.dashboard { font-family: 'DM Sans', sans-serif; padding: 0 32px 28px; color: #222; }
 
 	/* ── Sticky header ── */
-	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 0 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 14px; }
+	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 32px 0; margin: 0 -32px 14px; border-bottom: 1px solid #ebebeb; }
 
 	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 	h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
@@ -669,7 +690,18 @@
 	/* Section cards */
 	.ov-sec { border: 2px solid transparent; cursor: pointer; text-align: left; font-family: inherit; transition: all .15s; }
 	.ov-sec.active { border-color: #00b189; box-shadow: 0 3px 12px rgba(0,177,137,.12); }
-	.ov-sec:hover:not(.active) { background: #f8f8f8; }
+	.ov-sec.ov-complete { background: linear-gradient(135deg, #00b189 0%, #00c99a 100%); border: none; color: #fff; box-shadow: 0 4px 16px rgba(0,177,137,.30); }
+	.ov-sec.ov-complete .ov-name { color: rgba(255,255,255,.85); }
+	.ov-sec.ov-complete .ov-val { color: #fff !important; }
+	.ov-sec.ov-complete .ov-denom, .ov-sec.ov-complete .ov-unit { color: rgba(255,255,255,.7); }
+	.ov-sec.ov-complete .ov-foot { color: rgba(255,255,255,.75); }
+	.ov-sec.ov-complete .ov-foot b { color: #fff !important; }
+	.ov-sec.ov-complete .ov-icon { background: rgba(255,255,255,.2); color: #fff; }
+	.ov-sec.ov-complete .ov-count { background: rgba(255,255,255,.2); color: #fff; }
+	.ov-sec.ov-complete .ov-bar { background: rgba(255,255,255,.4); }
+	.ov-sec.ov-complete.active { border: 1.5px solid rgba(255,255,255,.5); box-shadow: 0 6px 20px rgba(0,177,137,.4); }
+	.ov-sec.ov-complete:hover:not(.active) { background: linear-gradient(135deg, #00a87f 0%, #00b88d 100%); }
+	.ov-sec:not(.ov-complete):hover:not(.active) { background: #f8f8f8; }
 	.ov-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #00b189; }
 	.ov-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
 	.ov-icon { width: 22px; height: 22px; border-radius: 6px; background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -750,7 +782,10 @@
 	.sb-dot { color: #ddd; font-size: 12px; }
 	.sb-count { font-size: 11px; color: #999; white-space: nowrap; }
 	.sb-ai { font-size: 11px; color: #999; white-space: nowrap; }
-	.sb-trend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+	.sb-test-info { font-size: 11px; color: #666; white-space: nowrap; }
+	.sb-trend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; background: none; border: none; padding: 4px 6px; margin: -4px -6px; border-radius: 8px; cursor: pointer; font-family: inherit; transition: background .15s; }
+	.sb-trend:hover:not(:disabled) { background: rgba(0,0,0,.04); }
+	.sb-trend:disabled { cursor: default; }
 	.sb-diff { font-size: 11px; font-weight: 700; white-space: nowrap; }
 	.sb-no-trend { font-size: 10px; color: #ccc; font-style: italic; }
 	.sb-sep-v { width: 1px; height: 20px; background: #e5e7eb; flex-shrink: 0; }
@@ -825,7 +860,7 @@
 
 	@media (max-width: 767px) {
 		.dashboard { padding: 0 16px 20px; }
-		.sticky-header { top: 56px; padding: 10px 0 0; }
+		.sticky-header { top: 56px; padding: 10px 16px 0; margin: 0 -16px 14px; }
 		h1 { font-size: 18px; }
 		.header { flex-direction: column; align-items: flex-start; gap: 10px; }
 		.overview-row { grid-template-columns: repeat(3, 1fr); }
@@ -849,4 +884,28 @@
 		.test-grid { grid-template-columns: 1fr; }
 		.tc { height: 260px; }
 	}
+
+	/* ── Trend popup ── */
+	.tp-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.28); backdrop-filter: blur(2px); }
+	.tp-popup { position: fixed; z-index: 201; background: #fff; border-radius: 18px; box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08); width: 472px; max-width: calc(100vw - 32px); top: 50%; left: 50%; transform: translate(-50%, -50%); overflow: hidden; }
+
+	.tp-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 18px 14px; border-bottom: 1px solid #f3f4f6; }
+	.tp-title { display: flex; flex-direction: column; gap: 3px; }
+	.tp-sec-name { font-size: 15px; font-weight: 800; color: #1a1a1a; letter-spacing: -0.3px; }
+	.tp-subtitle { font-size: 11px; color: #aaa; }
+	.tp-close { width: 28px; height: 28px; border-radius: 8px; border: none; background: #f5f5f5; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s, color .15s; }
+	.tp-close:hover { background: #eee; color: #333; }
+
+	.tp-chart-wrap { padding: 16px 16px 4px; }
+	.tp-chart-inner { position: relative; display: inline-block; }
+	.tp-tt { position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 10px)); background: #1a1a1a; color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 11px; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 1px; z-index: 10; font-family: 'DM Sans', sans-serif; }
+	.tp-tt b { font-size: 13px; font-weight: 800; line-height: 1.2; }
+	.tp-tt span { font-size: 10px; color: rgba(255,255,255,.55); line-height: 1.2; }
+
+	.tp-legend { display: flex; align-items: center; gap: 14px; padding: 12px 18px 16px; border-top: 1px solid #f3f4f6; flex-wrap: wrap; }
+	.tp-leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #888; }
+	.tp-leg-item b { color: #222; font-weight: 700; }
+	.tp-leg-dash { display: inline-block; width: 20px; height: 2px; border-radius: 2px; flex-shrink: 0; }
+	.tp-leg-gray { background: #cbd5e1; }
+	.tp-leg-delta { margin-left: auto; font-size: 13px; font-weight: 800; letter-spacing: -0.4px; }
 </style>
