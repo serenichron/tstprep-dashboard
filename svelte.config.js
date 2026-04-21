@@ -16,7 +16,7 @@ const config = {
 		}),
 		prerender: {
 			handleHttpError: ({ path, referrer, message }) => {
-				if (path === '/favicon.png') return;
+				if (path.endsWith('/favicon.png')) return;
 				throw new Error(message);
 			}
 		},
