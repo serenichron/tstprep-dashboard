@@ -36,6 +36,11 @@
 		}
 	];
 
+	const quizActive = $derived.by(() => {
+		const current = page.url.pathname.replace(base, '') || '/';
+		return current === '/quiz' || current.startsWith('/quiz/');
+	});
+
 	// Fix: use exact match or startsWith(path + '/') to avoid /history matching /history2
 	const activeHref = $derived.by(() => {
 		const current = page.url.pathname.replace(base, '') || '/';
@@ -98,6 +103,37 @@
 			</a>
 		{/each}
 	</nav>
+
+	<!-- Dev trigger: Quiz Funnel preview -->
+	{#if isOpen}
+		<div class="px-3 pb-2">
+			<a
+				href="{base}/quiz"
+				onclick={handleNavClick}
+				class="flex items-center gap-2 border border-dashed rounded-lg px-3 py-2 text-xs font-medium transition-colors
+					{quizActive ? 'border-brand-green bg-brand-green-light text-brand-green-dark' : 'border-gray-300 text-gray-500 hover:border-brand-green hover:text-brand-green'}"
+				title="Dev: preview the quiz funnel"
+			>
+				<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093M12 17h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+				</svg>
+				<span class="truncate">Quiz Funnel <span class="text-[10px] opacity-60">(dev)</span></span>
+			</a>
+		</div>
+	{:else}
+		<div class="pb-2 px-2 hidden lg:block">
+			<a
+				href="{base}/quiz"
+				class="w-10 h-10 mx-auto rounded-lg border border-dashed flex items-center justify-center transition-colors
+					{quizActive ? 'border-brand-green bg-brand-green-light text-brand-green-dark' : 'border-gray-300 text-gray-400 hover:border-brand-green hover:text-brand-green'}"
+				title="Dev: Quiz Funnel"
+			>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093M12 17h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+				</svg>
+			</a>
+		</div>
+	{/if}
 
 	<!-- Upgrade CTA — dynamic per plan, full when open, icon-only when collapsed -->
 	{#if getUpsell()}
