@@ -14,7 +14,8 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['Montserrat', 'sans-serif']
+				sans: ['Montserrat', 'sans-serif'],
+				dmsans: ['"DM Sans"', 'sans-serif']
 			},
 			boxShadow: {
 				card: '0 2px 12px rgba(0,0,0,0.07)'

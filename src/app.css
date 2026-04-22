@@ -62,3 +62,13 @@
 		@apply bg-brand-green text-white;
 	}
 }
+
+@layer utilities {
+	@keyframes waveform-pulse {
+		0%, 100% { transform: scaleY(0.5); opacity: 0.7; }
+		50%      { transform: scaleY(1);   opacity: 1; }
+	}
+	.animate-waveform {
+		animation: waveform-pulse 1.2s ease-in-out infinite;
+	}
+}

@@ -60,7 +60,7 @@
 	</div>
 	<div class="bg-brand-green-light rounded-xl h-14 flex items-center justify-center gap-1 mb-5">
 		{#each Array(14) as _, i}
-			<span class="bg-brand-green rounded-sm w-1" style="height: {14 + ((i * 7) % 28)}px; animation: pulse 1.2s ease-in-out infinite; animation-delay: {i * 0.05}s"></span>
+			<span class="bg-brand-green rounded-sm w-1 animate-waveform" style="height: {14 + ((i * 7) % 28)}px; animation-delay: {i * 0.05}s"></span>
 		{/each}
 	</div>
 	<button onclick={stop} class="w-full bg-red-500 text-white font-semibold py-3 rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
@@ -76,10 +76,3 @@
 {/if}
 
 <p class="text-[11px] text-gray-400 text-center mt-3">Your recording is processed by AI and not stored.</p>
-
-<style>
-	@keyframes pulse {
-		0%, 100% { transform: scaleY(0.5); opacity: 0.7; }
-		50%      { transform: scaleY(1);   opacity: 1; }
-	}
-</style>
