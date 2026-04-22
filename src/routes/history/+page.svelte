@@ -131,9 +131,6 @@
 	];
 
 	const SEC4: Sec4[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
-	const secColors: Record<Sec4, string> = {
-		Reading: '#3b82f6', Listening: '#8b5cf6', Speaking: '#f97316', Writing: '#ec4899'
-	};
 
 	/* ─── Icon paths ─── */
 	const iconPaths: Record<string, string[]> = {
@@ -253,7 +250,6 @@
 	const isComplete     = $derived(sec === 'Complete Tests');
 	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st             = $derived(stats[sec]);
-	// Trend filtered by testFilter (all tests or just the selected one)
 	const trendAllPts    = $derived(testFilter === 'all' ? st.trend : st.trend.filter(p => p.testNumber === (testFilter as number)));
 	const trendAllAvg    = $derived(trendAllPts.length ? roundHalf(trendAllPts.reduce((a, p) => a + p.v, 0) / trendAllPts.length) : null);
 	const trendData      = $derived(buildTrend(trendAllPts.slice(-10), trendAllAvg));
@@ -291,13 +287,11 @@
 	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeScore as number) - 1) / 5) * TA);
 	const gaugeBest      = $derived(genBest);
 
-	// Paginated date view (uses filtered rows)
 	const pagedDateRows  = $derived(filteredByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
 	const totalDatePages = $derived(Math.ceil(filteredByDate.length / PAGE_SIZE) || 1);
 	const pagedCtRows    = $derived(filteredCtByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
 	const totalCtPages   = $derived(Math.ceil(filteredCtByDate.length / PAGE_SIZE) || 1);
 
-	// Stats for the selected test shown in the section bar
 	const selectedTestStats = $derived.by(() => {
 		if (testFilter === 'all') return null;
 		const n = testFilter as number;
@@ -317,7 +311,6 @@
 		};
 	});
 
-	// Reset testFilter when section changes; reset datePage when any filter changes
 	$effect(() => { void sec; testFilter = 'all'; });
 	$effect(() => { void sec; void mode; void testFilter; datePage = 1; });
 </script>
@@ -327,22 +320,22 @@
 	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </svelte:head>
 
-<div class="dashboard">
-	<!-- ─── Sticky header: title row + overview cards ─── -->
-	<div class="sticky-header">
-		<div class="header">
+<div class="font-dmsans px-4 pb-5 md:px-8 md:pb-7 text-gray-800">
+	<!-- ─── Sticky header ─── -->
+	<div class="sticky top-14 z-40 bg-gray-50 pt-2.5 px-4 -mx-4 mb-3.5 border-b border-gray-200 md:pt-3.5 md:px-8 md:-mx-8">
+		<div class="flex flex-col items-start gap-2.5 mb-2.5 md:flex-row md:justify-between md:items-center md:gap-2 flex-wrap">
 			<div>
-				<h1><span class="green">Submission</span> History</h1>
-				<p class="subtitle">Track your TOEFL 2026 scores across all sections</p>
+				<h1 class="text-lg font-extrabold tracking-[-0.5px]"><span class="text-brand-green">Submission</span> History</h1>
+				<p class="text-[11px] text-gray-400 mt-px">Track your TOEFL 2026 scores across all sections</p>
 			</div>
 		</div>
 
-		<!-- Score Overview: Overall gauge + 5 section cards (incl. Complete Tests) -->
-		<div class="overview-row">
-			<!-- Overall Score — gauge -->
-			<div class="ov-card ov-gauge-card">
-				<div class="ov-gw">
-					<svg viewBox="0 0 120 86" class="ov-gsv">
+		<!-- Score Overview: Overall gauge + 5 section cards -->
+		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 items-start">
+			<!-- Overall Score gauge -->
+			<div class="bg-white rounded-xl pt-2 pb-[7px] px-2.5 shadow-[0_1px_4px_rgba(0,0,0,.05)] relative overflow-hidden text-center">
+				<div class="relative max-w-[68px] mx-auto">
+					<svg viewBox="0 0 120 86" class="w-[68px] h-[49px] block">
 						<path d={arcPath(SA, EA)} fill="none" stroke="#ebebeb" stroke-width="9" stroke-linecap="round" />
 						{#if !gaugeNA}
 							<path d={arcPath(SA, gaugeFillAngle)} fill="none" stroke={gaugeColor} stroke-width="9" stroke-linecap="round" style="transition:all .6s ease" />
@@ -350,15 +343,15 @@
 						<text x="14" y="82" font-size="8" fill="#ccc" text-anchor="middle">1</text>
 						<text x="106" y="82" font-size="8" fill="#ccc" text-anchor="middle">6</text>
 					</svg>
-					<div class="ov-gnum" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">
-						{gaugeNA ? '—' : fmtScore(gaugeScore)}{#if !gaugeNA}<span class="ov-gfrac">/6</span>{/if}
+					<div class="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-extrabold tracking-[-1px] leading-none whitespace-nowrap" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">
+						{gaugeNA ? '—' : fmtScore(gaugeScore)}{#if !gaugeNA}<span class="text-[10px] font-semibold text-gray-400">/6</span>{/if}
 					</div>
 				</div>
-				<div class="ov-label">{isComplete ? 'Composite Avg' : 'Overall Avg'}</div>
+				<div class="block text-[10px] font-bold text-gray-400 uppercase tracking-[.5px] mt-px">{isComplete ? 'Composite Avg' : 'Overall Avg'}</div>
 				{#if gaugeBest !== null}
-					<div class="ov-best">Best <b class="green">{fmtScore(gaugeBest)}/6</b></div>
+					<div class="text-[11px] text-gray-400 mt-0.5">Best <b class="text-brand-green">{fmtScore(gaugeBest)}/6</b></div>
 				{:else}
-					<div class="ov-hint">{isComplete ? 'No fully scored tests' : 'Need all 4 sections'}</div>
+					<div class="text-[10px] text-gray-300 mt-0.5">{isComplete ? 'No fully scored tests' : 'Need all 4 sections'}</div>
 				{/if}
 			</div>
 
@@ -366,49 +359,66 @@
 			{#each secs as sc}
 				{@const s = stats[sc]}
 				{@const act = sec === sc}
-				<button class="ov-card ov-sec" class:active={act} class:ov-complete={sc === 'Complete Tests'} onclick={() => (sec = sc)}>
-					{#if act}<div class="ov-bar"></div>{/if}
-					<div class="ov-head">
-						<div class="ov-icon" class:active={act}>
+				{@const comp = sc === 'Complete Tests'}
+				<button
+					onclick={() => (sec = sc)}
+					class="rounded-xl pt-2 pb-[7px] px-2.5 relative overflow-hidden border-2 cursor-pointer text-left transition-all duration-150
+						{comp
+							? act
+								? 'border border-white/50 bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_6px_20px_rgba(0,177,137,.4)]'
+								: 'border-0 bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_4px_16px_rgba(0,177,137,.3)] hover:from-[#00a87f] hover:to-[#00b88d]'
+							: act
+								? 'border-brand-green bg-white shadow-[0_3px_12px_rgba(0,177,137,.12)]'
+								: 'border-transparent bg-white shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:bg-gray-50'}"
+				>
+					{#if act}
+						<div class="absolute top-0 left-0 right-0 h-[3px] {comp ? 'bg-white/40' : 'bg-brand-green'}"></div>
+					{/if}
+					<div class="flex items-center gap-1.5 mb-[7px]">
+						<div class="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0
+							{comp ? 'bg-white/20 text-white' : act ? 'bg-brand-green/10 text-brand-green' : 'bg-gray-100 text-gray-400'}">
 							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								{#each iconPaths[sc] as d}<path {d} />{/each}
 								{#if sc === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
 							</svg>
 						</div>
-						<span class="ov-name">{sc}</span>
+						<span class="text-[11px] font-semibold {comp ? 'text-white/85' : 'text-gray-700'}">{sc}</span>
 					</div>
-					<div class="ov-score-row">
-						<span class="ov-val" style="color:{s.avg === null ? '#d0d5dd' : '#1a1a1a'}">{s.avg === null ? '—' : fmtScore(s.avg)}</span>
-						{#if s.avg !== null}<span class="ov-denom">/6</span><span class="ov-unit">{sc === 'Complete Tests' ? 'comp' : 'avg'}</span>{/if}
+					<div class="flex items-baseline gap-0.5 mb-1">
+						<span class="text-xl font-extrabold tracking-[-1px]" style="color:{s.avg === null ? (comp ? '#fff' : '#d0d5dd') : (comp ? '#fff' : '#1a1a1a')}">{s.avg === null ? '—' : fmtScore(s.avg)}</span>
+						{#if s.avg !== null}
+							<span class="text-[11px] font-semibold {comp ? 'text-white/70' : 'text-gray-400'}">/6</span>
+							<span class="text-[9px] ml-[3px] {comp ? 'text-white/70' : 'text-gray-400'}">{comp ? 'comp' : 'avg'}</span>
+						{/if}
 					</div>
-					<div class="ov-foot">
-						<span>Best: <b style="color:{s.best === null ? '#ccc' : '#00b189'}">{s.best === null ? '—' : fmtScore(s.best)}</b></span>
-						<span class="ov-count">{s.count}</span>
+					<div class="flex justify-between text-[10px] {comp ? 'text-white/75' : 'text-gray-400'}">
+						<span>Best: <b style="color:{s.best === null ? (comp ? '#fff' : '#ccc') : (comp ? '#fff' : '#00b189')}">{s.best === null ? '—' : fmtScore(s.best)}</b></span>
+						<span class="font-semibold {comp ? 'bg-white/20 text-white rounded px-1' : ''}">{s.count}</span>
 					</div>
 				</button>
 			{/each}
 		</div>
 
-		<!-- Section bar: section info + sparkline (left) | dropdowns (right) -->
-		<div class="section-bar">
-			<div class="sb-left">
-				<div class="sb-icon">
+		<!-- Section bar -->
+		<div class="flex items-center gap-2.5 pt-2 pb-2 border-t border-gray-200 mt-2">
+			<div class="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+				<div class="w-[22px] h-[22px] rounded-md bg-brand-green/10 text-brand-green flex items-center justify-center flex-shrink-0">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						{#each iconPaths[sec] as d}<path {d} />{/each}
 						{#if sec === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
 					</svg>
 				</div>
-				<span class="sb-name">{sec}</span>
-				<span class="sb-dot">·</span>
-				<span class="sb-count">
+				<span class="text-xs font-bold text-gray-800 whitespace-nowrap">{sec}</span>
+				<span class="text-gray-300 text-xs">·</span>
+				<span class="text-[11px] text-gray-400 whitespace-nowrap">
 					{isComplete ? filteredCtByDate.length : filteredByDate.length}
 					{isComplete ? 'attempt' : 'submission'}{(isComplete ? filteredCtByDate.length : filteredByDate.length) !== 1 ? 's' : ''}
 				</span>
-				{#if isComplete && st.aiCount < st.count}<span class="sb-ai">· {st.aiCount} fully scored</span>{/if}
-				{#if !isComplete && needsAI}<span class="sb-ai">· {st.aiCount} AI-graded</span>{/if}
+				{#if isComplete && st.aiCount < st.count}<span class="text-[11px] text-gray-400 whitespace-nowrap">· {st.aiCount} fully scored</span>{/if}
+				{#if !isComplete && needsAI}<span class="text-[11px] text-gray-400 whitespace-nowrap">· {st.aiCount} AI-graded</span>{/if}
 				{#if testFilter !== 'all' && selectedTestStats}
-					<span class="sb-dot">·</span>
-					<span class="sb-test-info">
+					<span class="text-gray-300 text-xs">·</span>
+					<span class="text-[11px] text-gray-500 whitespace-nowrap">
 						Test #{testFilter}
 						{#if selectedTestStats.avg !== null}
 							· Avg <b style="color:{scoreColor(selectedTestStats.avg)}">{fmtScore(selectedTestStats.avg)}/6</b>
@@ -419,7 +429,12 @@
 					</span>
 				{/if}
 			</div>
-			<button class="sb-trend" onclick={() => { if (trendData) { trendOpen = true; trendHovIdx = null; } }} disabled={!trendData} title="View progress chart">
+			<button
+				onclick={() => { if (trendData) { trendOpen = true; trendHovIdx = null; } }}
+				disabled={!trendData}
+				class="flex items-center gap-1.5 flex-shrink-0 bg-transparent border-0 py-1 px-1.5 -my-1 -mx-1.5 rounded-lg cursor-pointer transition-colors hover:enabled:bg-black/5 disabled:cursor-default"
+				title="View progress chart"
+			>
 				{#if trendData}
 					<svg width="72" height="22" viewBox="0 0 {trendData.W} {trendData.H}">
 						<defs><linearGradient id="sbg2" x1="0" y1="0" x2="0" y2="1">
@@ -432,25 +447,32 @@
 							<circle cx={c.x} cy={c.y} r="2" fill="#fff" stroke={trendData.color} stroke-width="1.4" />
 						{/each}
 					</svg>
-					<span class="sb-diff" style="color:{trendData.color}">{trendData.diffLabel}</span>
+					<span class="text-[11px] font-bold whitespace-nowrap" style="color:{trendData.color}">{trendData.diffLabel}</span>
 				{:else}
-					<span class="sb-no-trend">No trend yet</span>
+					<span class="text-[10px] text-gray-300 italic">No trend yet</span>
 				{/if}
 			</button>
-			<div class="sb-sep-v"></div>
-			<div class="sb-right">
+			<div class="w-px h-5 bg-gray-200 flex-shrink-0"></div>
+			<div class="flex items-center gap-2 flex-shrink-0">
 				<!-- Test no. dropdown -->
-				<span class="sb-ctrl-label">Test no.</span>
-				<div class="dd-wrap" class:open={testOpen}>
-					<button class="dd-trigger" onclick={() => { testOpen = !testOpen; modeOpen = false; }}>
+				<span class="text-[10px] font-semibold text-gray-400 uppercase tracking-[.4px] whitespace-nowrap">Test no.</span>
+				<div class="relative">
+					<button
+						onclick={() => { testOpen = !testOpen; modeOpen = false; }}
+						class="inline-flex items-center gap-1.5 px-3 py-1 rounded-[20px] border-[1.5px] bg-white text-gray-700 text-[11px] font-semibold cursor-pointer transition-[border-color,box-shadow] duration-150 shadow-[0_1px_3px_rgba(0,0,0,.05)] whitespace-nowrap hover:border-gray-300 hover:bg-gray-50
+							{testOpen ? 'border-brand-green shadow-[0_0_0_3px_rgba(0,177,137,.1)]' : 'border-gray-200'}"
+					>
 						{testLabel}
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 					</button>
 					{#if testOpen}
-						<div class="dd-panel">
+						<div class="absolute top-[calc(100%+6px)] right-0 bg-white rounded-xl shadow-[0_6px_24px_rgba(0,0,0,.13)] border border-gray-100 min-w-[150px] overflow-hidden z-[100]">
 							{#each testOptions as opt}
-								<button class="dd-item" class:sel={testFilter === opt.value}
-									onclick={() => { testFilter = opt.value; testOpen = false; }}>
+								<button
+									onclick={() => { testFilter = opt.value; testOpen = false; }}
+									class="block w-full px-3.5 py-[9px] border-0 bg-transparent text-xs cursor-pointer text-left transition-colors duration-100 hover:bg-gray-100
+										{testFilter === opt.value ? 'font-bold text-brand-green bg-brand-green/5' : 'font-medium text-gray-700'}"
+								>
 									{opt.label}
 								</button>
 							{/each}
@@ -458,17 +480,24 @@
 					{/if}
 				</div>
 				<!-- Mode dropdown -->
-				<span class="sb-ctrl-label">Mode</span>
-				<div class="dd-wrap" class:open={modeOpen}>
-					<button class="dd-trigger" onclick={() => { modeOpen = !modeOpen; testOpen = false; }}>
+				<span class="text-[10px] font-semibold text-gray-400 uppercase tracking-[.4px] whitespace-nowrap">Mode</span>
+				<div class="relative">
+					<button
+						onclick={() => { modeOpen = !modeOpen; testOpen = false; }}
+						class="inline-flex items-center gap-1.5 px-3 py-1 rounded-[20px] border-[1.5px] bg-white text-gray-700 text-[11px] font-semibold cursor-pointer transition-[border-color,box-shadow] duration-150 shadow-[0_1px_3px_rgba(0,0,0,.05)] whitespace-nowrap hover:border-gray-300 hover:bg-gray-50
+							{modeOpen ? 'border-brand-green shadow-[0_0_0_3px_rgba(0,177,137,.1)]' : 'border-gray-200'}"
+					>
 						{modeLabel}
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 					</button>
 					{#if modeOpen}
-						<div class="dd-panel">
+						<div class="absolute top-[calc(100%+6px)] right-0 bg-white rounded-xl shadow-[0_6px_24px_rgba(0,0,0,.13)] border border-gray-100 min-w-[150px] overflow-hidden z-[100]">
 							{#each modeOptions as opt}
-								<button class="dd-item" class:sel={mode === opt.value}
-									onclick={() => { mode = opt.value; modeOpen = false; }}>
+								<button
+									onclick={() => { mode = opt.value; modeOpen = false; }}
+									class="block w-full px-3.5 py-[9px] border-0 bg-transparent text-xs cursor-pointer text-left transition-colors duration-100 hover:bg-gray-100
+										{mode === opt.value ? 'font-bold text-brand-green bg-brand-green/5' : 'font-medium text-gray-700'}"
+								>
 									{opt.label}
 								</button>
 							{/each}
@@ -478,79 +507,139 @@
 			</div>
 		</div>
 		{#if testOpen || modeOpen}
-			<div class="dd-backdrop" onclick={() => { testOpen = false; modeOpen = false; }}></div>
+			<div
+				class="fixed inset-0 z-[99]"
+				onclick={() => { testOpen = false; modeOpen = false; }}
+				role="button"
+				aria-label="Close dropdowns"
+				tabindex="-1"
+			></div>
 		{/if}
 	</div>
 
 	<!-- Detail Panel -->
-	<div class="panel">
-
+	<div>
 		<!-- ═══ SECTION VIEW (Reading / Listening / Writing / Speaking) ═══ -->
 		{#if !isComplete}
 			{#if filteredByDate.length === 0}
-				<div class="empty"><div class="empty-icon">📝</div><div class="empty-title">No {sec.toLowerCase()} submissions{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div><div class="empty-sub">Complete a practice test to see results here</div></div>
+				<div class="py-11 px-5 text-center">
+					<div class="text-3xl mb-1.5 opacity-40">📝</div>
+					<div class="text-[13px] font-semibold text-gray-400">No {sec.toLowerCase()} submissions{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div>
+					<div class="text-[11px] text-gray-300 mt-0.5">Complete a practice test to see results here</div>
+				</div>
 			{:else}
-				<div class="date-list-card">
-				{#each pagedDateRows as sub, i}
-					<div class="sub-row" class:alt={i % 2 !== 0}>
-						<div class="sub-info wide">
-							<span class="test-pill">Test #{sub.testNumber}</span>
-							<span class="sub-date">{fmtD(sub.date)} <span class="dot">·</span> {fmtT(sub.date)}</span>
-							<span class="badge" class:test={sub.mode==='test'} class:practice={sub.mode==='practice'}>{sub.mode==='test'?'Test Mode':'Practice Mode'}</span>
-							{#if !sub.scoreAvailable}<span class="badge ai-off">AI off</span>{/if}
+				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
+					{#each pagedDateRows as sub, i}
+						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-wrap max-md:px-3.5 max-md:gap-2 {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
+							<div class="flex items-center gap-1.5 flex-wrap min-w-0 flex-[1_1_220px]">
+								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{sub.testNumber}</span>
+								<span class="text-gray-500 whitespace-nowrap">{fmtD(sub.date)} <span class="text-gray-300">·</span> {fmtT(sub.date)}</span>
+								<span class="text-[9px] font-bold py-px px-[7px] rounded-full uppercase tracking-[.4px]
+									{sub.mode==='test' ? 'bg-brand-green/10 text-brand-green' : 'bg-[#f0a030]/10 text-[#c8920a]'}">
+									{sub.mode==='test'?'Test Mode':'Practice Mode'}
+								</span>
+								{#if !sub.scoreAvailable}
+									<span class="text-[9px] font-medium py-px px-[7px] rounded-full uppercase tracking-[.4px] bg-gray-100 text-gray-400">AI off</span>
+								{/if}
+							</div>
+							<div class="flex items-center gap-1.5 flex-[0_0_140px] max-md:flex-[0_0_120px] max-sm:flex-[0_0_100px]">
+								{#if sub.score===null}
+									<div class="rounded-full w-[70px] h-[5px] bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
+									<span class="text-[11px] text-gray-400 italic">N/A</span>
+								{:else}
+									<div class="rounded-full bg-gray-200 overflow-hidden" style="width:70px;height:5px">
+										<div class="h-full rounded-full transition-[width] duration-500" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div>
+									</div>
+									<span class="text-xs font-bold min-w-[38px]" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
+								{/if}
+							</div>
+							<div class="flex gap-1 flex-wrap flex-[1_1_200px] max-md:flex-[1_1_100%]">
+								{#each Object.entries(sub.details) as [k,v]}
+									<span class="text-[10px] py-0.5 px-1.5 rounded whitespace-nowrap
+										{v==='not graded' ? 'bg-gray-50 text-gray-300' : 'bg-[#f4f7f5] text-gray-500'}">
+										{k}: <b>{v}</b>
+									</span>
+								{/each}
+							</div>
+							<button class="flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white max-sm:py-[3px] max-sm:px-2.5 max-sm:text-[10px]">
+								View →
+							</button>
 						</div>
-						<div class="sub-score">
-							{#if sub.score===null}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">N/A</span>
-							{:else}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div></div><span class="score-val" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>{/if}
+					{/each}
+					{#if totalDatePages > 1}
+						<div class="flex items-center justify-center gap-3 py-3 px-5 border-t border-gray-100">
+							<button disabled={datePage===1} onclick={() => datePage--}
+								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+								← Prev
+							</button>
+							<span class="text-[11px] text-gray-400">Page {datePage} of {totalDatePages} · {filteredByDate.length} submissions</span>
+							<button disabled={datePage===totalDatePages} onclick={() => datePage++}
+								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+								Next →
+							</button>
 						</div>
-						<div class="sub-details">{#each Object.entries(sub.details) as [k,v]}<span class="detail-pill" class:ungraded={v==='not graded'}>{k}: <b>{v}</b></span>{/each}</div>
-						<button class="view-btn-row">View →</button>
-					</div>
-				{/each}
-				{#if totalDatePages > 1}
-					<div class="pagination">
-						<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
-						<span class="pg-info">Page {datePage} of {totalDatePages} · {filteredByDate.length} submissions</span>
-						<button class="pg-btn" disabled={datePage===totalDatePages} onclick={() => datePage++}>Next →</button>
-					</div>
-				{/if}
+					{/if}
 				</div>
 			{/if}
 
 		<!-- ═══ COMPLETE TESTS VIEW ═══ -->
 		{:else}
 			{#if filteredCtByDate.length === 0}
-				<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-title">No complete test attempts{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div><div class="empty-sub">Take a full 4-section practice test to see results here</div></div>
+				<div class="py-11 px-5 text-center">
+					<div class="text-3xl mb-1.5 opacity-40">🗂️</div>
+					<div class="text-[13px] font-semibold text-gray-400">No complete test attempts{testFilter !== 'all' ? ` for Test #${testFilter}` : ''}</div>
+					<div class="text-[11px] text-gray-300 mt-0.5">Take a full 4-section practice test to see results here</div>
+				</div>
 			{:else}
-				<div class="date-list-card">
-				{#each pagedCtRows as t, i}
-					<div class="sub-row" class:alt={i % 2 !== 0}>
-						<div class="sub-info wide">
-							<span class="test-pill">Test #{t.testNumber}</span>
-							<span class="sub-date">{fmtD(t.date)} <span class="dot">·</span> {fmtT(t.date)}</span>
-							<span class="sub-date" style="color:#bbb">{t.duration}</span>
+				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
+					{#each pagedCtRows as t, i}
+						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-wrap max-md:px-3.5 max-md:gap-2 {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
+							<div class="flex items-center gap-1.5 flex-wrap min-w-0 flex-[1_1_220px]">
+								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{t.testNumber}</span>
+								<span class="text-gray-500 whitespace-nowrap">{fmtD(t.date)} <span class="text-gray-300">·</span> {fmtT(t.date)}</span>
+								<span class="text-gray-500 whitespace-nowrap" style="color:#bbb">{t.duration}</span>
+							</div>
+							<div class="flex gap-1 flex-wrap flex-[1_1_160px]">
+								{#each SEC4 as s}
+									{@const v=t.scores[s]}
+									<span class="text-[10px] font-bold py-0.5 px-[7px] rounded whitespace-nowrap" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>
+								{/each}
+							</div>
+							<div class="flex items-center gap-1.5 flex-[0_0_140px] max-md:flex-[0_0_120px] max-sm:flex-[0_0_100px]">
+								{#if t.composite!==null}
+									<div class="rounded-full bg-gray-200 overflow-hidden" style="width:70px;height:5px">
+										<div class="h-full rounded-full transition-[width] duration-500" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div>
+									</div>
+									<span class="text-xs font-bold min-w-[38px]" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
+								{:else}
+									<div class="rounded-full w-[70px] h-[5px] bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
+									<span class="text-[11px] text-gray-400 italic">Pending</span>
+								{/if}
+							</div>
+							<button class="flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white max-sm:py-[3px] max-sm:px-2.5 max-sm:text-[10px]">
+								View →
+							</button>
 						</div>
-						<div class="sec-chips">{#each SEC4 as s}{@const v=t.scores[s]}<span class="sec-chip" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>{/each}</div>
-						<div class="sub-score">
-							{#if t.composite!==null}<div class="bar-track" style="width:70px;height:5px"><div class="bar-fill" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div></div><span class="score-val" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-							{:else}<div class="bar-na" style="width:70px;height:5px"></div><span class="na-label">Pending</span>{/if}
+					{/each}
+					{#if totalCtPages > 1}
+						<div class="flex items-center justify-center gap-3 py-3 px-5 border-t border-gray-100">
+							<button disabled={datePage===1} onclick={() => datePage--}
+								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+								← Prev
+							</button>
+							<span class="text-[11px] text-gray-400">Page {datePage} of {totalCtPages} · {filteredCtByDate.length} attempts</span>
+							<button disabled={datePage===totalCtPages} onclick={() => datePage++}
+								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+								Next →
+							</button>
 						</div>
-						<button class="view-btn-row">View →</button>
-					</div>
-				{/each}
-				{#if totalCtPages > 1}
-					<div class="pagination">
-						<button class="pg-btn" disabled={datePage===1} onclick={() => datePage--}>← Prev</button>
-						<span class="pg-info">Page {datePage} of {totalCtPages} · {filteredCtByDate.length} attempts</span>
-						<button class="pg-btn" disabled={datePage===totalCtPages} onclick={() => datePage++}>Next →</button>
-					</div>
-				{/if}
+					{/if}
 				</div>
 			{/if}
 		{/if}
 	</div>
 
-	<div class="footer">
+	<div class="text-center py-3.5 text-[10px] text-gray-300">
 		Scores follow the TOEFL 2026 scale (1–6){#if needsAI && !isComplete} · Non-AI submissions excluded from averages{/if}{#if isComplete} · Composite = average of all 4 section scores{/if}
 	</div>
 </div>
@@ -558,22 +647,31 @@
 <!-- ─── Trend popup ──────────────────────────────────────────────────────── -->
 {#if trendOpen && trendPopupData}
 	{@const d = trendPopupData}
-	<div class="tp-backdrop" onclick={() => { trendOpen = false; trendHovIdx = null; }}></div>
-	<div class="tp-popup">
+	<div
+		class="fixed inset-0 z-[200] bg-black/25 backdrop-blur-sm"
+		onclick={() => { trendOpen = false; trendHovIdx = null; }}
+		role="button"
+		aria-label="Close trend"
+		tabindex="-1"
+	></div>
+	<div class="fixed z-[201] bg-white rounded-[18px] shadow-[0_24px_64px_rgba(0,0,0,.18),0_4px_16px_rgba(0,0,0,.08)] w-[472px] max-w-[calc(100vw-32px)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden">
 		<!-- Header -->
-		<div class="tp-head">
-			<div class="tp-title">
-				<span class="tp-sec-name">{sec}</span>
-				<span class="tp-subtitle">Last {d.coords.length} scored submissions · progress vs baseline</span>
+		<div class="flex justify-between items-start p-[18px] pb-3.5 border-b border-gray-100">
+			<div class="flex flex-col gap-[3px]">
+				<span class="text-[15px] font-extrabold text-gray-900 tracking-[-0.3px]">{sec}</span>
+				<span class="text-[11px] text-gray-400">Last {d.coords.length} scored submissions · progress vs baseline</span>
 			</div>
-			<button class="tp-close" onclick={() => { trendOpen = false; trendHovIdx = null; }}>
+			<button
+				onclick={() => { trendOpen = false; trendHovIdx = null; }}
+				class="w-7 h-7 rounded-lg border-0 bg-gray-100 text-gray-500 cursor-pointer flex items-center justify-center flex-shrink-0 transition-colors hover:bg-gray-200 hover:text-gray-700"
+			>
 				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 			</button>
 		</div>
 
 		<!-- Chart -->
-		<div class="tp-chart-wrap">
-			<div class="tp-chart-inner">
+		<div class="px-4 pt-4 pb-1">
+			<div class="relative inline-block">
 				<svg width={d.CW} height={d.CH} style="display:block;overflow:visible">
 					<defs>
 						<linearGradient id="tpgrd" x1="0" y1="0" x2="0" y2="1">
@@ -582,27 +680,22 @@
 						</linearGradient>
 					</defs>
 
-					<!-- Grid lines + y-axis labels -->
 					{#each d.yTicks as t}
 						<line x1={d.lx1} y1={t.y} x2={d.lx2} y2={t.y} stroke="#f0f0f0" stroke-width="1" />
 						<text x={d.pL - 7} y={t.y + 3.5} text-anchor="end" font-size="9" fill="#ccc" font-family="DM Sans,sans-serif">{t.v}</text>
 					{/each}
 
-					<!-- All-time avg reference line -->
 					{#if d.yAllTime !== null}
 						<line x1={d.lx1} y1={d.yAllTime} x2={d.lx2} y2={d.yAllTime} stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="5,4" />
 						<text x={d.lx2 + 5} y={d.yAllTime + 3.5} font-size="8.5" fill="#94a3b8" font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.allTimeAvg)}</text>
 					{/if}
 
-					<!-- Last-10 avg reference line -->
 					<line x1={d.lx1} y1={d.yLast10} x2={d.lx2} y2={d.yLast10} stroke={d.color} stroke-width="1.3" stroke-dasharray="5,4" opacity=".55" />
 					<text x={d.lx2 + 5} y={d.yLast10 + 3.5} font-size="8.5" fill={d.color} font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.last10avg)}</text>
 
-					<!-- Area + line -->
 					<path d={d.area} fill="url(#tpgrd)" />
 					<path d={d.d} fill="none" stroke={d.color} stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
 
-					<!-- Dots -->
 					{#each d.coords as c, i}
 						<circle
 							cx={c.x} cy={c.y}
@@ -615,7 +708,6 @@
 						/>
 					{/each}
 
-					<!-- X-axis date labels: first, mid, last -->
 					{#each d.coords as c, i}
 						{#if i === 0 || i === d.coords.length - 1 || i === Math.floor((d.coords.length - 1) / 2)}
 							<text x={c.x} y={d.CH - d.pB + 17} text-anchor="middle" font-size="8.5" fill="#bbb" font-family="DM Sans,sans-serif">
@@ -625,287 +717,31 @@
 					{/each}
 				</svg>
 
-				<!-- Hover tooltip -->
 				{#if trendHovIdx !== null}
 					{@const c = d.coords[trendHovIdx]}
-					<div class="tp-tt" style="left:{c.x}px; top:{c.y}px">
-						<b style="color:{d.color}">{fmtScore(c.v)}/6</b>
-						<span>{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+					<div class="absolute pointer-events-none -translate-x-1/2 -translate-y-[calc(100%+10px)] bg-gray-900 text-white rounded-lg py-1.5 px-2.5 text-[11px] whitespace-nowrap flex flex-col items-center gap-px z-10 font-dmsans" style="left:{c.x}px; top:{c.y}px">
+						<b class="text-[13px] font-extrabold leading-[1.2]" style="color:{d.color}">{fmtScore(c.v)}/6</b>
+						<span class="text-[10px] leading-[1.2] text-white/60">{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
 					</div>
 				{/if}
 			</div>
 		</div>
 
 		<!-- Legend -->
-		<div class="tp-legend">
-			<div class="tp-leg-item">
-				<span class="tp-leg-dash tp-leg-gray"></span>
-				All-time avg&nbsp;<b>{fmtScore(d.allTimeAvg)}/6</b>
+		<div class="flex items-center gap-3.5 py-3 px-[18px] border-t border-gray-100 flex-wrap">
+			<div class="flex items-center gap-1.5 text-[11px] text-gray-500">
+				<span class="inline-block w-5 h-0.5 rounded-sm flex-shrink-0 bg-slate-300"></span>
+				All-time avg&nbsp;<b class="text-gray-800 font-bold">{fmtScore(d.allTimeAvg)}/6</b>
 			</div>
-			<div class="tp-leg-item">
-				<span class="tp-leg-dash" style="background:{d.color};opacity:.55"></span>
-				Last {d.coords.length} avg&nbsp;<b style="color:{d.color}">{fmtScore(d.last10avg)}/6</b>
+			<div class="flex items-center gap-1.5 text-[11px] text-gray-500">
+				<span class="inline-block w-5 h-0.5 rounded-sm flex-shrink-0" style="background:{d.color};opacity:.55"></span>
+				Last {d.coords.length} avg&nbsp;<b class="font-bold" style="color:{d.color}">{fmtScore(d.last10avg)}/6</b>
 			</div>
 			{#if d.diff !== null}
-				<div class="tp-leg-delta" style="color:{d.color}">
+				<div class="ml-auto text-[13px] font-extrabold tracking-[-0.4px]" style="color:{d.color}">
 					{d.diff >= 0 ? '+' : ''}{fmtScore(d.diff)} vs baseline
 				</div>
 			{/if}
 		</div>
 	</div>
 {/if}
-
-<style>
-	* { box-sizing: border-box; margin: 0; padding: 0; }
-
-	.dashboard { font-family: 'DM Sans', sans-serif; padding: 0 32px 28px; color: #222; }
-
-	/* ── Sticky header ── */
-	.sticky-header { position: sticky; top: 56px; z-index: 40; background: #f9fafb; padding: 14px 32px 0; margin: 0 -32px 14px; border-bottom: 1px solid #ebebeb; }
-
-	.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-	h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
-	.green { color: #00b189; }
-	.subtitle { font-size: 11px; color: #999; margin-top: 1px; }
-
-	.mode-toggle { display: inline-flex; background: #edeef0; border-radius: 99px; padding: 3px; }
-	.mode-btn { padding: 6px 14px; border-radius: 99px; border: none; cursor: pointer; font-size: 12px; font-weight: 400; background: transparent; color: #777; transition: all .2s; font-family: inherit; }
-	.mode-btn.active { font-weight: 600; background: #00b189; color: #fff; }
-
-	/* ── Overview row: Overall gauge + 5 section cards (incl. Complete Tests) ── */
-	.overview-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; align-items: start; }
-
-	.ov-card { background: #fff; border-radius: 12px; padding: 8px 10px 7px; box-shadow: 0 1px 4px rgba(0,0,0,.05); position: relative; overflow: hidden; }
-
-	/* Gauge card */
-	.ov-gauge-card { text-align: center; }
-	.ov-gw { position: relative; max-width: 68px; margin: 0 auto; }
-	.ov-gsv { width: 68px; height: 49px; display: block; }
-	.ov-gnum { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: 800; letter-spacing: -1px; line-height: 1; white-space: nowrap; }
-	.ov-gfrac { font-size: 10px; font-weight: 600; color: #bbb; }
-	.ov-label { font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; margin-top: 1px; display: block; }
-	.ov-best { font-size: 11px; color: #999; margin-top: 2px; }
-	.ov-hint { font-size: 10px; color: #ccc; margin-top: 2px; }
-
-	/* Section cards */
-	.ov-sec { border: 2px solid transparent; cursor: pointer; text-align: left; font-family: inherit; transition: all .15s; }
-	.ov-sec.active { border-color: #00b189; box-shadow: 0 3px 12px rgba(0,177,137,.12); }
-	.ov-sec.ov-complete { background: linear-gradient(135deg, #00b189 0%, #00c99a 100%); border: none; color: #fff; box-shadow: 0 4px 16px rgba(0,177,137,.30); }
-	.ov-sec.ov-complete .ov-name { color: rgba(255,255,255,.85); }
-	.ov-sec.ov-complete .ov-val { color: #fff !important; }
-	.ov-sec.ov-complete .ov-denom, .ov-sec.ov-complete .ov-unit { color: rgba(255,255,255,.7); }
-	.ov-sec.ov-complete .ov-foot { color: rgba(255,255,255,.75); }
-	.ov-sec.ov-complete .ov-foot b { color: #fff !important; }
-	.ov-sec.ov-complete .ov-icon { background: rgba(255,255,255,.2); color: #fff; }
-	.ov-sec.ov-complete .ov-count { background: rgba(255,255,255,.2); color: #fff; }
-	.ov-sec.ov-complete .ov-bar { background: rgba(255,255,255,.4); }
-	.ov-sec.ov-complete.active { border: 1.5px solid rgba(255,255,255,.5); box-shadow: 0 6px 20px rgba(0,177,137,.4); }
-	.ov-sec.ov-complete:hover:not(.active) { background: linear-gradient(135deg, #00a87f 0%, #00b88d 100%); }
-	.ov-sec:not(.ov-complete):hover:not(.active) { background: #f8f8f8; }
-	.ov-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #00b189; }
-	.ov-head { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
-	.ov-icon { width: 22px; height: 22px; border-radius: 6px; background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-	.ov-icon.active { background: rgba(0,177,137,.08); color: #00b189; }
-	.ov-name { font-size: 11px; font-weight: 600; color: #333; }
-	.ov-score-row { display: flex; align-items: baseline; gap: 2px; margin-bottom: 4px; }
-	.ov-val { font-size: 20px; font-weight: 800; letter-spacing: -1px; }
-	.ov-denom { font-size: 11px; font-weight: 600; color: #bbb; }
-	.ov-unit { font-size: 9px; color: #aaa; margin-left: 3px; }
-	.ov-foot { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
-	.ov-count { font-weight: 600; }
-
-	.panel { overflow: visible; }
-	.date-list-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,.04); overflow: hidden; }
-	.panel-header { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-	.panel-title-row { display: flex; align-items: center; gap: 10px; }
-	.panel-icon { width: 34px; height: 34px; border-radius: 10px; background: rgba(0,177,137,.06); display: flex; align-items: center; justify-content: center; color: #00b189; }
-	.panel-section-name { font-size: 16px; font-weight: 700; }
-	.panel-sub { font-size: 11px; color: #999; }
-	.trend-area { text-align: right; }
-	.trend-label { font-size: 9px; color: #aaa; margin-bottom: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-	.no-trend { font-size: 10px; color: #ccc; font-style: italic; }
-
-	.view-toggle-bar { padding: 8px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px; background: #fafbfc; }
-	.view-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; margin-right: 4px; }
-	.view-btn { padding: 4px 12px; border-radius: 99px; border: none; cursor: pointer; font-size: 11px; font-weight: 400; background: transparent; color: #888; transition: all .15s; font-family: inherit; }
-	.view-btn.active { font-weight: 600; background: #222; color: #fff; }
-
-	.empty { padding: 44px 20px; text-align: center; }
-	.empty-icon { font-size: 32px; margin-bottom: 6px; opacity: .4; }
-	.empty-title { font-size: 13px; font-weight: 600; color: #aaa; }
-	.empty-sub { font-size: 11px; color: #ccc; margin-top: 3px; }
-
-	.group-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 9px 20px; background: #f8f9fb; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px; color: #888; font-weight: 600; font-family: inherit; }
-	.group-name { color: #444; }
-	.group-count { font-weight: 400; margin-left: 6px; }
-
-	.sub-row { display: flex; align-items: center; padding: 9px 20px; background: #fff; border-bottom: 1px solid #f4f4f4; font-size: 12px; gap: 12px; flex-wrap: wrap; }
-	.sub-row.alt { background: #fcfcfd; }
-	.sub-info { flex: 1 1 180px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
-	.sub-info.wide { flex: 1 1 220px; }
-	.sub-date { color: #666; white-space: nowrap; }
-	.dot { color: #ddd; }
-	.test-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #f0f0f0; color: #555; white-space: nowrap; }
-
-	.badge { font-size: 9px; font-weight: 700; padding: 1px 7px; border-radius: 99px; text-transform: uppercase; letter-spacing: .4px; }
-	.badge.test { background: rgba(0,177,137,.08); color: #00b189; }
-	.badge.practice { background: rgba(240,160,48,.08); color: #c8920a; }
-	.badge.ai-off { font-weight: 500; background: #f5f5f5; color: #b0b0b0; }
-
-	.sub-score { flex: 0 0 140px; display: flex; align-items: center; gap: 6px; }
-	.bar-na { border-radius: 99px; background: repeating-linear-gradient(90deg, #e8e8e8 0px, #e8e8e8 3px, transparent 3px, transparent 6px); }
-	.na-label { font-size: 11px; color: #bbb; font-style: italic; }
-	.bar-track { border-radius: 99px; background: #eee; overflow: hidden; }
-	.bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
-	.score-val { font-size: 12px; font-weight: 700; min-width: 38px; }
-
-	.sub-details { flex: 1 1 200px; display: flex; gap: 4px; flex-wrap: wrap; }
-	.detail-pill { font-size: 10px; background: #f4f7f5; padding: 2px 6px; border-radius: 5px; color: #888; white-space: nowrap; }
-	.detail-pill.ungraded { background: #fafafa; color: #ccc; }
-
-	.sec-chips { flex: 1 1 160px; display: flex; gap: 4px; flex-wrap: wrap; }
-	.sec-chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; white-space: nowrap; }
-
-	.view-btn-row { flex: 0 0 auto; padding: 4px 13px; border-radius: 99px; border: 1.5px solid #00b189; background: transparent; color: #00b189; font-size: 11px; font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit; white-space: nowrap; }
-	.view-btn-row:hover { background: #00b189; color: #fff; }
-
-	.footer { text-align: center; padding: 14px 0; font-size: 10px; color: #c0c0c0; }
-
-	@media (max-width: 900px) {
-		.section-cards { grid-template-columns: repeat(3, 1fr); }
-	}
-	/* ── Section bar (sticky header strip) ── */
-	.section-bar { display: flex; align-items: center; gap: 10px; padding: 7px 0 8px; border-top: 1px solid #ebebeb; margin-top: 8px; }
-	.sb-left { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
-	.sb-icon { width: 22px; height: 22px; border-radius: 6px; background: rgba(0,177,137,.07); color: #00b189; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-	.sb-name { font-size: 12px; font-weight: 700; color: #222; white-space: nowrap; }
-	.sb-dot { color: #ddd; font-size: 12px; }
-	.sb-count { font-size: 11px; color: #999; white-space: nowrap; }
-	.sb-ai { font-size: 11px; color: #999; white-space: nowrap; }
-	.sb-test-info { font-size: 11px; color: #666; white-space: nowrap; }
-	.sb-trend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; background: none; border: none; padding: 4px 6px; margin: -4px -6px; border-radius: 8px; cursor: pointer; font-family: inherit; transition: background .15s; }
-	.sb-trend:hover:not(:disabled) { background: rgba(0,0,0,.04); }
-	.sb-trend:disabled { cursor: default; }
-	.sb-diff { font-size: 11px; font-weight: 700; white-space: nowrap; }
-	.sb-no-trend { font-size: 10px; color: #ccc; font-style: italic; }
-	.sb-sep-v { width: 1px; height: 20px; background: #e5e7eb; flex-shrink: 0; }
-	.sb-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-	.sb-ctrl-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
-
-	/* ── Custom dropdown ── */
-	.dd-backdrop { position: fixed; inset: 0; z-index: 99; }
-	.dd-wrap { position: relative; }
-	.dd-trigger { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; border: 1.5px solid #e5e7eb; background: #fff; color: #333; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; transition: border-color .15s, box-shadow .15s; box-shadow: 0 1px 3px rgba(0,0,0,.05); white-space: nowrap; }
-	.dd-trigger:hover { border-color: #c5c5c5; background: #fafafa; }
-	.dd-wrap.open .dd-trigger { border-color: #00b189; box-shadow: 0 0 0 3px rgba(0,177,137,.1); }
-	.dd-panel { position: absolute; top: calc(100% + 6px); right: 0; background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.13); border: 1px solid #efefef; min-width: 150px; overflow: hidden; z-index: 100; }
-	.dd-item { display: block; width: 100%; padding: 9px 14px; border: none; background: transparent; color: #333; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; text-align: left; transition: background .1s; }
-	.dd-item:hover { background: #f5f5f5; }
-	.dd-item.sel { font-weight: 700; color: #00b189; background: rgba(0,177,137,.04); }
-
-	/* ── Test grid (By Test Number view) ── */
-	.test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 14px 0 16px; }
-
-	.tc { height: 280px; display: flex; flex-direction: column; background: #fff; border-radius: 12px; border: 1px solid #efefef; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
-
-	.tc-head { flex-shrink: 0; padding: 9px 12px 8px; border-bottom: 1px solid #f0f0f0; background: #fafbfc; }
-	.tc-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
-	.tc-num { font-size: 12px; font-weight: 700; color: #222; }
-	.tc-attempts { font-size: 10px; color: #bbb; font-weight: 500; }
-	.tc-stats { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-	.tc-stat { font-size: 10px; color: #888; }
-	.tc-stat-na { font-size: 10px; color: #ccc; font-style: italic; }
-	.tc-sep { color: #ddd; font-size: 10px; }
-
-	.tc-body { flex: 1; overflow-y: auto; position: relative; min-height: 0; }
-	.tc-body::-webkit-scrollbar { width: 3px; }
-	.tc-body::-webkit-scrollbar-track { background: transparent; }
-	.tc-body::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 99px; }
-
-	.tc-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: rgba(249,250,251,.97); border: none; cursor: pointer; font-family: inherit; width: 100%; transition: background .15s; }
-	.tc-overlay:hover { background: rgba(240,250,247,.99); }
-	.tc-overlay svg { color: #00b189; opacity: .8; }
-	.tc-overlay span { font-size: 11px; font-weight: 600; color: #00b189; }
-
-	.tc-empty { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 11px; color: #ccc; font-style: italic; padding: 16px; text-align: center; }
-
-	.tc-sub { display: flex; align-items: flex-start; gap: 8px; padding: 7px 12px; border-bottom: 1px solid #f4f4f4; }
-	.tc-sub:last-of-type { border-bottom: none; }
-	.tc-sub-body { flex: 1; min-width: 0; }
-	.tc-view { flex-shrink: 0; align-self: center; padding: 3px 8px; border-radius: 99px; border: 1.5px solid #00b189; color: #00b189; background: transparent; font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; transition: all .15s; }
-	.tc-view:hover { background: #00b189; color: #fff; }
-
-	.tc-l1 { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
-	.tc-l2 { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-	.tc-bar { flex: 1; height: 4px; }
-	.tc-date { font-size: 10px; color: #555; font-weight: 500; }
-	.tc-time { font-size: 10px; color: #bbb; }
-	.tc-score { font-size: 11px; font-weight: 700; flex-shrink: 0; }
-	.tc-pills { display: flex; gap: 3px; flex-wrap: wrap; }
-
-	.tc-load-more { display: block; width: 100%; padding: 7px; border: none; background: #f8f9fb; color: #00b189; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit; border-top: 1px solid #f0f0f0; transition: background .15s; }
-	.tc-load-more:hover { background: #f0faf8; }
-
-	/* ── Pagination ── */
-	.pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 13px 20px; border-top: 1px solid #f0f0f0; }
-	.pg-btn { padding: 5px 14px; border-radius: 8px; border: 1.5px solid #e0e0e0; background: #fff; color: #444; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
-	.pg-btn:hover:not(:disabled) { border-color: #00b189; color: #00b189; }
-	.pg-btn:disabled { opacity: .4; cursor: default; }
-	.pg-info { font-size: 11px; color: #aaa; }
-
-	/* ── Badge & pill size variants ── */
-	.badge.sm { font-size: 8px; padding: 1px 5px; }
-	.detail-pill.xs { font-size: 9px; padding: 1px 5px; }
-	.sec-chip.xs { font-size: 9px; padding: 1px 5px; }
-
-	@media (max-width: 767px) {
-		.dashboard { padding: 0 16px 20px; }
-		.sticky-header { top: 56px; padding: 10px 16px 0; margin: 0 -16px 14px; }
-		h1 { font-size: 18px; }
-		.header { flex-direction: column; align-items: flex-start; gap: 10px; }
-		.overview-row { grid-template-columns: repeat(3, 1fr); }
-		.ov-overall { grid-column: 1 / -1; flex-direction: row; text-align: left; gap: 16px; padding: 12px 14px; }
-		.ov-big { font-size: 24px; }
-		.ov-val { font-size: 20px; }
-		.panel-header { flex-direction: column; align-items: flex-start; }
-		.trend-area { text-align: left; width: 100%; }
-		.sub-row { padding: 8px 14px; gap: 8px; }
-		.sub-score { flex: 0 0 120px; }
-		.sub-details, .sec-chips { flex-basis: 100%; }
-		.group-header { padding: 8px 14px; }
-		.view-toggle-bar { padding: 7px 14px; }
-		.test-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px 0; }
-	}
-	@media (max-width: 480px) {
-		.overview-row { grid-template-columns: repeat(2, 1fr); }
-		.ov-card { padding: 10px 10px 9px; }
-		.sub-score { flex: 0 0 100px; }
-		.view-btn-row { padding: 3px 10px; font-size: 10px; }
-		.test-grid { grid-template-columns: 1fr; }
-		.tc { height: 260px; }
-	}
-
-	/* ── Trend popup ── */
-	.tp-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.28); backdrop-filter: blur(2px); }
-	.tp-popup { position: fixed; z-index: 201; background: #fff; border-radius: 18px; box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 4px 16px rgba(0,0,0,.08); width: 472px; max-width: calc(100vw - 32px); top: 50%; left: 50%; transform: translate(-50%, -50%); overflow: hidden; }
-
-	.tp-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 18px 14px; border-bottom: 1px solid #f3f4f6; }
-	.tp-title { display: flex; flex-direction: column; gap: 3px; }
-	.tp-sec-name { font-size: 15px; font-weight: 800; color: #1a1a1a; letter-spacing: -0.3px; }
-	.tp-subtitle { font-size: 11px; color: #aaa; }
-	.tp-close { width: 28px; height: 28px; border-radius: 8px; border: none; background: #f5f5f5; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .15s, color .15s; }
-	.tp-close:hover { background: #eee; color: #333; }
-
-	.tp-chart-wrap { padding: 16px 16px 4px; }
-	.tp-chart-inner { position: relative; display: inline-block; }
-	.tp-tt { position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 10px)); background: #1a1a1a; color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 11px; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 1px; z-index: 10; font-family: 'DM Sans', sans-serif; }
-	.tp-tt b { font-size: 13px; font-weight: 800; line-height: 1.2; }
-	.tp-tt span { font-size: 10px; color: rgba(255,255,255,.55); line-height: 1.2; }
-
-	.tp-legend { display: flex; align-items: center; gap: 14px; padding: 12px 18px 16px; border-top: 1px solid #f3f4f6; flex-wrap: wrap; }
-	.tp-leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #888; }
-	.tp-leg-item b { color: #222; font-weight: 700; }
-	.tp-leg-dash { display: inline-block; width: 20px; height: 2px; border-radius: 2px; flex-shrink: 0; }
-	.tp-leg-gray { background: #cbd5e1; }
-	.tp-leg-delta { margin-left: auto; font-size: 13px; font-weight: 800; letter-spacing: -0.4px; }
-</style>
