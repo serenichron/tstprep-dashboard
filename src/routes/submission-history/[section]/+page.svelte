@@ -1,4 +1,23 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { base } from '$app/paths';
+
+	/* ─── URL ↔ section name ─── */
+	const SLUG_TO_NAME: Record<string, string> = {
+		'complete-tests': 'Complete Tests',
+		'reading':        'Reading',
+		'listening':      'Listening',
+		'writing':        'Writing',
+		'speaking':       'Speaking'
+	};
+	const NAME_TO_SLUG: Record<string, string> = {
+		'Complete Tests': 'complete-tests',
+		'Reading':        'reading',
+		'Listening':      'listening',
+		'Writing':        'writing',
+		'Speaking':       'speaking'
+	};
+
 	/* ─── Helpers ─── */
 	const fmtScore    = (v: number | null | undefined) =>
 		v === null || v === undefined ? null : Number.isInteger(v) ? v + '.0' : String(v);
@@ -178,7 +197,7 @@
 	const secs = ['Complete Tests', 'Reading', 'Listening', 'Writing', 'Speaking'];
 	const PAGE_SIZE  = 20;
 	let mode       = $state<'all' | 'test' | 'practice'>('all');
-	let sec        = $state('Reading');
+	const sec      = $derived(SLUG_TO_NAME[page.params.section] ?? 'Reading');
 	let testFilter = $state<number | 'all'>('all');
 	let datePage   = $state(1);
 	let modeOpen   = $state(false);
@@ -331,7 +350,7 @@
 		</div>
 
 		<!-- Score Overview: Overall gauge + 5 section cards -->
-		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 items-start">
+		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 items-stretch">
 			<!-- Overall Score gauge -->
 			<div class="bg-white rounded-xl pt-2 pb-[7px] px-2.5 shadow-[0_1px_4px_rgba(0,0,0,.05)] relative overflow-hidden text-center">
 				<div class="relative max-w-[68px] mx-auto">
@@ -360,16 +379,16 @@
 				{@const s = stats[sc]}
 				{@const act = sec === sc}
 				{@const comp = sc === 'Complete Tests'}
-				<button
-					onclick={() => (sec = sc)}
-					class="rounded-xl pt-2 pb-[7px] px-2.5 relative overflow-hidden border-2 cursor-pointer text-left transition-all duration-150
+				<a
+					href="{base}/submission-history/{NAME_TO_SLUG[sc]}"
+					class="block no-underline rounded-xl pt-2 pb-[7px] px-2.5 relative overflow-hidden cursor-pointer text-left transition-all duration-150
 						{comp
 							? act
-								? 'border border-white/50 bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_6px_20px_rgba(0,177,137,.4)]'
-								: 'border-0 bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_4px_16px_rgba(0,177,137,.3)] hover:from-[#00a87f] hover:to-[#00b88d]'
+								? 'border border-[#58ae9b] bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_6px_20px_rgba(0,177,137,.4)]'
+								: 'border border-[#58ae9b] bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_4px_16px_rgba(0,177,137,.3)] hover:from-[#00a87f] hover:to-[#00b88d]'
 							: act
-								? 'border-brand-green bg-white shadow-[0_3px_12px_rgba(0,177,137,.12)]'
-								: 'border-transparent bg-white shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:bg-gray-50'}"
+								? 'border-2 border-brand-green bg-white shadow-[0_3px_12px_rgba(0,177,137,.12)]'
+								: 'border-2 border-transparent bg-white shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:bg-gray-50'}"
 				>
 					{#if act}
 						<div class="absolute top-0 left-0 right-0 h-[3px] {comp ? 'bg-white/40' : 'bg-brand-green'}"></div>
@@ -395,7 +414,7 @@
 						<span>Best: <b style="color:{s.best === null ? (comp ? '#fff' : '#ccc') : (comp ? '#fff' : '#00b189')}">{s.best === null ? '—' : fmtScore(s.best)}</b></span>
 						<span class="font-semibold {comp ? 'bg-white/20 text-white rounded px-1' : ''}">{s.count}</span>
 					</div>
-				</button>
+				</a>
 			{/each}
 		</div>
 
@@ -507,13 +526,12 @@
 			</div>
 		</div>
 		{#if testOpen || modeOpen}
-			<div
-				class="fixed inset-0 z-[99]"
+			<button
+				type="button"
+				class="fixed inset-0 z-[99] cursor-default"
 				onclick={() => { testOpen = false; modeOpen = false; }}
-				role="button"
 				aria-label="Close dropdowns"
-				tabindex="-1"
-			></div>
+			></button>
 		{/if}
 	</div>
 
@@ -530,8 +548,8 @@
 			{:else}
 				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
 					{#each pagedDateRows as sub, i}
-						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-wrap max-md:px-3.5 max-md:gap-2 {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
-							<div class="flex items-center gap-1.5 flex-wrap min-w-0 flex-[1_1_220px]">
+						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-nowrap max-md:px-3.5 max-md:gap-2 max-md:flex-wrap {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
+							<div class="flex items-center gap-1.5 flex-nowrap min-w-0 w-[470px] flex-shrink-0 max-md:w-full">
 								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{sub.testNumber}</span>
 								<span class="text-gray-500 whitespace-nowrap">{fmtD(sub.date)} <span class="text-gray-300">·</span> {fmtT(sub.date)}</span>
 								<span class="text-[9px] font-bold py-px px-[7px] rounded-full uppercase tracking-[.4px]
@@ -553,7 +571,7 @@
 									<span class="text-xs font-bold min-w-[38px]" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
 								{/if}
 							</div>
-							<div class="flex gap-1 flex-wrap flex-[1_1_200px] max-md:flex-[1_1_100%]">
+							<div class="flex gap-1 flex-wrap flex-1 min-w-0 max-md:flex-[1_1_100%]">
 								{#each Object.entries(sub.details) as [k,v]}
 									<span class="text-[10px] py-0.5 px-1.5 rounded whitespace-nowrap
 										{v==='not graded' ? 'bg-gray-50 text-gray-300' : 'bg-[#f4f7f5] text-gray-500'}">
@@ -593,13 +611,13 @@
 			{:else}
 				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
 					{#each pagedCtRows as t, i}
-						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-wrap max-md:px-3.5 max-md:gap-2 {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
-							<div class="flex items-center gap-1.5 flex-wrap min-w-0 flex-[1_1_220px]">
+						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-nowrap max-md:px-3.5 max-md:gap-2 max-md:flex-wrap {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
+							<div class="flex items-center gap-1.5 flex-nowrap min-w-0 w-[470px] flex-shrink-0 max-md:w-full">
 								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{t.testNumber}</span>
 								<span class="text-gray-500 whitespace-nowrap">{fmtD(t.date)} <span class="text-gray-300">·</span> {fmtT(t.date)}</span>
 								<span class="text-gray-500 whitespace-nowrap" style="color:#bbb">{t.duration}</span>
 							</div>
-							<div class="flex gap-1 flex-wrap flex-[1_1_160px]">
+							<div class="flex gap-1 flex-wrap flex-1 min-w-0 max-md:flex-[1_1_100%]">
 								{#each SEC4 as s}
 									{@const v=t.scores[s]}
 									<span class="text-[10px] font-bold py-0.5 px-[7px] rounded whitespace-nowrap" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>
@@ -647,13 +665,12 @@
 <!-- ─── Trend popup ──────────────────────────────────────────────────────── -->
 {#if trendOpen && trendPopupData}
 	{@const d = trendPopupData}
-	<div
-		class="fixed inset-0 z-[200] bg-black/25 backdrop-blur-sm"
+	<button
+		type="button"
+		class="fixed inset-0 z-[200] bg-black/25 backdrop-blur-sm cursor-default"
 		onclick={() => { trendOpen = false; trendHovIdx = null; }}
-		role="button"
 		aria-label="Close trend"
-		tabindex="-1"
-	></div>
+	></button>
 	<div class="fixed z-[201] bg-white rounded-[18px] shadow-[0_24px_64px_rgba(0,0,0,.18),0_4px_16px_rgba(0,0,0,.08)] w-[472px] max-w-[calc(100vw-32px)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden">
 		<!-- Header -->
 		<div class="flex justify-between items-start p-[18px] pb-3.5 border-b border-gray-100">
@@ -662,7 +679,9 @@
 				<span class="text-[11px] text-gray-400">Last {d.coords.length} scored submissions · progress vs baseline</span>
 			</div>
 			<button
+				type="button"
 				onclick={() => { trendOpen = false; trendHovIdx = null; }}
+				aria-label="Close"
 				class="w-7 h-7 rounded-lg border-0 bg-gray-100 text-gray-500 cursor-pointer flex items-center justify-center flex-shrink-0 transition-colors hover:bg-gray-200 hover:text-gray-700"
 			>
 				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -703,6 +722,8 @@
 							fill={trendHovIdx === i ? d.color : '#fff'}
 							stroke={d.color} stroke-width="2"
 							style="cursor:pointer;transition:r .1s,fill .1s"
+							role="img"
+							aria-label="Data point {i + 1}: {fmtScore(c.v)} of 6"
 							onmouseenter={() => trendHovIdx = i}
 							onmouseleave={() => trendHovIdx = null}
 						/>
