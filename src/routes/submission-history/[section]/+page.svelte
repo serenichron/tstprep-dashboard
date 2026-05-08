@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
+	import QuizRow from '$lib/components/QuizRow.svelte';
+	import TestRow from '$lib/components/TestRow.svelte';
+  import type { QuizSubmission } from '$lib/types';
+  import { formatScore } from '$lib/utils';
 
 	/* ─── URL ↔ section name ─── */
 	const SLUG_TO_NAME: Record<string, string> = {
@@ -21,107 +25,100 @@
 	/* ─── Helpers ─── */
 	const fmtScore    = (v: number | null | undefined) =>
 		v === null || v === undefined ? null : Number.isInteger(v) ? v + '.0' : String(v);
-	const fmtScoreFull = (v: number | null | undefined) =>
-		v === null || v === undefined ? null : fmtScore(v) + '/6';
-	const fmtD = (iso: string) =>
-		new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-	const fmtT = (iso: string) =>
-		new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 	const scoreColor  = (v: number) => (v >= 5 ? '#00b189' : v >= 3.5 ? '#f0a030' : '#ff5859');
 	const roundHalf   = (v: number) => Math.round(v * 2) / 2;
 
 	/* ─── Section submission mock data ─── */
 	/* Reading: 25 entries (tests 1–8)  |  Listening: 22 entries (tests 1–7)
 	   Writing: 8 entries (tests 1–5)   |  Speaking: 7 entries (tests 1–5)   */
-	const MOCK = [
+	const MOCK: QuizSubmission[] = [
 		// ── Reading ──
-		{ id:'r0',  section:'Reading', testNumber:1, mode:'test',     score:3.0, scoreAvailable:true,  date:'2025-12-15T09:00:00', details:{'Part 1':'7/12','Part 2':'6/12'} },
-		{ id:'r1',  section:'Reading', testNumber:1, mode:'practice', score:3.0, scoreAvailable:true,  date:'2026-01-10T09:15:00', details:{'Part 1':'7/12','Part 2':'6/12'} },
-		{ id:'r2',  section:'Reading', testNumber:1, mode:'test',     score:3.5, scoreAvailable:true,  date:'2026-01-20T11:30:00', details:{'Part 1':'8/12','Part 2':'7/12'} },
-		{ id:'r3',  section:'Reading', testNumber:1, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-02-14T10:00:00', details:{'Part 1':'9/12','Part 2':'9/12'} },
-		{ id:'r4',  section:'Reading', testNumber:2, mode:'test',     score:3.5, scoreAvailable:true,  date:'2026-01-28T13:00:00', details:{'Part 1':'8/12','Part 2':'7/12'} },
-		{ id:'r5',  section:'Reading', testNumber:2, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-02-05T10:00:00', details:{'Part 1':'9/12','Part 2':'8/12'} },
-		{ id:'r6',  section:'Reading', testNumber:2, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-02-12T14:00:00', details:{'Part 1':'9/12','Part 2':'9/12'} },
-		{ id:'r7',  section:'Reading', testNumber:2, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-03-02T09:30:00', details:{'Part 1':'10/12','Part 2':'9/12'} },
-		{ id:'r8',  section:'Reading', testNumber:3, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-02-18T14:20:00', details:{'Part 1':'10/12','Part 2':'8/12'} },
-		{ id:'r9',  section:'Reading', testNumber:3, mode:'practice', score:3.5, scoreAvailable:true,  date:'2026-02-25T09:45:00', details:{'Part 1':'9/12','Part 2':'7/12'} },
-		{ id:'r10', section:'Reading', testNumber:3, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-03-05T10:00:00', details:{'Part 1':'11/12','Part 2':'9/12'} },
-		{ id:'r11', section:'Reading', testNumber:3, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-03-10T10:15:00', details:{'Part 1':'10/12','Part 2':'9/12'} },
-		{ id:'r12', section:'Reading', testNumber:4, mode:'test',     score:4.0, scoreAvailable:true,  date:'2026-03-18T09:00:00', details:{'Part 1':'10/12','Part 2':'8/12'} },
-		{ id:'r13', section:'Reading', testNumber:4, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-03-22T15:00:00', details:{'Part 1':'10/12','Part 2':'8/12'} },
-		{ id:'r14', section:'Reading', testNumber:4, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-04-05T09:00:00', details:{'Part 1':'11/12','Part 2':'9/12'} },
-		{ id:'r15', section:'Reading', testNumber:5, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-04-01T09:30:00', details:{'Part 1':'11/12','Part 2':'10/12'} },
-		{ id:'r16', section:'Reading', testNumber:5, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-04-08T10:00:00', details:{'Part 1':'10/12','Part 2':'10/12'} },
-		{ id:'r17', section:'Reading', testNumber:5, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-14T09:15:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
-		{ id:'r18', section:'Reading', testNumber:6, mode:'test',     score:4.5, scoreAvailable:true,  date:'2026-03-25T11:00:00', details:{'Part 1':'11/12','Part 2':'9/12'} },
-		{ id:'r19', section:'Reading', testNumber:6, mode:'practice', score:4.0, scoreAvailable:true,  date:'2026-04-02T14:00:00', details:{'Part 1':'10/12','Part 2':'9/12'} },
-		{ id:'r20', section:'Reading', testNumber:6, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-09T10:30:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
-		{ id:'r21', section:'Reading', testNumber:7, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-06T09:00:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
-		{ id:'r22', section:'Reading', testNumber:7, mode:'practice', score:4.5, scoreAvailable:true,  date:'2026-04-10T11:00:00', details:{'Part 1':'11/12','Part 2':'10/12'} },
-		{ id:'r23', section:'Reading', testNumber:8, mode:'test',     score:5.0, scoreAvailable:true,  date:'2026-04-12T09:00:00', details:{'Part 1':'12/12','Part 2':'11/12'} },
-		{ id:'r24', section:'Reading', testNumber:8, mode:'practice', score:4.5, scoreAvailable:true,  date:'2026-04-13T14:00:00', details:{'Part 1':'11/12','Part 2':'10/12'} },
+		{ id:'r0',   quiz_type:'reading',   test_number:1, practice:false, score:35, ai:null, created_at:'2025-12-15T09:00:00', info:[{p:7, t:12},{p:6 ,t:12}] },
+		{ id:'r1',   quiz_type:'reading',   test_number:1, practice:true,  score:35, ai:null, created_at:'2026-01-10T09:15:00', info:[{p:7, t:12},{p:6 ,t:12}] },
+		{ id:'r2',   quiz_type:'reading',   test_number:1, practice:false, score:46, ai:null, created_at:'2026-01-20T11:30:00', info:[{p:8, t:12},{p:7 ,t:12}] },
+		{ id:'r3',   quiz_type:'reading',   test_number:1, practice:false, score:55, ai:null, created_at:'2026-02-14T10:00:00', info:[{p:9, t:12},{p:9 ,t:12}] },
+		{ id:'r4',   quiz_type:'reading',   test_number:2, practice:false, score:46, ai:null, created_at:'2026-01-28T13:00:00', info:[{p:8, t:12},{p:7 ,t:12}] },
+		{ id:'r5',   quiz_type:'reading',   test_number:2, practice:false, score:55, ai:null, created_at:'2026-02-05T10:00:00', info:[{p:9, t:12},{p:8 ,t:12}] },
+		{ id:'r6',   quiz_type:'reading',   test_number:2, practice:true,  score:55, ai:null, created_at:'2026-02-12T14:00:00', info:[{p:9, t:12},{p:9 ,t:12}] },
+		{ id:'r7',   quiz_type:'reading',   test_number:2, practice:false, score:66, ai:null, created_at:'2026-03-02T09:30:00', info:[{p:10,t:12},{p:9 ,t:12}] },
+		{ id:'r8',   quiz_type:'reading',   test_number:3, practice:false, score:55, ai:null, created_at:'2026-02-18T14:20:00', info:[{p:10,t:12},{p:8 ,t:12}] },
+		{ id:'r9',   quiz_type:'reading',   test_number:3, practice:true,  score:46, ai:null, created_at:'2026-02-25T09:45:00', info:[{p:9, t:12},{p:7 ,t:12}] },
+		{ id:'r10',  quiz_type:'reading',   test_number:3, practice:false, score:66, ai:null, created_at:'2026-03-05T10:00:00', info:[{p:11,t:12},{p:9 ,t:12}] },
+		{ id:'r11',  quiz_type:'reading',   test_number:3, practice:true,  score:55, ai:null, created_at:'2026-03-10T10:15:00', info:[{p:10,t:12},{p:9 ,t:12}] },
+		{ id:'r12',  quiz_type:'reading',   test_number:4, practice:false, score:55, ai:null, created_at:'2026-03-18T09:00:00', info:[{p:10,t:12},{p:8 ,t:12}] },
+		{ id:'r13',  quiz_type:'reading',   test_number:4, practice:true,  score:55, ai:null, created_at:'2026-03-22T15:00:00', info:[{p:10,t:12},{p:8 ,t:12}] },
+		{ id:'r14',  quiz_type:'reading',   test_number:4, practice:false, score:66, ai:null, created_at:'2026-04-05T09:00:00', info:[{p:11,t:12},{p:9 ,t:12}] },
+		{ id:'r15',  quiz_type:'reading',   test_number:5, practice:false, score:66, ai:null, created_at:'2026-04-01T09:30:00', info:[{p:11,t:12},{p:10,t:12}] },
+		{ id:'r16',  quiz_type:'reading',   test_number:5, practice:true,  score:55, ai:null, created_at:'2026-04-08T10:00:00', info:[{p:10,t:12},{p:10,t:12}] },
+		{ id:'r17',  quiz_type:'reading',   test_number:5, practice:false, score:75, ai:null, created_at:'2026-04-14T09:15:00', info:[{p:12,t:12},{p:11,t:12}] },
+		{ id:'r18',  quiz_type:'reading',   test_number:6, practice:false, score:66, ai:null, created_at:'2026-03-25T11:00:00', info:[{p:11,t:12},{p:9 ,t:12}] },
+		{ id:'r19',  quiz_type:'reading',   test_number:6, practice:true,  score:55, ai:null, created_at:'2026-04-02T14:00:00', info:[{p:10,t:12},{p:9 ,t:12}] },
+		{ id:'r20',  quiz_type:'reading',   test_number:6, practice:false, score:75, ai:null, created_at:'2026-04-09T10:30:00', info:[{p:12,t:12},{p:11,t:12}] },
+		{ id:'r21',  quiz_type:'reading',   test_number:7, practice:false, score:75, ai:null, created_at:'2026-04-06T09:00:00', info:[{p:12,t:12},{p:11,t:12}] },
+		{ id:'r22',  quiz_type:'reading',   test_number:7, practice:true,  score:66, ai:null, created_at:'2026-04-10T11:00:00', info:[{p:11,t:12},{p:10,t:12}] },
+		{ id:'r23',  quiz_type:'reading',   test_number:8, practice:false, score:75, ai:null, created_at:'2026-04-12T09:00:00', info:[{p:12,t:12},{p:11,t:12}] },
+		{ id:'r24',  quiz_type:'reading',   test_number:8, practice:true,  score:66, ai:null, created_at:'2026-04-13T14:00:00', info:[{p:11,t:12},{p:10,t:12}] },
 		// ── Listening ──
-		{ id:'l0',  section:'Listening', testNumber:1, mode:'test',     score:3.0, scoreAvailable:true, date:'2025-12-20T10:00:00', details:{'Part 1':'9/14','Part 2':'8/14'} },
-		{ id:'l1',  section:'Listening', testNumber:1, mode:'practice', score:3.0, scoreAvailable:true, date:'2026-01-12T10:00:00', details:{'Part 1':'10/14','Part 2':'8/14'} },
-		{ id:'l2',  section:'Listening', testNumber:1, mode:'test',     score:3.5, scoreAvailable:true, date:'2026-01-25T14:00:00', details:{'Part 1':'10/14','Part 2':'9/14'} },
-		{ id:'l3',  section:'Listening', testNumber:1, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-02-20T09:00:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
-		{ id:'l4',  section:'Listening', testNumber:2, mode:'practice', score:3.0, scoreAvailable:true, date:'2026-01-28T13:30:00', details:{'Part 1':'8/14','Part 2':'9/14'} },
-		{ id:'l5',  section:'Listening', testNumber:2, mode:'test',     score:3.5, scoreAvailable:true, date:'2026-02-10T11:00:00', details:{'Part 1':'10/14','Part 2':'9/14'} },
-		{ id:'l6',  section:'Listening', testNumber:2, mode:'practice', score:3.5, scoreAvailable:true, date:'2026-02-18T10:00:00', details:{'Part 1':'10/14','Part 2':'9/14'} },
-		{ id:'l7',  section:'Listening', testNumber:2, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-03-14T14:00:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
-		{ id:'l8',  section:'Listening', testNumber:3, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-02-20T09:15:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
-		{ id:'l9',  section:'Listening', testNumber:3, mode:'practice', score:3.5, scoreAvailable:true, date:'2026-03-01T11:00:00', details:{'Part 1':'11/14','Part 2':'9/14'} },
-		{ id:'l10', section:'Listening', testNumber:3, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-03-20T09:00:00', details:{'Part 1':'13/14','Part 2':'11/14'} },
-		{ id:'l11', section:'Listening', testNumber:4, mode:'practice', score:3.5, scoreAvailable:true, date:'2026-03-05T14:00:00', details:{'Part 1':'11/14','Part 2':'9/14'} },
-		{ id:'l12', section:'Listening', testNumber:4, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-03-15T10:30:00', details:{'Part 1':'12/14','Part 2':'10/14'} },
-		{ id:'l13', section:'Listening', testNumber:4, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-04-03T09:00:00', details:{'Part 1':'13/14','Part 2':'11/14'} },
-		{ id:'l14', section:'Listening', testNumber:5, mode:'test',     score:4.0, scoreAvailable:true, date:'2026-03-15T10:30:00', details:{'Part 1':'12/14','Part 2':'11/14'} },
-		{ id:'l15', section:'Listening', testNumber:5, mode:'practice', score:4.5, scoreAvailable:true, date:'2026-03-29T09:00:00', details:{'Part 1':'13/14','Part 2':'11/14'} },
-		{ id:'l16', section:'Listening', testNumber:5, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-04-08T10:00:00', details:{'Part 1':'13/14','Part 2':'12/14'} },
-		{ id:'l17', section:'Listening', testNumber:6, mode:'test',     score:4.5, scoreAvailable:true, date:'2026-04-05T11:15:00', details:{'Part 1':'13/14','Part 2':'12/14'} },
-		{ id:'l18', section:'Listening', testNumber:6, mode:'practice', score:4.0, scoreAvailable:true, date:'2026-04-10T14:00:00', details:{'Part 1':'12/14','Part 2':'11/14'} },
-		{ id:'l19', section:'Listening', testNumber:6, mode:'test',     score:5.0, scoreAvailable:true, date:'2026-04-14T09:00:00', details:{'Part 1':'14/14','Part 2':'12/14'} },
-		{ id:'l20', section:'Listening', testNumber:7, mode:'test',     score:5.0, scoreAvailable:true, date:'2026-04-07T10:00:00', details:{'Part 1':'14/14','Part 2':'13/14'} },
-		{ id:'l21', section:'Listening', testNumber:7, mode:'practice', score:4.5, scoreAvailable:true, date:'2026-04-11T11:00:00', details:{'Part 1':'13/14','Part 2':'12/14'} },
+		{ id:'l0',   quiz_type:'listening', test_number:1, practice:false, score:35, ai:null, created_at:'2025-12-20T10:00:00', info:[{p:9, t:14},{p:8, t:14}] },
+		{ id:'l1',   quiz_type:'listening', test_number:1, practice:true,  score:35, ai:null, created_at:'2026-01-12T10:00:00', info:[{p:10,t:14},{p:8, t:14}] },
+		{ id:'l2',   quiz_type:'listening', test_number:1, practice:false, score:46, ai:null, created_at:'2026-01-25T14:00:00', info:[{p:10,t:14},{p:9, t:14}] },
+		{ id:'l3',   quiz_type:'listening', test_number:1, practice:false, score:55, ai:null, created_at:'2026-02-20T09:00:00', info:[{p:12,t:14},{p:10,t:14}] },
+		{ id:'l4',   quiz_type:'listening', test_number:2, practice:true,  score:35, ai:null, created_at:'2026-01-28T13:30:00', info:[{p:8, t:14},{p:9, t:14}] },
+		{ id:'l5',   quiz_type:'listening', test_number:2, practice:false, score:46, ai:null, created_at:'2026-02-10T11:00:00', info:[{p:10,t:14},{p:9, t:14}] },
+		{ id:'l6',   quiz_type:'listening', test_number:2, practice:true,  score:46, ai:null, created_at:'2026-02-18T10:00:00', info:[{p:10,t:14},{p:9, t:14}] },
+		{ id:'l7',   quiz_type:'listening', test_number:2, practice:false, score:55, ai:null, created_at:'2026-03-14T14:00:00', info:[{p:12,t:14},{p:10,t:14}] },
+		{ id:'l8',   quiz_type:'listening', test_number:3, practice:false, score:55, ai:null, created_at:'2026-02-20T09:15:00', info:[{p:12,t:14},{p:10,t:14}] },
+		{ id:'l9',   quiz_type:'listening', test_number:3, practice:true,  score:46, ai:null, created_at:'2026-03-01T11:00:00', info:[{p:11,t:14},{p:9, t:14}] },
+		{ id:'l10',  quiz_type:'listening', test_number:3, practice:false, score:66, ai:null, created_at:'2026-03-20T09:00:00', info:[{p:13,t:14},{p:11,t:14}] },
+		{ id:'l11',  quiz_type:'listening', test_number:4, practice:true,  score:46, ai:null, created_at:'2026-03-05T14:00:00', info:[{p:11,t:14},{p:9, t:14}] },
+		{ id:'l12',  quiz_type:'listening', test_number:4, practice:false, score:55, ai:null, created_at:'2026-03-15T10:30:00', info:[{p:12,t:14},{p:10,t:14}] },
+		{ id:'l13',  quiz_type:'listening', test_number:4, practice:false, score:66, ai:null, created_at:'2026-04-03T09:00:00', info:[{p:13,t:14},{p:11,t:14}] },
+		{ id:'l14',  quiz_type:'listening', test_number:5, practice:false, score:55, ai:null, created_at:'2026-03-15T10:30:00', info:[{p:12,t:14},{p:11,t:14}] },
+		{ id:'l15',  quiz_type:'listening', test_number:5, practice:true,  score:66, ai:null, created_at:'2026-03-29T09:00:00', info:[{p:13,t:14},{p:11,t:14}] },
+		{ id:'l16',  quiz_type:'listening', test_number:5, practice:false, score:66, ai:null, created_at:'2026-04-08T10:00:00', info:[{p:13,t:14},{p:12,t:14}] },
+		{ id:'l17',  quiz_type:'listening', test_number:6, practice:false, score:66, ai:null, created_at:'2026-04-05T11:15:00', info:[{p:13,t:14},{p:12,t:14}] },
+		{ id:'l18',  quiz_type:'listening', test_number:6, practice:true,  score:55, ai:null, created_at:'2026-04-10T14:00:00', info:[{p:12,t:14},{p:11,t:14}] },
+		{ id:'l19',  quiz_type:'listening', test_number:6, practice:false, score:75, ai:null, created_at:'2026-04-14T09:00:00', info:[{p:14,t:14},{p:12,t:14}] },
+		{ id:'l20',  quiz_type:'listening', test_number:7, practice:false, score:75, ai:null, created_at:'2026-04-07T10:00:00', info:[{p:14,t:14},{p:13,t:14}] },
+		{ id:'l21',  quiz_type:'listening', test_number:7, practice:true,  score:66, ai:null, created_at:'2026-04-11T11:00:00', info:[{p:13,t:14},{p:12,t:14}] },
 		// ── Writing ──
-		{ id:'wh0',  section:'Writing', testNumber:1, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-08-10T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh1',  section:'Writing', testNumber:2, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-08-24T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh2',  section:'Writing', testNumber:3, mode:'test',     score:5.5, scoreAvailable:true, date:'2024-09-07T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
-		{ id:'wh3',  section:'Writing', testNumber:4, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-09-21T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh4',  section:'Writing', testNumber:5, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-10-05T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh5',  section:'Writing', testNumber:6, mode:'test',     score:5.5, scoreAvailable:true, date:'2024-10-19T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
-		{ id:'wh6',  section:'Writing', testNumber:7, mode:'test',     score:5.0, scoreAvailable:true, date:'2024-11-02T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh7',  section:'Writing', testNumber:8, mode:'test',     score:6.0, scoreAvailable:true, date:'2024-11-16T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
-		{ id:'wh8',  section:'Writing', testNumber:1, mode:'practice', score:5.0, scoreAvailable:true, date:'2024-11-30T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh9',  section:'Writing', testNumber:2, mode:'practice', score:5.5, scoreAvailable:true, date:'2024-12-14T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
-		{ id:'wh10', section:'Writing', testNumber:3, mode:'test',     score:5.0, scoreAvailable:true, date:'2025-01-11T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh11', section:'Writing', testNumber:4, mode:'test',     score:5.5, scoreAvailable:true, date:'2025-01-25T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
-		{ id:'wh12', section:'Writing', testNumber:5, mode:'test',     score:5.0, scoreAvailable:true, date:'2025-02-08T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh13', section:'Writing', testNumber:6, mode:'test',     score:5.0, scoreAvailable:true, date:'2025-02-22T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'4/5'} },
-		{ id:'wh14', section:'Writing', testNumber:7, mode:'test',     score:5.5, scoreAvailable:true, date:'2025-03-08T10:00:00', details:{'Build a Sentence':'10/10','Write an Email':'5/5','Academic Discussion':'5/5'} },
-		{ id:'w0', section:'Writing', testNumber:1, mode:'test',     score:3.0,  scoreAvailable:true,  date:'2026-01-14T10:30:00', details:{'Build a Sentence':'6/10','Write an Email':'3/5','Academic Discussion':'2/5'} },
-		{ id:'w1', section:'Writing', testNumber:1, mode:'practice', score:null, scoreAvailable:false, date:'2026-01-22T14:00:00', details:{'Build a Sentence':'7/10','Write an Email':'not graded','Academic Discussion':'not graded'} },
-		{ id:'w2', section:'Writing', testNumber:2, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-02-08T09:30:00', details:{'Build a Sentence':'7/10','Write an Email':'3/5','Academic Discussion':'3/5'} },
-		{ id:'w3', section:'Writing', testNumber:3, mode:'test',     score:null, scoreAvailable:false, date:'2026-02-22T11:45:00', details:{'Build a Sentence':'8/10','Write an Email':'not graded','Academic Discussion':'not graded'} },
-		{ id:'w4', section:'Writing', testNumber:3, mode:'practice', score:4.0,  scoreAvailable:true,  date:'2026-03-01T10:00:00', details:{'Build a Sentence':'8/10','Write an Email':'4/5','Academic Discussion':'3/5'} },
-		{ id:'w5', section:'Writing', testNumber:4, mode:'test',     score:4.0,  scoreAvailable:true,  date:'2026-03-18T09:15:00', details:{'Build a Sentence':'9/10','Write an Email':'4/5','Academic Discussion':'3/5'} },
-		{ id:'w6', section:'Writing', testNumber:5, mode:'test',     score:null, scoreAvailable:false, date:'2026-03-28T14:30:00', details:{'Build a Sentence':'9/10','Write an Email':'not graded','Academic Discussion':'not graded'} },
-		{ id:'w7', section:'Writing', testNumber:5, mode:'practice', score:4.0,  scoreAvailable:true,  date:'2026-04-06T11:00:00', details:{'Build a Sentence':'9/10','Write an Email':'4/5','Academic Discussion':'4/5'} },
+		{ id:'wh0',  quiz_type:'writing',   test_number:1, practice:false, score:75, ai:true,  created_at:'2024-08-10T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh1',  quiz_type:'writing',   test_number:2, practice:false, score:75, ai:true,  created_at:'2024-08-24T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh2',  quiz_type:'writing',   test_number:3, practice:false, score:86, ai:true,  created_at:'2024-09-07T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:5,t:5,c:1}} },
+		{ id:'wh3',  quiz_type:'writing',   test_number:4, practice:false, score:75, ai:true,  created_at:'2024-09-21T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh4',  quiz_type:'writing',   test_number:5, practice:false, score:75, ai:true,  created_at:'2024-10-05T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh5',  quiz_type:'writing',   test_number:6, practice:false, score:86, ai:true,  created_at:'2024-10-19T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:5,t:5,c:1}} },
+		{ id:'wh6',  quiz_type:'writing',   test_number:7, practice:false, score:75, ai:true,  created_at:'2024-11-02T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh7',  quiz_type:'writing',   test_number:8, practice:false, score:95, ai:true,  created_at:'2024-11-16T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:5,t:5,c:1}} },
+		{ id:'wh8',  quiz_type:'writing',   test_number:1, practice:true,  score:75, ai:true,  created_at:'2024-11-30T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh9',  quiz_type:'writing',   test_number:2, practice:true,  score:86, ai:true,  created_at:'2024-12-14T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:5,t:5,c:1}} },
+		{ id:'wh10', quiz_type:'writing',   test_number:3, practice:false, score:75, ai:true,  created_at:'2025-01-11T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh11', quiz_type:'writing',   test_number:4, practice:false, score:86, ai:true,  created_at:'2025-01-25T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:5,t:5,c:1}} },
+		{ id:'wh12', quiz_type:'writing',   test_number:5, practice:false, score:75, ai:true,  created_at:'2025-02-08T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh13', quiz_type:'writing',   test_number:6, practice:false, score:75, ai:true,  created_at:'2025-02-22T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
+		{ id:'wh14', quiz_type:'writing',   test_number:7, practice:false, score:86, ai:true,  created_at:'2025-03-08T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:10,t:10,c:2},'ld_tstprep_write_an_email':{p:5,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:5,t:5,c:1}} },
+		{ id:'w0',   quiz_type:'writing',   test_number:1, practice:false, score:35, ai:true,  created_at:'2026-01-14T10:30:00', info:{'ld_tstprep_build_a_sentence':{p:6, t:10,c:2},'ld_tstprep_write_an_email':{p:3,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:2,t:5,c:1}} },
+		{ id:'w1',   quiz_type:'writing',   test_number:1, practice:true,  score:0,  ai:false, created_at:'2026-01-22T14:00:00', info:{'ld_tstprep_build_a_sentence':{p:7, t:10,c:2},'ld_tstprep_write_an_email':{p:0,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:0,t:5,c:1}} },
+		{ id:'w2',   quiz_type:'writing',   test_number:2, practice:false, score:46, ai:true,  created_at:'2026-02-08T09:30:00', info:{'ld_tstprep_build_a_sentence':{p:7, t:10,c:2},'ld_tstprep_write_an_email':{p:3,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:3,t:5,c:1}} },
+		{ id:'w3',   quiz_type:'writing',   test_number:3, practice:false, score:0,  ai:false, created_at:'2026-02-22T11:45:00', info:{'ld_tstprep_build_a_sentence':{p:8, t:10,c:2},'ld_tstprep_write_an_email':{p:0,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:0,t:5,c:1}} },
+		{ id:'w5',   quiz_type:'writing',   test_number:4, practice:false, score:55, ai:true,  created_at:'2026-03-18T09:15:00', info:{'ld_tstprep_build_a_sentence':{p:9, t:10,c:2},'ld_tstprep_write_an_email':{p:4,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:3,t:5,c:1}} },
+		{ id:'w4',   quiz_type:'writing',   test_number:3, practice:true,  score:55, ai:true,  created_at:'2026-03-01T10:00:00', info:{'ld_tstprep_build_a_sentence':{p:8, t:10,c:2},'ld_tstprep_write_an_email':{p:4,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:3,t:5,c:1}} },
+		{ id:'w6',   quiz_type:'writing',   test_number:5, practice:false, score:0,  ai:false, created_at:'2026-03-28T14:30:00', info:{'ld_tstprep_build_a_sentence':{p:9, t:10,c:2},'ld_tstprep_write_an_email':{p:0,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:0,t:5,c:1}} },
+		{ id:'w7',   quiz_type:'writing',   test_number:5, practice:true,  score:55, ai:true,  created_at:'2026-04-06T11:00:00', info:{'ld_tstprep_build_a_sentence':{p:9, t:10,c:2},'ld_tstprep_write_an_email':{p:4,t:5,c:1},'ld_tstprep_write_academic_discussion':{p:4,t:5,c:1}} },
 		// ── Speaking ──
-		{ id:'s0', section:'Speaking', testNumber:1, mode:'test',     score:null, scoreAvailable:false, date:'2026-01-16T11:00:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
-		{ id:'s1', section:'Speaking', testNumber:2, mode:'practice', score:3.0,  scoreAvailable:true,  date:'2026-02-01T10:15:00', details:{'Listen and Repeat':'5/7','Take an Interview':'3/4'} },
-		{ id:'s2', section:'Speaking', testNumber:2, mode:'test',     score:null, scoreAvailable:false, date:'2026-02-15T13:00:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
-		{ id:'s3', section:'Speaking', testNumber:3, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-03-05T09:30:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
-		{ id:'s4', section:'Speaking', testNumber:4, mode:'practice', score:null, scoreAvailable:false, date:'2026-03-20T14:45:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
-		{ id:'s5', section:'Speaking', testNumber:5, mode:'test',     score:4.0,  scoreAvailable:true,  date:'2026-04-04T10:00:00', details:{'Listen and Repeat':'7/7','Take an Interview':'4/4'} },
-		{ id:'s6',  section:'Speaking', testNumber:3, mode:'practice', score:3.5,  scoreAvailable:true,  date:'2026-04-10T09:00:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
-		// extra Speaking test-2 entries — demo for load-more
-		{ id:'s7',  section:'Speaking', testNumber:2, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-02-20T11:00:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
-		{ id:'s8',  section:'Speaking', testNumber:2, mode:'practice', score:3.0,  scoreAvailable:true,  date:'2026-03-01T10:00:00', details:{'Listen and Repeat':'5/7','Take an Interview':'3/4'} },
-		{ id:'s9',  section:'Speaking', testNumber:2, mode:'test',     score:null, scoreAvailable:false, date:'2026-03-12T14:00:00', details:{'Listen and Repeat':'not graded','Take an Interview':'not graded'} },
-		{ id:'s10', section:'Speaking', testNumber:2, mode:'test',     score:3.5,  scoreAvailable:true,  date:'2026-03-20T09:30:00', details:{'Listen and Repeat':'6/7','Take an Interview':'3/4'} },
-		{ id:'s11', section:'Speaking', testNumber:2, mode:'practice', score:4.0,  scoreAvailable:true,  date:'2026-04-01T11:00:00', details:{'Listen and Repeat':'7/7','Take an Interview':'3/4'} },
-		{ id:'s12', section:'Speaking', testNumber:2, mode:'test',     score:4.0,  scoreAvailable:true,  date:'2026-04-08T10:30:00', details:{'Listen and Repeat':'7/7','Take an Interview':'4/4'} },
+		{ id:'s0',   quiz_type:'speaking',  test_number:1, practice:false, score:0,  ai:false, created_at:'2026-01-16T11:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:0,t:5,c:1},'ld_tstprep_mock_speaking_interview':{p:0,t:5,c:1}} },
+		{ id:'s1',   quiz_type:'speaking',  test_number:2, practice:true,  score:35, ai:true,  created_at:'2026-02-01T10:15:00', info:{'ld_tstprep_mock_speaking_repeat':{p:5,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:3,t:4,c:4}} },
+		{ id:'s2',   quiz_type:'speaking',  test_number:2, practice:false, score:0,  ai:false, created_at:'2026-02-15T13:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:0,t:5,c:1},'ld_tstprep_mock_speaking_interview':{p:0,t:5,c:1}} },
+		{ id:'s3',   quiz_type:'speaking',  test_number:3, practice:false, score:46, ai:true,  created_at:'2026-03-05T09:30:00', info:{'ld_tstprep_mock_speaking_repeat':{p:6,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:3,t:4,c:4}} },
+		{ id:'s4',   quiz_type:'speaking',  test_number:4, practice:true,  score:0,  ai:false, created_at:'2026-03-20T14:45:00', info:{'ld_tstprep_mock_speaking_repeat':{p:0,t:5,c:1},'ld_tstprep_mock_speaking_interview':{p:0,t:5,c:1}} },
+		{ id:'s5',   quiz_type:'speaking',  test_number:5, practice:false, score:55, ai:true,  created_at:'2026-04-04T10:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:7,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:4,t:4,c:4}} },
+		{ id:'s6',   quiz_type:'speaking',  test_number:3, practice:true,  score:46, ai:true,  created_at:'2026-04-10T09:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:6,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:3,t:4,c:4}} },
+		{ id:'s7',   quiz_type:'speaking',  test_number:2, practice:false, score:46, ai:true,  created_at:'2026-02-20T11:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:6,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:3,t:4,c:4}} },
+		{ id:'s8',   quiz_type:'speaking',  test_number:2, practice:true,  score:35, ai:true,  created_at:'2026-03-01T10:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:5,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:3,t:4,c:4}} },
+		{ id:'s9',   quiz_type:'speaking',  test_number:2, practice:false, score:0,  ai:false, created_at:'2026-03-12T14:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:0,t:5,c:1},'ld_tstprep_mock_speaking_interview':{p:0,t:5,c:1}} },
+		{ id:'s10',  quiz_type:'speaking',  test_number:2, practice:false, score:46, ai:true,  created_at:'2026-03-20T09:30:00', info:{'ld_tstprep_mock_speaking_repeat':{p:6,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:3,t:4,c:4}} },
+		{ id:'s11',  quiz_type:'speaking',  test_number:2, practice:true,  score:55, ai:true,  created_at:'2026-04-01T11:00:00', info:{'ld_tstprep_mock_speaking_repeat':{p:7,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:3,t:4,c:4}} },
+		{ id:'s12',  quiz_type:'speaking',  test_number:2, practice:false, score:55, ai:true,  created_at:'2026-04-08T10:30:00', info:{'ld_tstprep_mock_speaking_repeat':{p:7,t:7,c:7},'ld_tstprep_mock_speaking_interview':{p:4,t:4,c:4}} },
 	];
 
 	/* ─── Complete test mock data ─── */
@@ -135,18 +132,18 @@
 		composite: number | null;
 	}
 	const COMPLETE: CompleteSub[] = [
-		{ id:'ct1a', testNumber:1, date:'2026-01-18T10:00:00', duration:'1h 32m', scores:{Reading:3.5,Listening:3.5,Speaking:null,Writing:3.0}, composite:null },
-		{ id:'ct1b', testNumber:1, date:'2026-03-10T09:30:00', duration:'1h 28m', scores:{Reading:4.0,Listening:3.5,Speaking:null,Writing:3.5}, composite:null },
-		{ id:'ct2a', testNumber:2, date:'2026-02-12T11:00:00', duration:'1h 35m', scores:{Reading:4.0,Listening:3.5,Speaking:3.0,Writing:3.5}, composite:roundHalf((4.0+3.5+3.0+3.5)/4) },
-		{ id:'ct2b', testNumber:2, date:'2026-03-29T10:15:00', duration:'1h 31m', scores:{Reading:4.5,Listening:4.0,Speaking:3.5,Writing:4.0}, composite:roundHalf((4.5+4.0+3.5+4.0)/4) },
-		{ id:'ct3a', testNumber:3, date:'2026-02-25T14:00:00', duration:'1h 40m', scores:{Reading:4.0,Listening:4.0,Speaking:3.5,Writing:null}, composite:null },
-		{ id:'ct3b', testNumber:3, date:'2026-04-01T09:00:00', duration:'1h 33m', scores:{Reading:4.5,Listening:4.5,Speaking:4.0,Writing:4.0}, composite:roundHalf((4.5+4.5+4.0+4.0)/4) },
-		{ id:'ct4a', testNumber:4, date:'2026-03-18T09:00:00', duration:'1h 29m', scores:{Reading:4.5,Listening:3.5,Speaking:null,Writing:4.0}, composite:null },
-		{ id:'ct4b', testNumber:4, date:'2026-04-07T10:30:00', duration:'1h 26m', scores:{Reading:4.5,Listening:4.0,Speaking:4.0,Writing:4.0}, composite:roundHalf((4.5+4.0+4.0+4.0)/4) },
-		{ id:'ct5a', testNumber:5, date:'2026-04-02T10:30:00', duration:'1h 27m', scores:{Reading:4.5,Listening:4.0,Speaking:4.0,Writing:null}, composite:null },
-		{ id:'ct5b', testNumber:5, date:'2026-04-13T09:00:00', duration:'1h 25m', scores:{Reading:5.0,Listening:4.5,Speaking:4.0,Writing:4.0}, composite:roundHalf((5.0+4.5+4.0+4.0)/4) },
-		{ id:'ct6a', testNumber:6, date:'2026-04-09T10:00:00', duration:'1h 30m', scores:{Reading:5.0,Listening:4.5,Speaking:4.0,Writing:4.5}, composite:roundHalf((5.0+4.5+4.0+4.5)/4) },
-		{ id:'ct7a', testNumber:7, date:'2026-04-14T11:00:00', duration:'1h 28m', scores:{Reading:5.0,Listening:5.0,Speaking:4.5,Writing:4.5}, composite:roundHalf((5.0+5.0+4.5+4.5)/4) },
+		{ id:'ct1a', testNumber:1, date:'2026-01-18T10:00:00', duration:'1h 32m', scores:{Reading:46,Listening:46,Speaking:null,Writing:35  }, composite:null },
+		{ id:'ct1b', testNumber:1, date:'2026-03-10T09:30:00', duration:'1h 28m', scores:{Reading:55,Listening:46,Speaking:null,Writing:46  }, composite:null },
+		{ id:'ct2a', testNumber:2, date:'2026-02-12T11:00:00', duration:'1h 35m', scores:{Reading:55,Listening:46,Speaking:35,  Writing:46  }, composite:Math.round((55+46+35+46)/4) },
+		{ id:'ct2b', testNumber:2, date:'2026-03-29T10:15:00', duration:'1h 31m', scores:{Reading:66,Listening:55,Speaking:46,  Writing:55  }, composite:Math.round((66+55+46+55)/4) },
+		{ id:'ct3a', testNumber:3, date:'2026-02-25T14:00:00', duration:'1h 40m', scores:{Reading:55,Listening:55,Speaking:46,  Writing:null}, composite:null },
+		{ id:'ct3b', testNumber:3, date:'2026-04-01T09:00:00', duration:'1h 33m', scores:{Reading:66,Listening:66,Speaking:55,  Writing:55  }, composite:Math.round((66+66+55+55)/4) },
+		{ id:'ct4a', testNumber:4, date:'2026-03-18T09:00:00', duration:'1h 29m', scores:{Reading:66,Listening:46,Speaking:null,Writing:55  }, composite:null },
+		{ id:'ct4b', testNumber:4, date:'2026-04-07T10:30:00', duration:'1h 26m', scores:{Reading:66,Listening:55,Speaking:55,  Writing:55  }, composite:Math.round((66+55+55+55)/4) },
+		{ id:'ct5a', testNumber:5, date:'2026-04-02T10:30:00', duration:'1h 27m', scores:{Reading:66,Listening:55,Speaking:55,  Writing:null}, composite:null },
+		{ id:'ct5b', testNumber:5, date:'2026-04-13T09:00:00', duration:'1h 25m', scores:{Reading:75,Listening:66,Speaking:55,  Writing:55  }, composite:Math.round((75+66+55+55)/4) },
+		{ id:'ct6a', testNumber:6, date:'2026-04-09T10:00:00', duration:'1h 30m', scores:{Reading:75,Listening:66,Speaking:55,  Writing:66  }, composite:Math.round((75+66+55+66)/4) },
+		{ id:'ct7a', testNumber:7, date:'2026-04-14T11:00:00', duration:'1h 28m', scores:{Reading:75,Listening:75,Speaking:66,  Writing:66  }, composite:Math.round((75+75+66+66)/4) },
 	];
 
 	const SEC4: Sec4[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
@@ -197,7 +194,7 @@
 	const secs = ['Complete Tests', 'Reading', 'Listening', 'Writing', 'Speaking'];
 	const PAGE_SIZE  = 20;
 	let mode       = $state<'all' | 'test' | 'practice'>('all');
-	const sec      = $derived(SLUG_TO_NAME[page.params.section] ?? 'Reading');
+	const sec      = $derived(SLUG_TO_NAME[page.params.section!] ?? 'Reading');
 	let testFilter = $state<number | 'all'>('all');
 	let datePage   = $state(1);
 	let modeOpen   = $state(false);
@@ -218,16 +215,16 @@
 	const testLabel = $derived(testFilter === 'all' ? 'All' : String(testFilter));
 
 	/* ─── Derived — section stats ─── */
-	const data = $derived(MOCK.filter(s => mode === 'all' || s.mode === mode));
+	const data = $derived(MOCK.filter(s => mode === 'all' || (mode === 'practice' ? s.practice : !s.practice)));
 
 	const stats = $derived.by(() => {
 		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number; date: string; testNumber: number }[] }> = {};
 		secs.filter(s => s !== 'Complete Tests').forEach(sc => {
-			const all = data.filter(s => s.section === sc);
-			const ws  = all.filter(s => s.scoreAvailable && s.score !== null);
+			const all = data.filter(s => s.quiz_type === sc.toLowerCase());
+			const ws  = all.filter(s => s.ai !== false && s.score !== 0);
 			const avg  = ws.length ? roundHalf(ws.reduce((a, s) => a + (s.score as number), 0) / ws.length) : null;
 			const best = ws.length ? Math.max(...ws.map(s => s.score as number)) : null;
-			const trend = [...ws].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(s => ({ v: s.score as number, date: s.date as string, testNumber: s.testNumber as number }));
+			const trend = [...ws].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(s => ({ v: s.score as number, date: s.created_at as string, testNumber: s.test_number as number }));
 			o[sc] = { avg, best, count: all.length, aiCount: ws.length, trend };
 		});
 		const ctFiltered = mode === 'all' ? COMPLETE : mode === 'test' ? COMPLETE : [];
@@ -252,17 +249,17 @@
 
 	/* ─── Derived — section rows ─── */
 	const rows = $derived(
-		data.filter(s => s.section === sec)
-			.sort((a, b) => a.testNumber !== b.testNumber ? a.testNumber - b.testNumber : new Date(b.date).getTime() - new Date(a.date).getTime())
+		data.filter(s => s.quiz_type === sec.toLowerCase())
+			.sort((a, b) => a.test_number !== b.test_number ? a.test_number - b.test_number : new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 	);
-	const byDateRows = $derived([...rows].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+	const byDateRows = $derived([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
 
 	/* ─── Derived — complete test rows ─── */
 	const ctData   = $derived(mode === 'practice' ? [] : COMPLETE);
 	const ctByDate = $derived([...ctData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
 	/* ─── Derived — test-number filter ─── */
-	const filteredByDate   = $derived(testFilter === 'all' ? byDateRows : byDateRows.filter(s => s.testNumber === (testFilter as number)));
+	const filteredByDate   = $derived(testFilter === 'all' ? byDateRows : byDateRows.filter(s => s.test_number === (testFilter as number)));
 	const filteredCtByDate = $derived(testFilter === 'all' ? ctByDate   : ctByDate.filter(t => t.testNumber  === (testFilter as number)));
 
 	/* ─── Derived — panel helpers ─── */
@@ -303,7 +300,7 @@
 	const gaugeScore     = $derived(genScore);
 	const gaugeNA        = $derived(gaugeScore === null || gaugeScore === undefined);
 	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
-	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeScore as number) - 1) / 5) * TA);
+	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((formatScore(gaugeScore ?? 0) as number) - 1) / 5) * TA);
 	const gaugeBest      = $derived(genBest);
 
 	const pagedDateRows  = $derived(filteredByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
@@ -322,8 +319,8 @@
 				best: sc.length ? Math.max(...sc.map(t => t.composite as number)) : null,
 			};
 		}
-		const r  = data.filter(s => s.section === sec && s.testNumber === n);
-		const sc = r.filter(s => s.scoreAvailable && s.score !== null);
+		const r  = data.filter(s => s.quiz_type === sec.toLowerCase() && s.test_number === n);
+		const sc = r.filter(s => s.ai !== false && s.score !== 0);
 		return {
 			avg:  sc.length ? roundHalf(sc.reduce((a, s) => a + (s.score as number), 0) / sc.length) : null,
 			best: sc.length ? Math.max(...sc.map(s => s.score as number)) : null,
@@ -363,12 +360,12 @@
 						<text x="106" y="82" font-size="8" fill="#ccc" text-anchor="middle">6</text>
 					</svg>
 					<div class="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-extrabold tracking-[-1px] leading-none whitespace-nowrap" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">
-						{gaugeNA ? '—' : fmtScore(gaugeScore)}{#if !gaugeNA}<span class="text-[10px] font-semibold text-gray-400">/6</span>{/if}
+						{gaugeNA ? '—' : formatScore(gaugeScore ?? 0).toFixed(1)}{#if !gaugeNA}<span class="text-[10px] font-semibold text-gray-400">/6</span>{/if}
 					</div>
 				</div>
 				<div class="block text-[10px] font-bold text-gray-400 uppercase tracking-[.5px] mt-px">{isComplete ? 'Composite Avg' : 'Overall Avg'}</div>
 				{#if gaugeBest !== null}
-					<div class="text-[11px] text-gray-400 mt-0.5">Best <b class="text-brand-green">{fmtScore(gaugeBest)}/6</b></div>
+					<div class="text-[11px] text-gray-400 mt-0.5">Best <b class="text-brand-green">{formatScore(gaugeBest).toFixed(1)}/6</b></div>
 				{:else}
 					<div class="text-[10px] text-gray-300 mt-0.5">{isComplete ? 'No fully scored tests' : 'Need all 4 sections'}</div>
 				{/if}
@@ -404,14 +401,14 @@
 						<span class="text-[11px] font-semibold {comp ? 'text-white/85' : 'text-gray-700'}">{sc}</span>
 					</div>
 					<div class="flex items-baseline gap-0.5 mb-1">
-						<span class="text-xl font-extrabold tracking-[-1px]" style="color:{s.avg === null ? (comp ? '#fff' : '#d0d5dd') : (comp ? '#fff' : '#1a1a1a')}">{s.avg === null ? '—' : fmtScore(s.avg)}</span>
+						<span class="text-xl font-extrabold tracking-[-1px]" style="color:{s.avg === null ? (comp ? '#fff' : '#d0d5dd') : (comp ? '#fff' : '#1a1a1a')}">{s.avg === null ? '—' : formatScore(s.avg).toFixed(1)}</span>
 						{#if s.avg !== null}
 							<span class="text-[11px] font-semibold {comp ? 'text-white/70' : 'text-gray-400'}">/6</span>
 							<span class="text-[9px] ml-[3px] {comp ? 'text-white/70' : 'text-gray-400'}">{comp ? 'comp' : 'avg'}</span>
 						{/if}
 					</div>
 					<div class="flex justify-between text-[10px] {comp ? 'text-white/75' : 'text-gray-400'}">
-						<span>Best: <b style="color:{s.best === null ? (comp ? '#fff' : '#ccc') : (comp ? '#fff' : '#00b189')}">{s.best === null ? '—' : fmtScore(s.best)}</b></span>
+						<span>Best: <b style="color:{s.best === null ? (comp ? '#fff' : '#ccc') : (comp ? '#fff' : '#00b189')}">{s.best === null ? '—' : formatScore(s.best).toFixed(1)}</b></span>
 						<span class="font-semibold {comp ? 'bg-white/20 text-white rounded px-1' : ''}">{s.count}</span>
 					</div>
 				</a>
@@ -547,42 +544,8 @@
 				</div>
 			{:else}
 				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
-					{#each pagedDateRows as sub, i}
-						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-nowrap max-md:px-3.5 max-md:gap-2 max-md:flex-wrap {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
-							<div class="flex items-center gap-1.5 flex-nowrap min-w-0 w-[470px] flex-shrink-0 max-md:w-full">
-								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{sub.testNumber}</span>
-								<span class="text-gray-500 whitespace-nowrap">{fmtD(sub.date)} <span class="text-gray-300">·</span> {fmtT(sub.date)}</span>
-								<span class="text-[9px] font-bold py-px px-[7px] rounded-full uppercase tracking-[.4px]
-									{sub.mode==='test' ? 'bg-brand-green/10 text-brand-green' : 'bg-[#f0a030]/10 text-[#c8920a]'}">
-									{sub.mode==='test'?'Test Mode':'Practice Mode'}
-								</span>
-								{#if !sub.scoreAvailable}
-									<span class="text-[9px] font-medium py-px px-[7px] rounded-full uppercase tracking-[.4px] bg-gray-100 text-gray-400">AI off</span>
-								{/if}
-							</div>
-							<div class="flex items-center gap-1.5 flex-[0_0_140px] max-md:flex-[0_0_120px] max-sm:flex-[0_0_100px]">
-								{#if sub.score===null}
-									<div class="rounded-full w-[70px] h-[5px] bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
-									<span class="text-[11px] text-gray-400 italic">N/A</span>
-								{:else}
-									<div class="rounded-full bg-gray-200 overflow-hidden" style="width:70px;height:5px">
-										<div class="h-full rounded-full transition-[width] duration-500" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div>
-									</div>
-									<span class="text-xs font-bold min-w-[38px]" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
-								{/if}
-							</div>
-							<div class="flex gap-1 flex-wrap flex-1 min-w-0 max-md:flex-[1_1_100%]">
-								{#each Object.entries(sub.details) as [k,v]}
-									<span class="text-[10px] py-0.5 px-1.5 rounded whitespace-nowrap
-										{v==='not graded' ? 'bg-gray-50 text-gray-300' : 'bg-[#f4f7f5] text-gray-500'}">
-										{k}: <b>{v}</b>
-									</span>
-								{/each}
-							</div>
-							<button class="flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white max-sm:py-[3px] max-sm:px-2.5 max-sm:text-[10px]">
-								View →
-							</button>
-						</div>
+					{#each pagedDateRows as sub, i (sub.id)}
+						<QuizRow quiz={sub} index={i} />
 					{/each}
 					{#if totalDatePages > 1}
 						<div class="flex items-center justify-center gap-3 py-3 px-5 border-t border-gray-100">
@@ -611,33 +574,7 @@
 			{:else}
 				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
 					{#each pagedCtRows as t, i}
-						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-nowrap max-md:px-3.5 max-md:gap-2 max-md:flex-wrap {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
-							<div class="flex items-center gap-1.5 flex-nowrap min-w-0 w-[470px] flex-shrink-0 max-md:w-full">
-								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{t.testNumber}</span>
-								<span class="text-gray-500 whitespace-nowrap">{fmtD(t.date)} <span class="text-gray-300">·</span> {fmtT(t.date)}</span>
-								<span class="text-gray-500 whitespace-nowrap" style="color:#bbb">{t.duration}</span>
-							</div>
-							<div class="flex gap-1 flex-wrap flex-1 min-w-0 max-md:flex-[1_1_100%]">
-								{#each SEC4 as s}
-									{@const v=t.scores[s]}
-									<span class="text-[10px] font-bold py-0.5 px-[7px] rounded whitespace-nowrap" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>
-								{/each}
-							</div>
-							<div class="flex items-center gap-1.5 flex-[0_0_140px] max-md:flex-[0_0_120px] max-sm:flex-[0_0_100px]">
-								{#if t.composite!==null}
-									<div class="rounded-full bg-gray-200 overflow-hidden" style="width:70px;height:5px">
-										<div class="h-full rounded-full transition-[width] duration-500" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div>
-									</div>
-									<span class="text-xs font-bold min-w-[38px]" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
-								{:else}
-									<div class="rounded-full w-[70px] h-[5px] bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
-									<span class="text-[11px] text-gray-400 italic">Pending</span>
-								{/if}
-							</div>
-							<button class="flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white max-sm:py-[3px] max-sm:px-2.5 max-sm:text-[10px]">
-								View →
-							</button>
-						</div>
+						<TestRow row={t} index={i} sections={SEC4} />
 					{/each}
 					{#if totalCtPages > 1}
 						<div class="flex items-center justify-center gap-3 py-3 px-5 border-t border-gray-100">
