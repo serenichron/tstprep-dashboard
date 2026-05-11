@@ -133,3 +133,7 @@ export type QuizSubmission = {
       >;
     }
 );
+
+export type QuizType = "reading" | "listening" | "writing" | "speaking";
+export type QuizTypeComplete = QuizType | "complete";
+export type QuizMode = "practice" | "test";
