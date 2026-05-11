@@ -7,7 +7,7 @@
 	import ProgressChart from '$lib/components/ProgressChart.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import SectionCard from '$lib/components/SectionCard.svelte';
-	import type { QuizSubmission } from '$lib/types';
+	import type { QuizMode, QuizSubmission, QuizType, QuizTypeComplete } from '$lib/types';
 	import { formatScore, scoreColor } from '$lib/utils';
 
 	/* ─── URL ↔ section name ─── */
@@ -142,6 +142,67 @@
 		{ id:'ct7a', testNumber:7, date:'2026-04-14T11:00:00', duration:'1h 28m', scores:{Reading:75,Listening:75,Speaking:66,  Writing:66  }, composite:Math.round((75+75+66+66)/4) },
 	];
 
+	const MOCK_AGGREGATE: Record<QuizTypeComplete, Record<QuizMode | 'all', {
+		average: number | null,
+		best: number | null,
+		count: number,
+	}>> = $derived.by(() => {
+		const data = MOCK.filter(q => q.ai !== false && q.score !== 0);
+		const average = (quizzes: QuizSubmission[]) => quizzes.length ? formatScore(quizzes.reduce((a, q) => a + q.score, 0) / quizzes.length) : null;
+		const best = (quizzes: QuizSubmission[]) => quizzes.length ? formatScore(quizzes.reduce((a, q) => Math.max(a + q.score), 0)) : null;
+		const extract = (type: QuizType): Record<QuizMode | 'all', {
+			average: number | null,
+			best: number | null,
+			count: number,
+		}> => {
+			const d = data.filter(q => q.quiz_type === type);
+			const p = d.filter(q => q.practice);
+			const t = d.filter(q => !q.practice);
+
+			return {
+				practice: {
+					average: average(p),
+					best: best(p),
+					count: p.length,
+				},
+				test: {
+					average: average(t),
+					best: best(t),
+					count: t.length,
+				},
+				all: {
+					average: average(d),
+					best: best(d),
+					count: d.length,
+				},
+			};
+		}
+
+		return {
+			reading: extract('reading'),
+			listening: extract('listening'),
+			writing: extract('writing'),
+			speaking: extract('speaking'),
+			complete: {
+				practice: {
+					average: null,
+					best: null,
+					count: 0,
+				},
+				test: {
+					average: null,
+					best: null,
+					count: 0,
+				},
+				all: {
+					average: null,
+					best: null,
+					count: 0,
+				},
+			}
+		}
+	})
+
 	const SEC4: Sec4[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
 
 	/* ─── Icon paths (used in the section bar + mobile indicator) ─── */
@@ -165,10 +226,16 @@
 	const TA = EA - SA;
 
 	/* ─── State ─── */
-	/* 'Complete Tests' is intentionally absent from the user-facing selector pre-launch;
-	   the route still resolves so dev can inspect /submission-history/complete-tests. */
 	const secs = ['Reading', 'Listening', 'Writing', 'Speaking'];
-	const PAGE_SIZE = 20;
+	const sections: QuizTypeComplete[] = ['reading', 'listening', 'writing', 'speaking'];
+	const sectionLabels: Record<QuizTypeComplete, string> = {
+		complete: 'Complete Tests',
+		reading: 'Reading',
+		listening: 'Listening',
+		writing: 'Writing',
+		speaking: 'Speaking',
+	};
+	const PAGE_SIZE  = 20;
 	let mode       = $state<'all' | 'test' | 'practice'>('all');
 	const sec      = $derived(SLUG_TO_NAME[page.params.section!] ?? 'Reading');
 	let testFilter = $state<number | 'all'>('all');
@@ -363,18 +430,19 @@
 			</div>
 
 			<!-- Section cards -->
-			{#each secs as sc}
-				{@const cs = cardStats[sc]}
+			{#each sections as sc}
+				{@const l = sectionLabels[sc]}
+				{@const s = MOCK_AGGREGATE[sc]}
 				<SectionCard
 					selected={sec}
-					value={sc}
-					href={resolve(`/submission-history/${NAME_TO_SLUG[sc]}`)}
-					label={sc}
-					score={cs.avg}
-					bestScore={cs.best}
-					testScore={cs.testAvg}
-					practiceScore={cs.practiceAvg}
-					count={cs.count}
+					value={l}
+					href={resolve(`/submission-history/${NAME_TO_SLUG[l]}`)}
+					label={l}
+					score={s.all.average}
+					bestScore={s.all.best}
+					count={s.all.count}
+					testScore={s.test.average}
+					practiceScore={s.practice.average}
 				/>
 			{/each}
 		</div>

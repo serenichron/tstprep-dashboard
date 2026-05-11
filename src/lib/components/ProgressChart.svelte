@@ -65,7 +65,7 @@
                 <stop offset="100%" stop-color={trendData.color} stop-opacity="0" />
             </linearGradient></defs>
             <path d={trendData.area} fill="url(#sbg2)" />
-            <path d={trendData.d} fill="none" stroke={trendData.color} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+            <path d={trendData.d} fill="none" stroke={trendData.color} stroke-width="1" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
             {#each trendData.coords as c}
                 <circle cx={c.x} cy={c.y} r="2" fill="#fff" stroke={trendData.color} stroke-width="1.4" vector-effect="non-scaling-stroke" />
             {/each}
