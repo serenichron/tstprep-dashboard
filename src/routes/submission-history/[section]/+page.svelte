@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import QuizRow from '$lib/components/QuizRow.svelte';
 	import TestRow from '$lib/components/TestRow.svelte';
-  import type { QuizSubmission } from '$lib/types';
-  import { formatScore } from '$lib/utils';
-  import ProgressChart from '$lib/components/ProgressChart.svelte';
+	import type { QuizSubmission } from '$lib/types';
+	import { formatScore } from '$lib/utils';
+	import ProgressChart from '$lib/components/ProgressChart.svelte';
+	import Select from '$lib/components/Select.svelte';
+  	import SectionCard from '$lib/components/SectionCard.svelte';
 
 	/* ─── URL ↔ section name ─── */
 	const SLUG_TO_NAME: Record<string, string> = {
@@ -149,7 +151,7 @@
 
 	const SEC4: Sec4[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
 
-	/* ─── Icon paths ─── */
+	/* ─── Icons ─── */
 	const iconPaths: Record<string, string[]> = {
 		Reading:        ['M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z', 'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'],
 		Listening:      ['M3 18v-6a9 9 0 0 1 18 0v6', 'M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z'],
@@ -169,28 +171,6 @@
 	const EA = Math.PI * 2.18;
 	const TA = EA - SA;
 
-	/* ─── Trend helper ─── */
-	function buildTrend(pts: { v: number }[], allTimeAvg?: number | null) {
-		if (!pts || pts.length < 2) return null;
-		const W = 180, H = 42, px = 4, py = 4;
-		const mn = 0.5, mx = 6.5;
-		const coords = pts.map((p, i) => ({
-			x: px + (i / (pts.length - 1)) * (W - px * 2),
-			y: py + (1 - (p.v - mn) / (mx - mn)) * (H - py * 2)
-		}));
-		const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ');
-		const last10avg = pts.reduce((a, p) => a + p.v, 0) / pts.length;
-		const diff  = allTimeAvg != null
-			? roundHalf(last10avg - allTimeAvg)
-			: roundHalf(pts[pts.length - 1].v - pts[0].v);
-		const color = diff >= 0 ? '#00b189' : '#ff5859';
-		return {
-			W, H, coords, d, color,
-			area: `${d}L${coords[coords.length - 1].x},${H}L${coords[0].x},${H}Z`,
-			diffLabel: (diff >= 0 ? '+' : '') + fmtScore(diff)
-		};
-	}
-
 	/* ─── State ─── */
 	const secs = ['Complete Tests', 'Reading', 'Listening', 'Writing', 'Speaking'];
 	const PAGE_SIZE  = 20;
@@ -198,10 +178,6 @@
 	const sec      = $derived(SLUG_TO_NAME[page.params.section!] ?? 'Reading');
 	let testFilter = $state<number | 'all'>('all');
 	let datePage   = $state(1);
-	let modeOpen   = $state(false);
-	let testOpen   = $state(false);
-	let trendOpen  = $state(false);
-	let trendHovIdx = $state<number | null>(null);
 
 	const modeOptions = [
 		{ value: 'all'      as const, label: 'All' },
@@ -212,8 +188,6 @@
 		{ value: 'all', label: 'All' },
 		...Array.from({length: 15}, (_, i) => ({ value: i + 1, label: String(i + 1) }))
 	];
-	const modeLabel = $derived(modeOptions.find(o => o.value === mode)!.label);
-	const testLabel = $derived(testFilter === 'all' ? 'All' : String(testFilter));
 
 	/* ─── Derived — section stats ─── */
 	const data = $derived(MOCK.filter(s => mode === 'all' || (mode === 'practice' ? s.practice : !s.practice)));
@@ -345,44 +319,18 @@
 			<!-- Section cards -->
 			{#each secs as sc}
 				{@const s = stats[sc]}
-				{@const act = sec === sc}
 				{@const comp = sc === 'Complete Tests'}
-				<a
-					href="{base}/submission-history/{NAME_TO_SLUG[sc]}"
-					class="block no-underline rounded-xl pt-2 pb-[7px] px-2.5 relative overflow-hidden cursor-pointer text-left transition-all duration-150
-						{comp
-							? act
-								? 'border border-[#58ae9b] bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_6px_20px_rgba(0,177,137,.4)]'
-								: 'border border-[#58ae9b] bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_4px_16px_rgba(0,177,137,.3)] hover:from-[#00a87f] hover:to-[#00b88d]'
-							: act
-								? 'border-2 border-brand-green bg-white shadow-[0_3px_12px_rgba(0,177,137,.12)]'
-								: 'border-2 border-transparent bg-white shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:bg-gray-50'}"
-				>
-					{#if act}
-						<div class="absolute top-0 left-0 right-0 h-[3px] {comp ? 'bg-white/40' : 'bg-brand-green'}"></div>
-					{/if}
-					<div class="flex items-center gap-1.5 mb-[7px]">
-						<div class="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0
-							{comp ? 'bg-white/20 text-white' : act ? 'bg-brand-green/10 text-brand-green' : 'bg-gray-100 text-gray-400'}">
-							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								{#each iconPaths[sc] as d}<path {d} />{/each}
-								{#if sc === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
-							</svg>
-						</div>
-						<span class="text-[11px] font-semibold {comp ? 'text-white/85' : 'text-gray-700'}">{sc}</span>
-					</div>
-					<div class="flex items-baseline gap-0.5 mb-1">
-						<span class="text-xl font-extrabold tracking-[-1px]" style="color:{s.avg === null ? (comp ? '#fff' : '#d0d5dd') : (comp ? '#fff' : '#1a1a1a')}">{s.avg === null ? '—' : formatScore(s.avg).toFixed(1)}</span>
-						{#if s.avg !== null}
-							<span class="text-[11px] font-semibold {comp ? 'text-white/70' : 'text-gray-400'}">/6</span>
-							<span class="text-[9px] ml-[3px] {comp ? 'text-white/70' : 'text-gray-400'}">{comp ? 'comp' : 'avg'}</span>
-						{/if}
-					</div>
-					<div class="flex justify-between text-[10px] {comp ? 'text-white/75' : 'text-gray-400'}">
-						<span>Best: <b style="color:{s.best === null ? (comp ? '#fff' : '#ccc') : (comp ? '#fff' : '#00b189')}">{s.best === null ? '—' : formatScore(s.best).toFixed(1)}</b></span>
-						<span class="font-semibold {comp ? 'bg-white/20 text-white rounded px-1' : ''}">{s.count}</span>
-					</div>
-				</a>
+				<SectionCard
+					selected={sec}
+					value={sc}
+					variant={comp ? 'green' : 'white'}
+					href={resolve(`/submission-history/${NAME_TO_SLUG[sc]}`)}
+					label={sc}
+					scoreLabel={comp ? 'comp' : 'avg'}
+					score={s.avg !== null ? formatScore(s.avg) : null}
+					bestScore={s.best !== null ? formatScore(s.best) : null}
+					count={s.count}
+				/>
 			{/each}
 		</div>
 
@@ -419,66 +367,10 @@
 			<ProgressChart quizzes={trendData} label={sec} />
 			<div class="w-px h-5 bg-gray-200 flex-shrink-0"></div>
 			<div class="flex items-center gap-2 flex-shrink-0">
-				<!-- Test no. dropdown -->
-				<span class="text-[10px] font-semibold text-gray-400 uppercase tracking-[.4px] whitespace-nowrap">Test no.</span>
-				<div class="relative">
-					<button
-						onclick={() => { testOpen = !testOpen; modeOpen = false; }}
-						class="inline-flex items-center gap-1.5 px-3 py-1 rounded-[20px] border-[1.5px] bg-white text-gray-700 text-[11px] font-semibold cursor-pointer transition-[border-color,box-shadow] duration-150 shadow-[0_1px_3px_rgba(0,0,0,.05)] whitespace-nowrap hover:border-gray-300 hover:bg-gray-50
-							{testOpen ? 'border-brand-green shadow-[0_0_0_3px_rgba(0,177,137,.1)]' : 'border-gray-200'}"
-					>
-						{testLabel}
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-					</button>
-					{#if testOpen}
-						<div class="absolute top-[calc(100%+6px)] right-0 bg-white rounded-xl shadow-[0_6px_24px_rgba(0,0,0,.13)] border border-gray-100 min-w-[150px] overflow-hidden z-[100]">
-							{#each testOptions as opt}
-								<button
-									onclick={() => { testFilter = opt.value; testOpen = false; }}
-									class="block w-full px-3.5 py-[9px] border-0 bg-transparent text-xs cursor-pointer text-left transition-colors duration-100 hover:bg-gray-100
-										{testFilter === opt.value ? 'font-bold text-brand-green bg-brand-green/5' : 'font-medium text-gray-700'}"
-								>
-									{opt.label}
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</div>
-				<!-- Mode dropdown -->
-				<span class="text-[10px] font-semibold text-gray-400 uppercase tracking-[.4px] whitespace-nowrap">Mode</span>
-				<div class="relative">
-					<button
-						onclick={() => { modeOpen = !modeOpen; testOpen = false; }}
-						class="inline-flex items-center gap-1.5 px-3 py-1 rounded-[20px] border-[1.5px] bg-white text-gray-700 text-[11px] font-semibold cursor-pointer transition-[border-color,box-shadow] duration-150 shadow-[0_1px_3px_rgba(0,0,0,.05)] whitespace-nowrap hover:border-gray-300 hover:bg-gray-50
-							{modeOpen ? 'border-brand-green shadow-[0_0_0_3px_rgba(0,177,137,.1)]' : 'border-gray-200'}"
-					>
-						{modeLabel}
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-					</button>
-					{#if modeOpen}
-						<div class="absolute top-[calc(100%+6px)] right-0 bg-white rounded-xl shadow-[0_6px_24px_rgba(0,0,0,.13)] border border-gray-100 min-w-[150px] overflow-hidden z-[100]">
-							{#each modeOptions as opt}
-								<button
-									onclick={() => { mode = opt.value; modeOpen = false; }}
-									class="block w-full px-3.5 py-[9px] border-0 bg-transparent text-xs cursor-pointer text-left transition-colors duration-100 hover:bg-gray-100
-										{mode === opt.value ? 'font-bold text-brand-green bg-brand-green/5' : 'font-medium text-gray-700'}"
-								>
-									{opt.label}
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</div>
+				<Select label="Test no." bind:value={testFilter} options={testOptions} />
+				<Select label="Mode" bind:value={mode} options={modeOptions} />
 			</div>
 		</div>
-		{#if testOpen || modeOpen}
-			<button
-				type="button"
-				class="fixed inset-0 z-[99] cursor-default"
-				onclick={() => { testOpen = false; modeOpen = false; }}
-				aria-label="Close dropdowns"
-			></button>
-		{/if}
 	</div>
 
 	<!-- Detail Panel -->

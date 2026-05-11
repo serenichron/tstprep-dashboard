@@ -10,6 +10,11 @@
     let trendOpen  = $state(false);
 	let trendHovIdx = $state<number | null>(null);
 
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return { destroy: () => node.remove() };
+	}
+
     const latestQuizzes = $derived(quizzes.slice(-10));
 
 	const average = $derived(quizzes.length ? formatScore(quizzes.reduce((a, q) => a + q.score, 0) / quizzes.length) : null);
@@ -72,6 +77,7 @@
 </button>
 
 {#if trendOpen && trendData}
+<div use:portal>
 	<button
 		type="button"
 		class="fixed inset-0 z-[200] bg-black/25 backdrop-blur-sm cursor-default"
@@ -177,5 +183,6 @@
 			{/if}
 		</div>
 	</div>
+</div>
 {/if}
 
