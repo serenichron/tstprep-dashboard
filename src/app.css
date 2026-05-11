@@ -71,4 +71,13 @@
 	.animate-waveform {
 		animation: waveform-pulse 1.2s ease-in-out infinite;
 	}
+	.scrollbar-none,
+	.scrollbar-hide {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+	.scrollbar-none::-webkit-scrollbar,
+	.scrollbar-hide::-webkit-scrollbar {
+		display: none;
+	}
 }
