@@ -5,6 +5,7 @@
 	import TestRow from '$lib/components/TestRow.svelte';
   import type { QuizSubmission } from '$lib/types';
   import { formatScore } from '$lib/utils';
+  import ProgressChart from '$lib/components/ProgressChart.svelte';
 
 	/* ─── URL ↔ section name ─── */
 	const SLUG_TO_NAME: Record<string, string> = {
@@ -266,37 +267,7 @@
 	const isComplete     = $derived(sec === 'Complete Tests');
 	const needsAI        = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st             = $derived(stats[sec]);
-	const trendAllPts    = $derived(testFilter === 'all' ? st.trend : st.trend.filter(p => p.testNumber === (testFilter as number)));
-	const trendAllAvg    = $derived(trendAllPts.length ? roundHalf(trendAllPts.reduce((a, p) => a + p.v, 0) / trendAllPts.length) : null);
-	const trendData      = $derived(buildTrend(trendAllPts.slice(-10), trendAllAvg));
-	const trendPopupData = $derived.by(() => {
-		const pts = trendAllPts.slice(-10);
-		if (pts.length < 2) return null;
-		const last10avg   = roundHalf(pts.reduce((a, p) => a + p.v, 0) / pts.length);
-		const allTimeAvg  = trendAllAvg;
-		const diff        = allTimeAvg !== null ? roundHalf(last10avg - allTimeAvg) : null;
-		const color       = diff === null || diff >= 0 ? '#00b189' : '#ff5859';
-		const CW = 400, CH = 160, pL = 32, pR = 14, pT = 16, pB = 32;
-		const iW = CW - pL - pR, iH = CH - pT - pB;
-		const mn = 0.5, mx = 6.5;
-		const yFor = (v: number) => pT + (1 - (v - mn) / (mx - mn)) * iH;
-		const coords = pts.map((p, i) => ({
-			x: pL + (pts.length > 1 ? (i / (pts.length - 1)) * iW : iW / 2),
-			y: yFor(p.v),
-			v: p.v, date: p.date
-		}));
-		const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
-		return {
-			CW, CH, pL, pR, pT, pB,
-			color, coords, d,
-			area: `${d}L${coords.at(-1)!.x.toFixed(1)},${(CH - pB).toFixed(1)}L${coords[0].x.toFixed(1)},${(CH - pB).toFixed(1)}Z`,
-			last10avg, allTimeAvg, diff,
-			yLast10:  yFor(last10avg),
-			yAllTime: allTimeAvg !== null ? yFor(allTimeAvg) : null,
-			yTicks:   [1, 2, 3, 4, 5, 6].map(v => ({ v, y: yFor(v) })),
-			lx1: pL, lx2: CW - pR,
-		};
-	});
+	const trendData = $derived((testFilter === 'all' ? st.trend : st.trend.filter(p => p.testNumber === testFilter)).map(x => ({score:x.v,created_at:x.date})));
 	const gaugeScore     = $derived(genScore);
 	const gaugeNA        = $derived(gaugeScore === null || gaugeScore === undefined);
 	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeScore as number));
@@ -445,29 +416,7 @@
 					</span>
 				{/if}
 			</div>
-			<button
-				onclick={() => { if (trendData) { trendOpen = true; trendHovIdx = null; } }}
-				disabled={!trendData}
-				class="flex items-center gap-1.5 flex-shrink-0 bg-transparent border-0 py-1 px-1.5 -my-1 -mx-1.5 rounded-lg cursor-pointer transition-colors hover:enabled:bg-black/5 disabled:cursor-default"
-				title="View progress chart"
-			>
-				{#if trendData}
-					<svg width="72" height="22" viewBox="0 0 {trendData.W} {trendData.H}">
-						<defs><linearGradient id="sbg2" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="0%" stop-color={trendData.color} stop-opacity=".12" />
-							<stop offset="100%" stop-color={trendData.color} stop-opacity="0" />
-						</linearGradient></defs>
-						<path d={trendData.area} fill="url(#sbg2)" />
-						<path d={trendData.d} fill="none" stroke={trendData.color} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-						{#each trendData.coords as c}
-							<circle cx={c.x} cy={c.y} r="2" fill="#fff" stroke={trendData.color} stroke-width="1.4" />
-						{/each}
-					</svg>
-					<span class="text-[11px] font-bold whitespace-nowrap" style="color:{trendData.color}">{trendData.diffLabel}</span>
-				{:else}
-					<span class="text-[10px] text-gray-300 italic">No trend yet</span>
-				{/if}
-			</button>
+			<ProgressChart quizzes={trendData} label={sec} />
 			<div class="w-px h-5 bg-gray-200 flex-shrink-0"></div>
 			<div class="flex items-center gap-2 flex-shrink-0">
 				<!-- Test no. dropdown -->
@@ -598,108 +547,3 @@
 		Scores follow the TOEFL 2026 scale (1–6){#if needsAI && !isComplete} · Non-AI submissions excluded from averages{/if}{#if isComplete} · Composite = average of all 4 section scores{/if}
 	</div>
 </div>
-
-<!-- ─── Trend popup ──────────────────────────────────────────────────────── -->
-{#if trendOpen && trendPopupData}
-	{@const d = trendPopupData}
-	<button
-		type="button"
-		class="fixed inset-0 z-[200] bg-black/25 backdrop-blur-sm cursor-default"
-		onclick={() => { trendOpen = false; trendHovIdx = null; }}
-		aria-label="Close trend"
-	></button>
-	<div class="fixed z-[201] bg-white rounded-[18px] shadow-[0_24px_64px_rgba(0,0,0,.18),0_4px_16px_rgba(0,0,0,.08)] w-[472px] max-w-[calc(100vw-32px)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden">
-		<!-- Header -->
-		<div class="flex justify-between items-start p-[18px] pb-3.5 border-b border-gray-100">
-			<div class="flex flex-col gap-[3px]">
-				<span class="text-[15px] font-extrabold text-gray-900 tracking-[-0.3px]">{sec}</span>
-				<span class="text-[11px] text-gray-400">Last {d.coords.length} scored submissions · progress vs baseline</span>
-			</div>
-			<button
-				type="button"
-				onclick={() => { trendOpen = false; trendHovIdx = null; }}
-				aria-label="Close"
-				class="w-7 h-7 rounded-lg border-0 bg-gray-100 text-gray-500 cursor-pointer flex items-center justify-center flex-shrink-0 transition-colors hover:bg-gray-200 hover:text-gray-700"
-			>
-				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-			</button>
-		</div>
-
-		<!-- Chart -->
-		<div class="px-4 pt-4 pb-1">
-			<div class="relative inline-block">
-				<svg width={d.CW} height={d.CH} style="display:block;overflow:visible">
-					<defs>
-						<linearGradient id="tpgrd" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="0%" stop-color={d.color} stop-opacity=".13" />
-							<stop offset="100%" stop-color={d.color} stop-opacity="0" />
-						</linearGradient>
-					</defs>
-
-					{#each d.yTicks as t}
-						<line x1={d.lx1} y1={t.y} x2={d.lx2} y2={t.y} stroke="#f0f0f0" stroke-width="1" />
-						<text x={d.pL - 7} y={t.y + 3.5} text-anchor="end" font-size="9" fill="#ccc" font-family="DM Sans,sans-serif">{t.v}</text>
-					{/each}
-
-					{#if d.yAllTime !== null}
-						<line x1={d.lx1} y1={d.yAllTime} x2={d.lx2} y2={d.yAllTime} stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="5,4" />
-						<text x={d.lx2 + 5} y={d.yAllTime + 3.5} font-size="8.5" fill="#94a3b8" font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.allTimeAvg)}</text>
-					{/if}
-
-					<line x1={d.lx1} y1={d.yLast10} x2={d.lx2} y2={d.yLast10} stroke={d.color} stroke-width="1.3" stroke-dasharray="5,4" opacity=".55" />
-					<text x={d.lx2 + 5} y={d.yLast10 + 3.5} font-size="8.5" fill={d.color} font-family="DM Sans,sans-serif" font-weight="600">{fmtScore(d.last10avg)}</text>
-
-					<path d={d.area} fill="url(#tpgrd)" />
-					<path d={d.d} fill="none" stroke={d.color} stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-
-					{#each d.coords as c, i}
-						<circle
-							cx={c.x} cy={c.y}
-							r={trendHovIdx === i ? 5.5 : 3.5}
-							fill={trendHovIdx === i ? d.color : '#fff'}
-							stroke={d.color} stroke-width="2"
-							style="cursor:pointer;transition:r .1s,fill .1s"
-							role="img"
-							aria-label="Data point {i + 1}: {fmtScore(c.v)} of 6"
-							onmouseenter={() => trendHovIdx = i}
-							onmouseleave={() => trendHovIdx = null}
-						/>
-					{/each}
-
-					{#each d.coords as c, i}
-						{#if i === 0 || i === d.coords.length - 1 || i === Math.floor((d.coords.length - 1) / 2)}
-							<text x={c.x} y={d.CH - d.pB + 17} text-anchor="middle" font-size="8.5" fill="#bbb" font-family="DM Sans,sans-serif">
-								{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-							</text>
-						{/if}
-					{/each}
-				</svg>
-
-				{#if trendHovIdx !== null}
-					{@const c = d.coords[trendHovIdx]}
-					<div class="absolute pointer-events-none -translate-x-1/2 -translate-y-[calc(100%+10px)] bg-gray-900 text-white rounded-lg py-1.5 px-2.5 text-[11px] whitespace-nowrap flex flex-col items-center gap-px z-10 font-dmsans" style="left:{c.x}px; top:{c.y}px">
-						<b class="text-[13px] font-extrabold leading-[1.2]" style="color:{d.color}">{fmtScore(c.v)}/6</b>
-						<span class="text-[10px] leading-[1.2] text-white/60">{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Legend -->
-		<div class="flex items-center gap-3.5 py-3 px-[18px] border-t border-gray-100 flex-wrap">
-			<div class="flex items-center gap-1.5 text-[11px] text-gray-500">
-				<span class="inline-block w-5 h-0.5 rounded-sm flex-shrink-0 bg-slate-300"></span>
-				All-time avg&nbsp;<b class="text-gray-800 font-bold">{fmtScore(d.allTimeAvg)}/6</b>
-			</div>
-			<div class="flex items-center gap-1.5 text-[11px] text-gray-500">
-				<span class="inline-block w-5 h-0.5 rounded-sm flex-shrink-0" style="background:{d.color};opacity:.55"></span>
-				Last {d.coords.length} avg&nbsp;<b class="font-bold" style="color:{d.color}">{fmtScore(d.last10avg)}/6</b>
-			</div>
-			{#if d.diff !== null}
-				<div class="ml-auto text-[13px] font-extrabold tracking-[-0.4px]" style="color:{d.color}">
-					{d.diff >= 0 ? '+' : ''}{fmtScore(d.diff)} vs baseline
-				</div>
-			{/if}
-		</div>
-	</div>
-{/if}
