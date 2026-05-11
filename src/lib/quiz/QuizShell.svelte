@@ -18,7 +18,7 @@
 	} = $props();
 </script>
 
-<div class="flex flex-col h-full">
+<div class="flex flex-col h-full w-full">
 	<!-- Top bar: back + exit -->
 	<div class="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2">
 		{#if onBack}
@@ -80,8 +80,6 @@
 
 	<!-- Step content -->
 	<div class="flex-1 px-4 sm:px-6 pb-6 overflow-y-auto">
-		<div class="max-w-lg mx-auto">
-			{@render children()}
-		</div>
+		{@render children()}
 	</div>
 </div>
