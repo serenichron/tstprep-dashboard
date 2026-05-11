@@ -20,18 +20,32 @@
 	// Sidebar: open by default on first visit; persisted in localStorage thereafter
 	let sidebarOpen = $state(false);
 
+	function applyViewportSidebar() {
+		const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+		if (isDesktop) {
+			const saved = localStorage.getItem('sidebarOpen');
+			sidebarOpen = saved !== null ? saved === 'true' : true;
+		} else {
+			sidebarOpen = false;
+		}
+	}
+
 	$effect(() => {
 		mounted = true;
 		if (sessionStorage.getItem(STORAGE_KEY) === '1') {
 			unlocked = true;
 		}
-		const saved = localStorage.getItem('sidebarOpen');
-		sidebarOpen = saved !== null ? saved === 'true' : window.matchMedia('(min-width: 1024px)').matches;
+		applyViewportSidebar();
+		const mql = window.matchMedia('(min-width: 1024px)');
+		mql.addEventListener('change', applyViewportSidebar);
+		return () => mql.removeEventListener('change', applyViewportSidebar);
 	});
 
 	function setSidebar(val: boolean) {
 		sidebarOpen = val;
-		localStorage.setItem('sidebarOpen', String(val));
+		if (window.matchMedia('(min-width: 1024px)').matches) {
+			localStorage.setItem('sidebarOpen', String(val));
+		}
 	}
 
 	async function submit(e: SubmitEvent) {
@@ -177,7 +191,7 @@
 	<!-- ─── Layout body ───────────────────────────────────────────────────────── -->
 	<div class="flex min-h-screen bg-gray-50 pt-14">
 		<Sidebar isOpen={sidebarOpen} onClose={() => setSidebar(false)} onToggle={() => setSidebar(!sidebarOpen)} />
-		<main class="flex-1 min-h-screen transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : 'lg:ml-14'}">
+		<main class="flex-1 min-w-0 overflow-x-clip min-h-[calc(100vh-3.5rem)] transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : 'lg:ml-14'}">
 			{@render children()}
 		</main>
 	</div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
+	import { fade } from 'svelte/transition';
 
 	/* ─── URL ↔ section name ─── */
 	const SLUG_TO_NAME: Record<string, string> = {
@@ -194,7 +195,9 @@
 	}
 
 	/* ─── State ─── */
-	const secs = ['Complete Tests', 'Reading', 'Listening', 'Writing', 'Speaking'];
+	/* Note: 'Complete Tests' is hidden from the section selector pre-launch — feature still in dev.
+	   Keep route handling intact so /submission-history/complete-tests still works for development. */
+	const secs = ['Reading', 'Listening', 'Writing', 'Speaking'];
 	const PAGE_SIZE  = 20;
 	let mode       = $state<'all' | 'test' | 'practice'>('all');
 	const sec      = $derived(SLUG_TO_NAME[page.params.section] ?? 'Reading');
@@ -222,7 +225,7 @@
 
 	const stats = $derived.by(() => {
 		const o: Record<string, { avg: number | null; best: number | null; count: number; aiCount: number; trend: { v: number; date: string; testNumber: number }[] }> = {};
-		secs.filter(s => s !== 'Complete Tests').forEach(sc => {
+		secs.forEach(sc => {
 			const all = data.filter(s => s.section === sc);
 			const ws  = all.filter(s => s.scoreAvailable && s.score !== null);
 			const avg  = ws.length ? roundHalf(ws.reduce((a, s) => a + (s.score as number), 0) / ws.length) : null;
@@ -239,15 +242,39 @@
 		return o;
 	});
 
-	const allAvg   = $derived((['Reading','Listening','Writing','Speaking'] as const).map(s => stats[s].avg));
+	/* Card stats — mode-agnostic, includes per-mode avgs. Used by the header section cards
+	   and overall gauge so they stay constant regardless of the mode filter applied to rows. */
+	const cardStats = $derived.by(() => {
+		const avgOf = (arr: { score: number | null; scoreAvailable: boolean }[]) => {
+			const ws = arr.filter(s => s.scoreAvailable && s.score !== null);
+			return ws.length ? roundHalf(ws.reduce((a, s) => a + (s.score as number), 0) / ws.length) : null;
+		};
+		const o: Record<string, {
+			avg: number | null; best: number | null; count: number;
+			testAvg: number | null; testCount: number;
+			practiceAvg: number | null; practiceCount: number;
+		}> = {};
+		secs.forEach(sc => {
+			const all = MOCK.filter(s => s.section === sc);
+			const ws  = all.filter(s => s.scoreAvailable && s.score !== null);
+			const testArr = all.filter(s => s.mode === 'test');
+			const pracArr = all.filter(s => s.mode === 'practice');
+			o[sc] = {
+				avg: ws.length ? roundHalf(ws.reduce((a, s) => a + (s.score as number), 0) / ws.length) : null,
+				best: ws.length ? Math.max(...ws.map(s => s.score as number)) : null,
+				count: all.length,
+				testAvg: avgOf(testArr), testCount: testArr.length,
+				practiceAvg: avgOf(pracArr), practiceCount: pracArr.length,
+			};
+		});
+		return o;
+	});
+
+	const allAvg   = $derived((['Reading','Listening','Writing','Speaking'] as const).map(s => cardStats[s].avg));
 	const secAvg   = $derived(allAvg.every(v => v !== null) ? roundHalf((allAvg as number[]).reduce((a, b) => a + b, 0) / 4) : null);
-	const ctAvg    = $derived(stats['Complete Tests'].avg);
-	const genScore = $derived(
-		secAvg !== null && ctAvg !== null ? roundHalf((secAvg + ctAvg) / 2) :
-		secAvg !== null ? secAvg : null
-	);
-	const genBest  = $derived((['Reading','Listening','Writing','Speaking'] as const).every(s => stats[s].best !== null)
-		? roundHalf((['Reading','Listening','Writing','Speaking'] as const).reduce((a, s) => a + (stats[s].best as number), 0) / 4)
+	const genScore = $derived(secAvg);
+	const genBest  = $derived((['Reading','Listening','Writing','Speaking'] as const).every(s => cardStats[s].best !== null)
+		? roundHalf((['Reading','Listening','Writing','Speaking'] as const).reduce((a, s) => a + (cardStats[s].best as number), 0) / 4)
 		: null);
 
 	/* ─── Derived — section rows ─── */
@@ -332,6 +359,27 @@
 
 	$effect(() => { void sec; testFilter = 'all'; });
 	$effect(() => { void sec; void mode; void testFilter; datePage = 1; });
+
+	/* Scroll list back into view when paginating (smooth, respects scroll-margin-top on the list element) */
+	let listEl = $state<HTMLDivElement | undefined>();
+	function changePage(delta: number) {
+		datePage += delta;
+		listEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
+
+	/* Track when the original section bar is on/off screen, so the mobile sticky indicator
+	   only shows once the original has scrolled out of view (and hides again when it returns). */
+	let sectionBarEl = $state<HTMLDivElement | undefined>();
+	let sectionBarVisible = $state(true);
+	$effect(() => {
+		if (!sectionBarEl) return;
+		const observer = new IntersectionObserver(
+			([entry]) => { sectionBarVisible = entry.isIntersecting; },
+			{ rootMargin: '-56px 0px 0px 0px' } // account for fixed 56px global header
+		);
+		observer.observe(sectionBarEl);
+		return () => observer.disconnect();
+	});
 </script>
 
 <svelte:head>
@@ -339,88 +387,156 @@
 	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </svelte:head>
 
-<div class="font-dmsans px-4 pb-5 md:px-8 md:pb-7 text-gray-800">
-	<!-- ─── Sticky header ─── -->
-	<div class="sticky top-14 z-40 bg-gray-50 pt-2.5 px-4 -mx-4 mb-3.5 border-b border-gray-200 md:pt-3.5 md:px-8 md:-mx-8">
-		<div class="flex flex-col items-start gap-2.5 mb-2.5 md:flex-row md:justify-between md:items-center md:gap-2 flex-wrap">
-			<div>
-				<h1 class="text-lg font-extrabold tracking-[-0.5px]"><span class="text-brand-green">Submission</span> History</h1>
-				<p class="text-[11px] text-gray-400 mt-px">Track your TOEFL 2026 scores across all sections</p>
+<div
+	class="font-dmsans relative px-4 pb-5 md:px-8 md:pb-7 text-gray-800
+		min-h-[calc(100vh-3.5rem)]
+		bg-gray-50
+		bg-[radial-gradient(55%_22%_at_100%_0%,rgba(0,177,137,0.11),transparent_70%),radial-gradient(50%_18%_at_0%_18%,rgba(0,177,137,0.07),transparent_70%),radial-gradient(60%_20%_at_100%_38%,rgba(0,177,137,0.08),transparent_70%),radial-gradient(55%_18%_at_0%_58%,rgba(0,177,137,0.06),transparent_70%),radial-gradient(50%_20%_at_100%_78%,rgba(0,177,137,0.07),transparent_70%),radial-gradient(60%_18%_at_0%_96%,rgba(0,177,137,0.06),transparent_70%)]"
+>
+	<!-- ─── Header (sticky only on md+, mobile lets it scroll away) ─── -->
+	<div class="relative md:sticky md:top-14 z-40 bg-gray-50/75 backdrop-blur-md pt-2.5 px-4 -mx-4 mb-3.5 border-b border-gray-200/70 md:pt-3.5 md:px-8 md:-mx-8">
+		<!-- Title row — compact on mobile, inline overall score chip -->
+		<div class="flex items-center justify-between gap-2 mb-2 md:mb-2.5">
+			<div class="min-w-0">
+				<h1 class="text-base md:text-lg font-extrabold tracking-[-0.5px] leading-tight"><span class="text-brand-green">Submission</span> History</h1>
+				<p class="hidden md:block text-[11px] text-gray-400 mt-px">Track your TOEFL 2026 scores across all sections</p>
+			</div>
+			<!-- Mobile-only inline overall chip -->
+			<div class="md:hidden flex items-center gap-1.5 bg-white rounded-full px-2.5 py-1 shadow-[0_1px_3px_rgba(0,0,0,.05)] flex-shrink-0">
+				<span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Overall</span>
+				<span class="text-sm font-extrabold leading-none" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">{gaugeNA ? '—' : fmtScore(gaugeScore)}</span>
+				<span class="text-[10px] text-gray-400 leading-none">/6</span>
 			</div>
 		</div>
 
-		<!-- Score Overview: Overall gauge + 5 section cards -->
-		<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 items-stretch">
-			<!-- Overall Score gauge -->
-			<div class="bg-white rounded-xl pt-2 pb-[7px] px-2.5 shadow-[0_1px_4px_rgba(0,0,0,.05)] relative overflow-hidden text-center">
-				<div class="relative max-w-[68px] mx-auto">
-					<svg viewBox="0 0 120 86" class="w-[68px] h-[49px] block">
-						<path d={arcPath(SA, EA)} fill="none" stroke="#ebebeb" stroke-width="9" stroke-linecap="round" />
+		<!-- Score grid — 2-col on mobile & tablet (section cards only), 5-col on xl+ (with gauge) -->
+		<div class="grid grid-cols-2 gap-2 xl:grid-cols-[0.72fr_repeat(4,1fr)] items-stretch pb-1">
+			<!-- Overall Score — hero card, only shown when there's room for the 5-col layout -->
+			<div class="hidden xl:flex relative rounded-xl bg-gradient-to-br from-brand-green-light via-white to-white shadow-[0_1px_4px_rgba(0,0,0,.05)] overflow-hidden flex-col items-center justify-center text-center px-3 py-3">
+				<!-- subtle decorative ring in the corner -->
+				<div class="pointer-events-none absolute -top-6 -right-6 w-16 h-16 rounded-full bg-brand-green/10"></div>
+
+				<div class="text-[9px] font-bold text-brand-green-dark uppercase tracking-[.6px] mb-1 relative">Overall Avg</div>
+
+				<!-- Gauge -->
+				<div class="relative w-[88px] mx-auto">
+					<svg viewBox="0 0 120 86" class="w-[88px] h-[63px] block">
+						<path d={arcPath(SA, EA)} fill="none" stroke="#eaf2ee" stroke-width="10" stroke-linecap="round" />
 						{#if !gaugeNA}
-							<path d={arcPath(SA, gaugeFillAngle)} fill="none" stroke={gaugeColor} stroke-width="9" stroke-linecap="round" style="transition:all .6s ease" />
+							<path d={arcPath(SA, gaugeFillAngle)} fill="none" stroke={gaugeColor} stroke-width="10" stroke-linecap="round" style="transition:all .6s ease" />
 						{/if}
-						<text x="14" y="82" font-size="8" fill="#ccc" text-anchor="middle">1</text>
-						<text x="106" y="82" font-size="8" fill="#ccc" text-anchor="middle">6</text>
 					</svg>
-					<div class="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm font-extrabold tracking-[-1px] leading-none whitespace-nowrap" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">
-						{gaugeNA ? '—' : fmtScore(gaugeScore)}{#if !gaugeNA}<span class="text-[10px] font-semibold text-gray-400">/6</span>{/if}
+					<div class="absolute top-[58%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-baseline gap-0.5 leading-none whitespace-nowrap">
+						<span class="text-[22px] font-extrabold tracking-[-1.2px]" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">{gaugeNA ? '—' : fmtScore(gaugeScore)}</span>
+						{#if !gaugeNA}<span class="text-[10px] font-semibold text-gray-400">/6</span>{/if}
 					</div>
 				</div>
-				<div class="block text-[10px] font-bold text-gray-400 uppercase tracking-[.5px] mt-px">{isComplete ? 'Composite Avg' : 'Overall Avg'}</div>
+
+				<!-- Best badge -->
 				{#if gaugeBest !== null}
-					<div class="text-[11px] text-gray-400 mt-0.5">Best <b class="text-brand-green">{fmtScore(gaugeBest)}/6</b></div>
+					<div class="inline-flex items-center gap-1 mt-1 px-2 py-[3px] rounded-full bg-white border border-brand-green/25 shadow-[0_1px_2px_rgba(0,0,0,.04)]">
+						<svg class="w-3 h-3 text-brand-green -translate-y-px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.3 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
+						<span class="text-[9px] uppercase tracking-[.4px] font-semibold text-gray-500">Best</span>
+						<b class="text-[11px] font-extrabold text-brand-green leading-none">{fmtScore(gaugeBest)}</b>
+					</div>
 				{:else}
-					<div class="text-[10px] text-gray-300 mt-0.5">{isComplete ? 'No fully scored tests' : 'Need all 4 sections'}</div>
+					<div class="text-[10px] text-gray-400 mt-1.5 italic">Need all 4 sections</div>
 				{/if}
 			</div>
 
-			<!-- Section cards -->
+			<!-- Section cards — green header + body, overlapping markers on a shared 1–6 ruler -->
 			{#each secs as sc}
-				{@const s = stats[sc]}
+				{@const s = cardStats[sc]}
 				{@const act = sec === sc}
-				{@const comp = sc === 'Complete Tests'}
+				{@const pct = (v: number) => ((v - 1) / 5) * 100}
 				<a
 					href="{base}/submission-history/{NAME_TO_SLUG[sc]}"
-					class="block no-underline rounded-xl pt-2 pb-[7px] px-2.5 relative overflow-hidden cursor-pointer text-left transition-all duration-150
-						{comp
-							? act
-								? 'border border-[#58ae9b] bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_6px_20px_rgba(0,177,137,.4)]'
-								: 'border border-[#58ae9b] bg-gradient-to-br from-brand-green to-[#00c99a] text-white shadow-[0_4px_16px_rgba(0,177,137,.3)] hover:from-[#00a87f] hover:to-[#00b88d]'
-							: act
-								? 'border-2 border-brand-green bg-white shadow-[0_3px_12px_rgba(0,177,137,.12)]'
-								: 'border-2 border-transparent bg-white shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:bg-gray-50'}"
+					class="flex flex-col no-underline rounded-xl relative overflow-hidden cursor-pointer text-left transition-shadow duration-150 bg-white
+						{act
+							? 'ring-2 ring-brand-green ring-offset-2 ring-offset-gray-50 shadow-[0_6px_20px_rgba(0,177,137,.18)]'
+							: 'shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:shadow-[0_3px_10px_rgba(0,0,0,.1)]'}"
 				>
-					{#if act}
-						<div class="absolute top-0 left-0 right-0 h-[3px] {comp ? 'bg-white/40' : 'bg-brand-green'}"></div>
-					{/if}
-					<div class="flex items-center gap-1.5 mb-[7px]">
-						<div class="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0
-							{comp ? 'bg-white/20 text-white' : act ? 'bg-brand-green/10 text-brand-green' : 'bg-gray-100 text-gray-400'}">
-							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<!-- Green header strip -->
+					<div class="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 {act ? 'bg-brand-green-dark' : 'bg-brand-green'}">
+						<div class="w-[18px] h-[18px] md:w-[22px] md:h-[22px] rounded-md flex items-center justify-center flex-shrink-0 bg-white/20 text-white">
+							<svg class="w-[11px] h-[11px] md:w-[13px] md:h-[13px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								{#each iconPaths[sc] as d}<path {d} />{/each}
 								{#if sc === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
 							</svg>
 						</div>
-						<span class="text-[11px] font-semibold {comp ? 'text-white/85' : 'text-gray-700'}">{sc}</span>
+						<span class="text-[11px] md:text-[12px] font-bold text-white truncate">{sc}</span>
+						<span class="ml-auto text-[10px] text-white/75 flex-shrink-0">{s.count}<span class="hidden md:inline xl:hidden"> submission{s.count !== 1 ? 's' : ''}</span><span class="hidden xl:inline 2xl:hidden"> sub.</span><span class="hidden 2xl:inline"> submission{s.count !== 1 ? 's' : ''}</span></span>
 					</div>
-					<div class="flex items-baseline gap-0.5 mb-1">
-						<span class="text-xl font-extrabold tracking-[-1px]" style="color:{s.avg === null ? (comp ? '#fff' : '#d0d5dd') : (comp ? '#fff' : '#1a1a1a')}">{s.avg === null ? '—' : fmtScore(s.avg)}</span>
-						{#if s.avg !== null}
-							<span class="text-[11px] font-semibold {comp ? 'text-white/70' : 'text-gray-400'}">/6</span>
-							<span class="text-[9px] ml-[3px] {comp ? 'text-white/70' : 'text-gray-400'}">{comp ? 'comp' : 'avg'}</span>
+
+					<!-- Body -->
+					<div class="flex flex-col flex-1 px-2.5 md:px-3 pt-2 pb-2 md:pt-2.5 md:pb-2.5">
+
+					<!-- Hero avg + Best -->
+					<div class="flex items-baseline gap-1 mb-2 md:mb-3 flex-wrap">
+						<span class="text-[20px] md:text-[28px] font-extrabold tracking-[-1px] md:tracking-[-1.5px] leading-none" style="color:{s.avg === null ? '#d0d5dd' : '#1a1a1a'}">{s.avg === null ? '—' : fmtScore(s.avg)}</span>
+						<span class="text-[10px] md:text-[12px] font-semibold text-gray-300 leading-none">/6</span>
+						<span class="text-[8.5px] md:text-[9px] uppercase tracking-[.5px] text-gray-400 leading-none ml-0.5">avg</span>
+						{#if s.best !== null}
+							<span class="ml-auto inline-flex items-baseline gap-1 text-[10px] text-gray-400 leading-none">
+								<svg class="w-3 h-3 text-brand-green self-center -translate-y-px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.3 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
+								<span>Best</span>
+								<b class="text-[10.5px] md:text-[12px] font-bold" style="color:#00b189">{fmtScore(s.best)}</b>
+							</span>
 						{/if}
 					</div>
-					<div class="flex justify-between text-[10px] {comp ? 'text-white/75' : 'text-gray-400'}">
-						<span>Best: <b style="color:{s.best === null ? (comp ? '#fff' : '#ccc') : (comp ? '#fff' : '#00b189')}">{s.best === null ? '—' : fmtScore(s.best)}</b></span>
-						<span class="font-semibold {comp ? 'bg-white/20 text-white rounded px-1' : ''}">{s.count}</span>
+
+					<!-- Shared 1–6 ruler with Test + Practice markers -->
+					{#if s.testAvg !== null || s.practiceAvg !== null}
+						<div class="mt-auto">
+							<!-- Ruler rendered as SVG so every tick is pixel-crisp at the same width -->
+							<div class="relative h-4">
+								<svg class="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+									<!-- baseline -->
+									<line x1="0%" y1="50%" x2="100%" y2="50%" stroke="#f3f4f6" stroke-width="1" vector-effect="non-scaling-stroke" />
+									<!-- half-step ticks (1.5, 2.5, 3.5, 4.5, 5.5) -->
+									{#each [1.5, 2.5, 3.5, 4.5, 5.5] as t}
+										<line x1="{((t - 1) / 5) * 100}%" y1="38%" x2="{((t - 1) / 5) * 100}%" y2="62%" stroke="#e5e7eb" stroke-width="1" vector-effect="non-scaling-stroke" />
+									{/each}
+									<!-- integer ticks (1, 2, 3, 4, 5, 6) -->
+									{#each [1, 2, 3, 4, 5, 6] as t}
+										<line x1="{((t - 1) / 5) * 100}%" y1="22%" x2="{((t - 1) / 5) * 100}%" y2="78%" stroke="#d1d5db" stroke-width="1" vector-effect="non-scaling-stroke" />
+									{/each}
+								</svg>
+								<!-- Practice marker (amber) -->
+								{#if s.practiceAvg !== null}
+									<div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white bg-[#f0a030] shadow-[0_1px_3px_rgba(0,0,0,.25)]" style="left:{pct(s.practiceAvg)}%" title="Practice avg {fmtScore(s.practiceAvg)}/6"></div>
+								{/if}
+								<!-- Test marker (green) on top -->
+								{#if s.testAvg !== null}
+									<div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white bg-brand-green shadow-[0_1px_3px_rgba(0,0,0,.25)]" style="left:{pct(s.testAvg)}%" title="Test avg {fmtScore(s.testAvg)}/6"></div>
+								{/if}
+							</div>
+
+							<!-- Legend with values -->
+							<div class="flex items-center justify-between mt-1 md:mt-1.5 gap-1.5">
+								<div class="flex items-center gap-1 min-w-0 leading-none">
+									<span class="block w-[7px] h-[7px] rounded-full bg-brand-green flex-shrink-0 -translate-y-px"></span>
+									<span class="text-[8.5px] uppercase tracking-[.4px] font-semibold text-gray-500">Test</span>
+									<b class="text-[11px] font-extrabold" style="color:{s.testAvg === null ? '#d0d5dd' : '#00876c'}">{s.testAvg === null ? '—' : fmtScore(s.testAvg)}</b>
+									<span class="hidden md:inline xl:hidden 2xl:inline text-[8px] uppercase tracking-[.4px] text-gray-400">avg</span>
+								</div>
+								<div class="flex items-center gap-1 min-w-0 leading-none">
+									<span class="block w-[7px] h-[7px] rounded-full bg-[#f0a030] flex-shrink-0 -translate-y-px"></span>
+									<span class="text-[8.5px] uppercase tracking-[.4px] font-semibold text-gray-500 truncate"><span class="hidden md:inline xl:hidden 2xl:inline">Practice</span><span class="md:hidden xl:inline 2xl:hidden">Prac</span></span>
+									<b class="text-[11px] font-extrabold" style="color:{s.practiceAvg === null ? '#d0d5dd' : '#a87a08'}">{s.practiceAvg === null ? '—' : fmtScore(s.practiceAvg)}</b>
+									<span class="hidden md:inline xl:hidden 2xl:inline text-[8px] uppercase tracking-[.4px] text-gray-400">avg</span>
+								</div>
+							</div>
+						</div>
+					{/if}
 					</div>
 				</a>
 			{/each}
 		</div>
 
 		<!-- Section bar -->
-		<div class="flex items-center gap-2.5 pt-2 pb-2 border-t border-gray-200 mt-2">
-			<div class="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+		<div bind:this={sectionBarEl} class="flex items-center gap-2.5 pt-2 pb-2 border-t border-gray-200 mt-2 flex-wrap max-md:gap-y-2">
+			<div class="flex items-center gap-1.5 flex-1 min-w-0 flex-wrap">
 				<div class="w-[22px] h-[22px] rounded-md bg-brand-green/10 text-brand-green flex items-center justify-center flex-shrink-0">
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						{#each iconPaths[sec] as d}<path {d} />{/each}
@@ -471,8 +587,8 @@
 					<span class="text-[10px] text-gray-300 italic">No trend yet</span>
 				{/if}
 			</button>
-			<div class="w-px h-5 bg-gray-200 flex-shrink-0"></div>
-			<div class="flex items-center gap-2 flex-shrink-0">
+			<div class="w-px h-5 bg-gray-200 flex-shrink-0 max-md:hidden"></div>
+			<div class="flex items-center gap-2 flex-shrink-0 max-md:basis-full max-md:justify-end">
 				<!-- Test no. dropdown -->
 				<span class="text-[10px] font-semibold text-gray-400 uppercase tracking-[.4px] whitespace-nowrap">Test no.</span>
 				<div class="relative">
@@ -535,6 +651,26 @@
 		{/if}
 	</div>
 
+	<!-- Mobile-only floating section indicator — fades in once the original section bar leaves view -->
+	{#if !sectionBarVisible}
+		<div
+			class="md:hidden fixed top-14 left-0 right-0 z-30 px-4 py-2 bg-gray-50/85 backdrop-blur-md border-b border-gray-200/70"
+			transition:fade={{ duration: 180 }}
+		>
+			<div class="flex items-center gap-2">
+				<div class="w-[22px] h-[22px] rounded-md bg-brand-green/10 text-brand-green flex items-center justify-center flex-shrink-0">
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						{#each iconPaths[sec] as d}<path {d} />{/each}
+						{#if sec === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
+					</svg>
+				</div>
+				<span class="text-[13px] font-bold text-gray-800">{sec}</span>
+				<span class="text-gray-300 text-xs">·</span>
+				<span class="text-[11px] text-gray-500">{isComplete ? filteredCtByDate.length : filteredByDate.length} {isComplete ? 'attempt' : 'submission'}{(isComplete ? filteredCtByDate.length : filteredByDate.length) !== 1 ? 's' : ''}</span>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Detail Panel -->
 	<div>
 		<!-- ═══ SECTION VIEW (Reading / Listening / Writing / Speaking) ═══ -->
@@ -546,58 +682,65 @@
 					<div class="text-[11px] text-gray-300 mt-0.5">Complete a practice test to see results here</div>
 				</div>
 			{:else}
-				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
-					{#each pagedDateRows as sub, i}
-						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-nowrap max-md:px-3.5 max-md:gap-2 max-md:flex-wrap {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
-							<div class="flex items-center gap-1.5 flex-nowrap min-w-0 w-[470px] flex-shrink-0 max-md:w-full">
-								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{sub.testNumber}</span>
-								<span class="text-gray-500 whitespace-nowrap">{fmtD(sub.date)} <span class="text-gray-300">·</span> {fmtT(sub.date)}</span>
-								<span class="text-[9px] font-bold py-px px-[7px] rounded-full uppercase tracking-[.4px]
+				<div bind:this={listEl} class="flex flex-col gap-2 scroll-mt-20 md:scroll-mt-72">
+					{#each pagedDateRows as sub}
+						<!-- Mobile card / desktop row -->
+						<div class="bg-white rounded-xl ring-1 ring-gray-100 shadow-[0_1px_3px_rgba(0,0,0,.04)] px-3.5 py-3 md:flex md:items-center md:px-5 md:py-2.5 md:gap-3 md:flex-nowrap transition-shadow hover:shadow-[0_3px_10px_rgba(0,0,0,.06)]">
+							<!-- Header: test# + mode chip + date -->
+							<div class="flex items-center gap-1.5 flex-wrap min-w-0 md:w-[470px] md:flex-shrink-0 md:flex-nowrap">
+								<span class="text-[11px] md:text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{sub.testNumber}</span>
+								<span class="text-[10px] md:text-[9px] font-bold py-px px-[7px] rounded-full uppercase tracking-[.4px] whitespace-nowrap
 									{sub.mode==='test' ? 'bg-brand-green/10 text-brand-green' : 'bg-[#f0a030]/10 text-[#c8920a]'}">
 									{sub.mode==='test'?'Test Mode':'Practice Mode'}
 								</span>
 								{#if !sub.scoreAvailable}
-									<span class="text-[9px] font-medium py-px px-[7px] rounded-full uppercase tracking-[.4px] bg-gray-100 text-gray-400">AI off</span>
+									<span class="text-[10px] md:text-[9px] font-medium py-px px-[7px] rounded-full uppercase tracking-[.4px] bg-gray-100 text-gray-400 whitespace-nowrap">AI off</span>
 								{/if}
+								<span class="text-[12px] md:text-xs text-gray-500 whitespace-nowrap ml-auto md:ml-0">{fmtD(sub.date)} <span class="text-gray-300">·</span> {fmtT(sub.date)}</span>
 							</div>
-							<div class="flex items-center gap-1.5 flex-[0_0_140px] max-md:flex-[0_0_120px] max-sm:flex-[0_0_100px]">
-								{#if sub.score===null}
-									<div class="rounded-full w-[70px] h-[5px] bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
-									<span class="text-[11px] text-gray-400 italic">N/A</span>
-								{:else}
-									<div class="rounded-full bg-gray-200 overflow-hidden" style="width:70px;height:5px">
-										<div class="h-full rounded-full transition-[width] duration-500" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div>
-									</div>
-									<span class="text-xs font-bold min-w-[38px]" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
-								{/if}
-							</div>
-							<div class="flex gap-1 flex-wrap flex-1 min-w-0 max-md:flex-[1_1_100%]">
+							<!-- Detail chips -->
+							<div class="flex gap-1 flex-wrap mt-2 md:mt-0 md:flex-1 md:min-w-0 md:order-3">
 								{#each Object.entries(sub.details) as [k,v]}
-									<span class="text-[10px] py-0.5 px-1.5 rounded whitespace-nowrap
+									<span class="text-[11px] md:text-[10px] py-0.5 px-1.5 rounded whitespace-nowrap
 										{v==='not graded' ? 'bg-gray-50 text-gray-300' : 'bg-[#f4f7f5] text-gray-500'}">
 										{k}: <b>{v}</b>
 									</span>
 								{/each}
 							</div>
-							<button class="flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white max-sm:py-[3px] max-sm:px-2.5 max-sm:text-[10px]">
+							<!-- Score + View row (mobile: full width row; desktop: fixed slot) -->
+							<div class="flex items-center gap-2 mt-3 md:mt-0 md:gap-1.5 md:flex-[0_0_140px] md:order-2">
+								{#if sub.score===null}
+									<div class="flex-1 md:flex-none md:w-[70px] h-[5px] rounded-full bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
+									<span class="text-[12px] md:text-[11px] text-gray-400 italic">N/A</span>
+								{:else}
+									<div class="flex-1 md:flex-none md:w-[70px] h-[5px] rounded-full bg-gray-200 overflow-hidden">
+										<div class="h-full rounded-full transition-[width] duration-500" style="width:{((sub.score-1)/5)*100}%;background:{scoreColor(sub.score)}"></div>
+									</div>
+									<span class="text-sm md:text-xs font-bold min-w-[42px] md:min-w-[38px] text-right md:text-left" style="color:{scoreColor(sub.score)}">{fmtScoreFull(sub.score)}</span>
+								{/if}
+								<button class="md:hidden flex-shrink-0 py-1.5 px-3.5 rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-xs font-bold cursor-pointer hover:bg-brand-green hover:text-white transition-colors">
+									View →
+								</button>
+							</div>
+							<button class="hidden md:inline-block flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white md:order-4">
 								View →
 							</button>
 						</div>
 					{/each}
-					{#if totalDatePages > 1}
-						<div class="flex items-center justify-center gap-3 py-3 px-5 border-t border-gray-100">
-							<button disabled={datePage===1} onclick={() => datePage--}
-								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
-								← Prev
-							</button>
-							<span class="text-[11px] text-gray-400">Page {datePage} of {totalDatePages} · {filteredByDate.length} submissions</span>
-							<button disabled={datePage===totalDatePages} onclick={() => datePage++}
-								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
-								Next →
-							</button>
-						</div>
-					{/if}
 				</div>
+				{#if totalDatePages > 1}
+					<div class="flex items-center justify-center gap-3 py-3 mt-3">
+						<button disabled={datePage===1} onclick={() => changePage(-1)}
+							class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+							← Prev
+						</button>
+						<span class="text-[11px] text-gray-400">Page {datePage} of {totalDatePages} · {filteredByDate.length} submissions</span>
+						<button disabled={datePage===totalDatePages} onclick={() => changePage(1)}
+							class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+							Next →
+						</button>
+					</div>
+				{/if}
 			{/if}
 
 		<!-- ═══ COMPLETE TESTS VIEW ═══ -->
@@ -609,50 +752,53 @@
 					<div class="text-[11px] text-gray-300 mt-0.5">Take a full 4-section practice test to see results here</div>
 				</div>
 			{:else}
-				<div class="bg-white rounded-2xl shadow-[0_1px_6px_rgba(0,0,0,.04)] overflow-hidden">
-					{#each pagedCtRows as t, i}
-						<div class="flex items-center px-5 py-[9px] border-b border-gray-100 text-xs gap-3 flex-nowrap max-md:px-3.5 max-md:gap-2 max-md:flex-wrap {i % 2 !== 0 ? 'bg-gray-50/40' : 'bg-white'}">
-							<div class="flex items-center gap-1.5 flex-nowrap min-w-0 w-[470px] flex-shrink-0 max-md:w-full">
-								<span class="text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{t.testNumber}</span>
-								<span class="text-gray-500 whitespace-nowrap">{fmtD(t.date)} <span class="text-gray-300">·</span> {fmtT(t.date)}</span>
-								<span class="text-gray-500 whitespace-nowrap" style="color:#bbb">{t.duration}</span>
+				<div bind:this={listEl} class="flex flex-col gap-2 scroll-mt-20 md:scroll-mt-72">
+					{#each pagedCtRows as t}
+						<div class="bg-white rounded-xl ring-1 ring-gray-100 shadow-[0_1px_3px_rgba(0,0,0,.04)] px-3.5 py-3 md:flex md:items-center md:px-5 md:py-2.5 md:gap-3 md:flex-nowrap transition-shadow hover:shadow-[0_3px_10px_rgba(0,0,0,.06)]">
+							<div class="flex items-center gap-1.5 flex-wrap min-w-0 md:w-[470px] md:flex-shrink-0 md:flex-nowrap">
+								<span class="text-[11px] md:text-[10px] font-bold py-0.5 px-2 rounded-md bg-gray-100 text-gray-600 whitespace-nowrap">Test #{t.testNumber}</span>
+								<span class="text-[11px] md:text-xs text-gray-400 whitespace-nowrap">{t.duration}</span>
+								<span class="text-[12px] md:text-xs text-gray-500 whitespace-nowrap ml-auto md:ml-0">{fmtD(t.date)} <span class="text-gray-300">·</span> {fmtT(t.date)}</span>
 							</div>
-							<div class="flex gap-1 flex-wrap flex-1 min-w-0 max-md:flex-[1_1_100%]">
+							<div class="flex gap-1 flex-wrap mt-2 md:mt-0 md:flex-1 md:min-w-0 md:order-3">
 								{#each SEC4 as s}
 									{@const v=t.scores[s]}
-									<span class="text-[10px] font-bold py-0.5 px-[7px] rounded whitespace-nowrap" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>
+									<span class="text-[11px] md:text-[10px] font-bold py-0.5 px-[7px] rounded whitespace-nowrap" style="color:{v!==null?scoreColor(v):'#ccc'};background:{v!==null?scoreColor(v)+'18':'#f5f5f5'}">{s.slice(0,1)}: {v!==null?fmtScore(v):'—'}</span>
 								{/each}
 							</div>
-							<div class="flex items-center gap-1.5 flex-[0_0_140px] max-md:flex-[0_0_120px] max-sm:flex-[0_0_100px]">
+							<div class="flex items-center gap-2 mt-3 md:mt-0 md:gap-1.5 md:flex-[0_0_140px] md:order-2">
 								{#if t.composite!==null}
-									<div class="rounded-full bg-gray-200 overflow-hidden" style="width:70px;height:5px">
+									<div class="flex-1 md:flex-none md:w-[70px] h-[5px] rounded-full bg-gray-200 overflow-hidden">
 										<div class="h-full rounded-full transition-[width] duration-500" style="width:{((t.composite-1)/5)*100}%;background:{scoreColor(t.composite)}"></div>
 									</div>
-									<span class="text-xs font-bold min-w-[38px]" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
+									<span class="text-sm md:text-xs font-bold min-w-[42px] md:min-w-[38px] text-right md:text-left" style="color:{scoreColor(t.composite)}">{fmtScoreFull(t.composite)}</span>
 								{:else}
-									<div class="rounded-full w-[70px] h-[5px] bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
-									<span class="text-[11px] text-gray-400 italic">Pending</span>
+									<div class="flex-1 md:flex-none md:w-[70px] h-[5px] rounded-full bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
+									<span class="text-[12px] md:text-[11px] text-gray-400 italic">Pending</span>
 								{/if}
+								<button class="md:hidden flex-shrink-0 py-1.5 px-3.5 rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-xs font-bold cursor-pointer hover:bg-brand-green hover:text-white transition-colors">
+									View →
+								</button>
 							</div>
-							<button class="flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white max-sm:py-[3px] max-sm:px-2.5 max-sm:text-[10px]">
+							<button class="hidden md:inline-block flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white md:order-4">
 								View →
 							</button>
 						</div>
 					{/each}
-					{#if totalCtPages > 1}
-						<div class="flex items-center justify-center gap-3 py-3 px-5 border-t border-gray-100">
-							<button disabled={datePage===1} onclick={() => datePage--}
-								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
-								← Prev
-							</button>
-							<span class="text-[11px] text-gray-400">Page {datePage} of {totalCtPages} · {filteredCtByDate.length} attempts</span>
-							<button disabled={datePage===totalCtPages} onclick={() => datePage++}
-								class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
-								Next →
-							</button>
-						</div>
-					{/if}
 				</div>
+				{#if totalCtPages > 1}
+					<div class="flex items-center justify-center gap-3 py-3 mt-3">
+						<button disabled={datePage===1} onclick={() => changePage(-1)}
+							class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+							← Prev
+						</button>
+						<span class="text-[11px] text-gray-400">Page {datePage} of {totalCtPages} · {filteredCtByDate.length} attempts</span>
+						<button disabled={datePage===totalCtPages} onclick={() => changePage(1)}
+							class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
+							Next →
+						</button>
+					</div>
+				{/if}
 			{/if}
 		{/if}
 	</div>
