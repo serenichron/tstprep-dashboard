@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { fade } from 'svelte/transition';
 	import QuizRow from '$lib/components/QuizRow.svelte';
 	import TestRow from '$lib/components/TestRow.svelte';
@@ -149,7 +150,7 @@
 	}>> = $derived.by(() => {
 		const data = MOCK.filter(q => q.ai !== false && q.score !== 0);
 		const average = (quizzes: QuizSubmission[]) => quizzes.length ? formatScore(quizzes.reduce((a, q) => a + q.score, 0) / quizzes.length) : null;
-		const best = (quizzes: QuizSubmission[]) => quizzes.length ? formatScore(quizzes.reduce((a, q) => Math.max(a + q.score), 0)) : null;
+		const best = (quizzes: QuizSubmission[]) => quizzes.length ? formatScore(Math.max(...quizzes.map(q => q.score))) : null;
 		const extract = (type: QuizType): Record<QuizMode | 'all', {
 			average: number | null,
 			best: number | null,
@@ -236,10 +237,35 @@
 		speaking: 'Speaking',
 	};
 	const PAGE_SIZE  = 20;
-	let mode       = $state<'all' | 'test' | 'practice'>('all');
-	const sec      = $derived(SLUG_TO_NAME[page.params.section!] ?? 'Reading');
-	let testFilter = $state<number | 'all'>('all');
-	let datePage   = $state(1);
+
+	/* ─── Initial state read from URL query params ───
+	   Filters survive refreshes and can be deep-linked. Defaults (mode=all, test=all,
+	   page=1) are not represented in the URL — manual `?mode=all`, `?test=all` or
+	   `?page=1` is treated as the default and stripped on load. */
+	const initialUrl = page.url.searchParams;
+	let mode = $state<'all' | 'test' | 'practice'>(
+		(() => {
+			const m = initialUrl.get('mode');
+			return m === 'test' || m === 'practice' ? m : 'all';
+		})()
+	);
+	let testFilter = $state<number | 'all'>(
+		(() => {
+			const t = initialUrl.get('testno');
+			if (!t) return 'all';
+			const n = Number.parseInt(t, 10);
+			return Number.isInteger(n) && n >= 1 && n <= 15 ? n : 'all';
+		})()
+	);
+	let datePage = $state<number>(
+		(() => {
+			const p = initialUrl.get('page');
+			if (!p) return 1;
+			const n = Number.parseInt(p, 10);
+			return Number.isInteger(n) && n >= 1 ? n : 1;
+		})()
+	);
+	const sec = $derived(SLUG_TO_NAME[page.params.section!] ?? 'Reading');
 
 	const modeOptions = [
 		{ value: 'all'      as const, label: 'All' },
@@ -250,12 +276,6 @@
 		{ value: 'all', label: 'All' },
 		...Array.from({ length: 15 }, (_, i) => ({ value: i + 1, label: String(i + 1) }))
 	];
-
-	const roundHalf = (v: number) => Math.round(v * 2) / 2;
-	const avgOf = (arr: QuizSubmission[]) => {
-		const scored = arr.filter(s => s.ai !== false && s.score > 0);
-		return scored.length ? scored.reduce((a, s) => a + s.score, 0) / scored.length : null;
-	};
 
 	/* ─── Mode-filtered subset (drives the row list + section bar counts) ─── */
 	const data = $derived(MOCK.filter(s => mode === 'all' || (mode === 'practice' ? s.practice : !s.practice)));
@@ -275,31 +295,11 @@
 		return o;
 	});
 
-	/* ─── Mode-AGNOSTIC card stats (header cards stay constant when mode filter changes) ─── */
-	const cardStats = $derived.by(() => {
-		const o: Record<string, { avg: number | null; best: number | null; count: number; testAvg: number | null; practiceAvg: number | null }> = {};
-		secs.forEach(sc => {
-			const all = MOCK.filter(s => s.quiz_type === sc.toLowerCase());
-			const scored = all.filter(s => s.ai !== false && s.score > 0);
-			const testArr = all.filter(s => !s.practice);
-			const practiceArr = all.filter(s => s.practice);
-			o[sc] = {
-				avg: avgOf(all),
-				best: scored.length ? Math.max(...scored.map(s => s.score)) : null,
-				count: all.length,
-				testAvg: avgOf(testArr),
-				practiceAvg: avgOf(practiceArr)
-			};
-		});
-		return o;
-	});
-
-	/* ─── Overall gauge — mode-agnostic ─── */
-	const allAvg = $derived(secs.map(s => cardStats[s].avg));
-	const overallAvg = $derived(allAvg.every(v => v !== null) ? (allAvg as number[]).reduce((a, b) => a + b, 0) / 4 : null);
-	const overallBest = $derived(secs.every(s => cardStats[s].best !== null)
-		? (secs.reduce((a, s) => a + (cardStats[s].best as number), 0) / 4)
-		: null);
+	/* ─── Overall gauge — averaged from MOCK_AGGREGATE (already in 1–6 band) ─── */
+	const sectionBands  = $derived(sections.map(t => MOCK_AGGREGATE[t].all.average));
+	const overallBand   = $derived(sectionBands.every(v => v !== null) ? (sectionBands as number[]).reduce((a, b) => a + b, 0) / sections.length : null);
+	const sectionBests  = $derived(sections.map(t => MOCK_AGGREGATE[t].all.best));
+	const overallBest   = $derived(sectionBests.every(v => v !== null) ? (sectionBests as number[]).reduce((a, b) => a + b, 0) / sections.length : null);
 
 	/* ─── Section rows ─── */
 	const sectionData = $derived(
@@ -317,11 +317,11 @@
 	const st          = $derived(stats[sec] ?? { count: 0, aiCount: 0, trend: [] });
 	const trendData   = $derived((testFilter === 'all' ? st.trend : st.trend.filter(p => p.test_number === testFilter)).map(x => ({ score: x.score, created_at: x.created_at })));
 
-	const gaugeNA        = $derived(overallAvg === null);
-	const gaugeBand      = $derived(gaugeNA ? null : formatScore(overallAvg as number));
+	const gaugeNA        = $derived(overallBand === null);
+	const gaugeBand      = $derived(overallBand);
 	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeBand as number));
 	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeBand as number) - 1) / 5) * TA);
-	const gaugeBestBand  = $derived(overallBest === null ? null : formatScore(overallBest));
+	const gaugeBestBand  = $derived(overallBest);
 
 	const pagedDateRows  = $derived(filteredByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
 	const totalDatePages = $derived(Math.ceil(filteredByDate.length / PAGE_SIZE) || 1);
@@ -347,8 +347,42 @@
 		};
 	});
 
-	$effect(() => { void sec; testFilter = 'all'; });
-	$effect(() => { void sec; void mode; void testFilter; datePage = 1; });
+	/* Reset filters on user-initiated changes only. We track the previous values in
+	   plain (non-reactive) variables, so the very first effect pass — which always
+	   matches the initial captured value — does nothing and lets URL-loaded state stand. */
+	let lastSecForTest = sec;
+	$effect(() => {
+		if (sec === lastSecForTest) return;
+		lastSecForTest = sec;
+		testFilter = 'all';
+	});
+
+	let lastSecForPage = sec;
+	let lastModeForPage = mode;
+	let lastTestForPage = testFilter;
+	$effect(() => {
+		if (sec === lastSecForPage && mode === lastModeForPage && testFilter === lastTestForPage) return;
+		lastSecForPage = sec;
+		lastModeForPage = mode;
+		lastTestForPage = testFilter;
+		datePage = 1;
+	});
+
+	/* Sync state → URL. Default values are stripped. Manual entry of default values
+	   (e.g. ?mode=all) is normalized to a clean URL on first run. */
+	$effect(() => {
+		const params = new URLSearchParams(page.url.searchParams);
+		if (mode === 'all') params.delete('mode'); else params.set('mode', mode);
+		if (testFilter === 'all') params.delete('testno'); else params.set('testno', String(testFilter));
+		if (datePage === 1) params.delete('page'); else params.set('page', String(datePage));
+
+		const nextSearch = params.toString();
+		const currentSearch = page.url.searchParams.toString();
+		if (nextSearch === currentSearch) return;
+
+		const target = page.url.pathname + (nextSearch ? '?' + nextSearch : '');
+		goto(target, { replaceState: true, keepFocus: true, noScroll: true });
+	});
 
 	/* Scroll list back into view when paginating */
 	let listEl = $state<HTMLDivElement | undefined>();

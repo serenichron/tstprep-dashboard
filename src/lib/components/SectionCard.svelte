@@ -1,6 +1,5 @@
 <script lang="ts">
 	import QuizIcon from './QuizIcon.svelte';
-	import { formatScore } from '$lib/utils';
 
 	let {
 		selected,
@@ -17,6 +16,7 @@
 		value: string;
 		href: string;
 		label: string;
+		// Scores arrive already in the 1–6 TOEFL band (caller is expected to use formatScore()).
 		score: number | null;
 		bestScore: number | null;
 		testScore: number | null;
@@ -26,11 +26,10 @@
 
 	const active = $derived(value === selected);
 
-	// Scores arriving as 0–100 internal scale; format to 1–6 TOEFL band for display.
-	const avgDisplay      = $derived(score         !== null ? formatScore(score)         : null);
-	const bestDisplay     = $derived(bestScore     !== null ? formatScore(bestScore)     : null);
-	const testDisplay     = $derived(testScore     !== null ? formatScore(testScore)     : null);
-	const practiceDisplay = $derived(practiceScore !== null ? formatScore(practiceScore) : null);
+	const avgDisplay      = $derived(score);
+	const bestDisplay     = $derived(bestScore);
+	const testDisplay     = $derived(testScore);
+	const practiceDisplay = $derived(practiceScore);
 	const pct = (v: number) => ((v - 1) / 5) * 100;
 	const fmt = (v: number) => v.toFixed(1);
 </script>
@@ -48,7 +47,7 @@
 			<QuizIcon width="11" height="11" variant={value} />
 		</div>
 		<span class="text-[11px] md:text-[12px] font-bold text-white truncate">{label}</span>
-		<span class="ml-auto text-[10px] text-white/75 flex-shrink-0">{count}<span class="hidden md:inline xl:hidden"> submission{count !== 1 ? 's' : ''}</span><span class="hidden xl:inline 2xl:hidden"> sub.</span><span class="hidden 2xl:inline"> submission{count !== 1 ? 's' : ''}</span></span>
+		<span class="ml-auto text-[10px] text-white/75 flex-shrink-0">{count}<span class="hidden md:inline xl:hidden">&nbsp;submission{count !== 1 ? 's' : ''}</span><span class="hidden xl:inline 2xl:hidden">&nbsp;sub.</span><span class="hidden 2xl:inline">&nbsp;submission{count !== 1 ? 's' : ''}</span></span>
 	</div>
 
 	<!-- Body -->
@@ -92,13 +91,13 @@
 				<!-- Legend -->
 				<div class="flex items-center justify-between mt-1 md:mt-1.5 gap-1.5">
 					<div class="flex items-center gap-1 min-w-0 leading-none">
-						<span class="block w-[7px] h-[7px] rounded-full bg-brand-green flex-shrink-0 -translate-y-px"></span>
+						<svg width="7" height="7" viewBox="0 0 7 7" class="flex-shrink-0 overflow-visible" aria-hidden="true"><circle cx="3.5" cy="3.5" r="3.5" fill="#00b189" /></svg>
 						<span class="text-[8.5px] uppercase tracking-[.4px] font-semibold text-gray-500">Test</span>
 						<b class="text-[11px] font-extrabold" style="color:{testDisplay === null ? '#d0d5dd' : '#00876c'}">{testDisplay === null ? '—' : fmt(testDisplay)}</b>
 						<span class="hidden md:inline xl:hidden 2xl:inline text-[8px] uppercase tracking-[.4px] text-gray-400">avg</span>
 					</div>
 					<div class="flex items-center gap-1 min-w-0 leading-none">
-						<span class="block w-[7px] h-[7px] rounded-full bg-[#f0a030] flex-shrink-0 -translate-y-px"></span>
+						<svg width="7" height="7" viewBox="0 0 7 7" class="flex-shrink-0 overflow-visible" aria-hidden="true"><circle cx="3.5" cy="3.5" r="3.5" fill="#f0a030" /></svg>
 						<span class="text-[8.5px] uppercase tracking-[.4px] font-semibold text-gray-500 truncate"><span class="hidden md:inline xl:hidden 2xl:inline">Practice</span><span class="md:hidden xl:inline 2xl:hidden">Prac</span></span>
 						<b class="text-[11px] font-extrabold" style="color:{practiceDisplay === null ? '#d0d5dd' : '#a87a08'}">{practiceDisplay === null ? '—' : fmt(practiceDisplay)}</b>
 						<span class="hidden md:inline xl:hidden 2xl:inline text-[8px] uppercase tracking-[.4px] text-gray-400">avg</span>
