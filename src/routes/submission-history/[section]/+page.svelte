@@ -10,6 +10,9 @@
 	import SectionCard from '$lib/components/SectionCard.svelte';
 	import type { QuizMode, QuizSubmission, QuizType, QuizTypeComplete } from '$lib/types';
 	import { formatScore, scoreColor } from '$lib/utils';
+  	import GaugeCard from '$lib/components/GaugeCard.svelte';
+  	import AverageChip from '$lib/components/AverageChip.svelte';
+  	import QuizIcon from '$lib/components/QuizIcon.svelte';
 
 	/* ─── URL ↔ section name ─── */
 	const SLUG_TO_NAME: Record<string, string> = {
@@ -147,7 +150,13 @@
 		average: number | null,
 		best: number | null,
 		count: number,
-	}>> = $derived.by(() => {
+	}>> & {
+		all: {
+			average: number | null,
+			best: number | null,
+			count: number,
+		}
+	} = $derived.by(() => {
 		const data = MOCK.filter(q => q.ai !== false && q.score !== 0);
 		const average = (quizzes: QuizSubmission[]) => quizzes.length ? formatScore(quizzes.reduce((a, q) => a + q.score, 0) / quizzes.length) : null;
 		const best = (quizzes: QuizSubmission[]) => quizzes.length ? formatScore(Math.max(...quizzes.map(q => q.score))) : null;
@@ -179,52 +188,31 @@
 			};
 		}
 
+		const none = {
+			average: null,
+			best: null,
+			count: 0,
+		};
+
 		return {
 			reading: extract('reading'),
 			listening: extract('listening'),
 			writing: extract('writing'),
 			speaking: extract('speaking'),
+			all: {
+				average: average(data),
+				best: best(data),
+				count: data.length,
+			},
 			complete: {
-				practice: {
-					average: null,
-					best: null,
-					count: 0,
-				},
-				test: {
-					average: null,
-					best: null,
-					count: 0,
-				},
-				all: {
-					average: null,
-					best: null,
-					count: 0,
-				},
+				practice: none,
+				test: none,
+				all: none,
 			}
 		}
-	})
+	});
 
 	const SEC4: Sec4[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
-
-	/* ─── Icon paths (used in the section bar + mobile indicator) ─── */
-	const iconPaths: Record<string, string[]> = {
-		Reading:        ['M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z', 'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'],
-		Listening:      ['M3 18v-6a9 9 0 0 1 18 0v6', 'M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z'],
-		Writing:        ['M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'],
-		Speaking:       ['M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z', 'M19 10v2a7 7 0 0 1-14 0v-2'],
-		'Complete Tests': ['M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m-6 8h.01M9 16h.01M13 12h3m-3 4h3'],
-	};
-
-	/* ─── Arc helpers (gauge) ─── */
-	const arcPath = (sa: number, ea: number) => {
-		const r = 46, cx = 60, cy = 54;
-		const x1 = cx + r * Math.cos(sa), y1 = cy + r * Math.sin(sa);
-		const x2 = cx + r * Math.cos(ea), y2 = cy + r * Math.sin(ea);
-		return `M${x1},${y1}A${r},${r},0,${ea - sa > Math.PI ? 1 : 0},1,${x2},${y2}`;
-	};
-	const SA = Math.PI * 0.82;
-	const EA = Math.PI * 2.18;
-	const TA = EA - SA;
 
 	/* ─── State ─── */
 	const secs = ['Reading', 'Listening', 'Writing', 'Speaking'];
@@ -295,12 +283,6 @@
 		return o;
 	});
 
-	/* ─── Overall gauge — averaged from MOCK_AGGREGATE (already in 1–6 band) ─── */
-	const sectionBands  = $derived(sections.map(t => MOCK_AGGREGATE[t].all.average));
-	const overallBand   = $derived(sectionBands.every(v => v !== null) ? (sectionBands as number[]).reduce((a, b) => a + b, 0) / sections.length : null);
-	const sectionBests  = $derived(sections.map(t => MOCK_AGGREGATE[t].all.best));
-	const overallBest   = $derived(sectionBests.every(v => v !== null) ? (sectionBests as number[]).reduce((a, b) => a + b, 0) / sections.length : null);
-
 	/* ─── Section rows ─── */
 	const sectionData = $derived(
 		data.filter(s => s.quiz_type === sec.toLowerCase())
@@ -316,12 +298,6 @@
 	const needsAI     = $derived(sec === 'Writing' || sec === 'Speaking');
 	const st          = $derived(stats[sec] ?? { count: 0, aiCount: 0, trend: [] });
 	const trendData   = $derived((testFilter === 'all' ? st.trend : st.trend.filter(p => p.test_number === testFilter)).map(x => ({ score: x.score, created_at: x.created_at })));
-
-	const gaugeNA        = $derived(overallBand === null);
-	const gaugeBand      = $derived(overallBand);
-	const gaugeColor     = $derived(gaugeNA ? '#ddd' : scoreColor(gaugeBand as number));
-	const gaugeFillAngle = $derived(gaugeNA ? SA : SA + (((gaugeBand as number) - 1) / 5) * TA);
-	const gaugeBestBand  = $derived(overallBest);
 
 	const pagedDateRows  = $derived(filteredByDate.slice((datePage - 1) * PAGE_SIZE, datePage * PAGE_SIZE));
 	const totalDatePages = $derived(Math.ceil(filteredByDate.length / PAGE_SIZE) || 1);
@@ -427,41 +403,13 @@
 				<p class="hidden md:block text-[11px] text-gray-400 mt-px">Track your TOEFL 2026 scores across all sections</p>
 			</div>
 			<!-- Mobile-only inline overall chip -->
-			<div class="md:hidden flex items-center gap-1.5 bg-white rounded-full px-2.5 py-1 shadow-[0_1px_3px_rgba(0,0,0,.05)] flex-shrink-0">
-				<span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Overall</span>
-				<span class="text-sm font-extrabold leading-none" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">{gaugeNA ? '—' : fmtSel(gaugeBand as number)}</span>
-				<span class="text-[10px] text-gray-400 leading-none">/6</span>
-			</div>
+			<AverageChip score={MOCK_AGGREGATE.all.average} />
 		</div>
 
 		<!-- Score grid — 2-col on mobile & tablet (section cards only), 5-col on xl+ (with gauge) -->
 		<div class="grid grid-cols-2 gap-2 xl:grid-cols-[0.72fr_repeat(4,1fr)] items-stretch pb-1">
 			<!-- Overall gauge card (only when there's room for 5-col) -->
-			<div class="hidden xl:flex relative rounded-xl bg-gradient-to-br from-brand-green-light via-white to-white shadow-[0_1px_4px_rgba(0,0,0,.05)] overflow-hidden flex-col items-center justify-center text-center px-3 py-3">
-				<div class="pointer-events-none absolute -top-6 -right-6 w-16 h-16 rounded-full bg-brand-green/10"></div>
-				<div class="text-[9px] font-bold text-brand-green-dark uppercase tracking-[.6px] mb-1 relative">Overall Avg</div>
-				<div class="relative w-[88px] mx-auto">
-					<svg viewBox="0 0 120 86" class="w-[88px] h-[63px] block">
-						<path d={arcPath(SA, EA)} fill="none" stroke="#eaf2ee" stroke-width="10" stroke-linecap="round" />
-						{#if !gaugeNA}
-							<path d={arcPath(SA, gaugeFillAngle)} fill="none" stroke={gaugeColor} stroke-width="10" stroke-linecap="round" style="transition:all .6s ease" />
-						{/if}
-					</svg>
-					<div class="absolute top-[58%] left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-baseline gap-0.5 leading-none whitespace-nowrap">
-						<span class="text-[22px] font-extrabold tracking-[-1.2px]" style="color:{gaugeNA ? '#d0d5dd' : gaugeColor}">{gaugeNA ? '—' : fmtSel(gaugeBand as number)}</span>
-						{#if !gaugeNA}<span class="text-[10px] font-semibold text-gray-400">/6</span>{/if}
-					</div>
-				</div>
-				{#if gaugeBestBand !== null}
-					<div class="inline-flex items-center gap-1 mt-1 px-2 py-[3px] rounded-full bg-white border border-brand-green/25 shadow-[0_1px_2px_rgba(0,0,0,.04)]">
-						<svg class="w-3 h-3 text-brand-green -translate-y-px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.3 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
-						<span class="text-[9px] uppercase tracking-[.4px] font-semibold text-gray-500">Best</span>
-						<b class="text-[11px] font-extrabold text-brand-green leading-none">{fmtSel(gaugeBestBand)}</b>
-					</div>
-				{:else}
-					<div class="text-[10px] text-gray-400 mt-1.5 italic">Need all 4 sections</div>
-				{/if}
-			</div>
+			<GaugeCard best={MOCK_AGGREGATE.all.best} average={MOCK_AGGREGATE.all.average} />
 
 			<!-- Section cards -->
 			{#each sections as sc}
@@ -485,10 +433,7 @@
 		<div bind:this={sectionBarEl} class="flex items-center gap-2.5 pt-2 pb-2 border-t border-gray-200 mt-2 flex-wrap max-md:gap-y-2">
 			<div class="flex items-center gap-1.5 flex-1 min-w-0 flex-wrap">
 				<div class="w-[22px] h-[22px] rounded-md bg-brand-green/10 text-brand-green flex items-center justify-center flex-shrink-0">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						{#each iconPaths[sec] as d}<path {d} />{/each}
-						{#if sec === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
-					</svg>
+					<QuizIcon variant={sec} width="14" height="14" />
 				</div>
 				<span class="text-xs font-bold text-gray-800 whitespace-nowrap">{sec}</span>
 				<span class="text-gray-300 text-xs">·</span>
@@ -527,10 +472,7 @@
 		>
 			<div class="flex items-center gap-2">
 				<div class="w-[22px] h-[22px] rounded-md bg-brand-green/10 text-brand-green flex items-center justify-center flex-shrink-0">
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						{#each iconPaths[sec] as d}<path {d} />{/each}
-						{#if sec === 'Speaking'}<line x1="12" x2="12" y1="19" y2="22" />{/if}
-					</svg>
+					<QuizIcon variant={sec} width="13" height="13" />
 				</div>
 				<span class="text-[13px] font-bold text-gray-800">{sec}</span>
 				<span class="text-gray-300 text-xs">·</span>
