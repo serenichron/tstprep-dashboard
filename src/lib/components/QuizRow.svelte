@@ -1,8 +1,23 @@
 <script lang="ts">
 	import type { QuizSubmission } from '$lib/types';
 	import { extractDateTime, formatScore, scoreColor } from '$lib/utils';
+	import MarkButton from './MarkButton.svelte';
 
-	let { quiz, onView }: { quiz: QuizSubmission; onView?: () => void } = $props();
+	let {
+		quiz,
+		onView,
+		starred = false,
+		feedback = null,
+		onStarToggle,
+		onFeedback
+	}: {
+		quiz: QuizSubmission;
+		onView?: () => void;
+		starred?: boolean;
+		feedback?: 'up' | 'down' | null;
+		onStarToggle?: () => void;
+		onFeedback?: (kind: 'up' | 'down') => void;
+	} = $props();
 
 	const aiOff = $derived(quiz.ai === false);
 	const scored = $derived(!aiOff && quiz.score > 0);
@@ -52,24 +67,28 @@
 		{/if}
 	</div>
 
-	<!-- Score bar + score number (with mobile View button) -->
-	<div class="flex items-center gap-2 mt-3 md:mt-0 md:gap-1.5 md:flex-[0_0_140px] md:order-2">
-		{#if !scored}
-			<div class="flex-1 md:flex-none md:w-[70px] h-[5px] rounded-full bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
-			<span class="text-[12px] md:text-[11px] text-gray-400 italic">N/A</span>
-		{:else}
-			<div class="flex-1 md:flex-none md:w-[70px] h-[5px] rounded-full bg-gray-200 overflow-hidden">
-				<div class="h-full rounded-full transition-[width] duration-500" style="width:{((band! - 1) / 5) * 100}%;background:{color}"></div>
-			</div>
-			<span class="text-sm md:text-xs font-bold min-w-[42px] md:min-w-[38px] text-right md:text-left" style="color:{color}">{band!.toFixed(1)}/6</span>
-		{/if}
-		<button onclick={onView} class="md:hidden flex-shrink-0 py-1.5 px-3.5 rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-xs font-bold cursor-pointer hover:bg-brand-green hover:text-white transition-colors">
-			View →
-		</button>
+	<!-- Score + actions: one row on mobile, two separate flex items on desktop -->
+	<div class="flex items-center gap-2 mt-3 md:mt-0 md:contents">
+		<!-- Score bar + number -->
+		<div class="flex items-center gap-2 flex-1 min-w-0 md:flex-initial md:gap-1.5 md:flex-[0_0_120px] md:order-2">
+			{#if !scored}
+				<div class="flex-1 md:flex-none md:w-[60px] h-[5px] rounded-full bg-[repeating-linear-gradient(90deg,_#e8e8e8_0px,_#e8e8e8_3px,_transparent_3px,_transparent_6px)]"></div>
+				<span class="text-[12px] md:text-[11px] text-gray-400 italic">N/A</span>
+			{:else}
+				<div class="flex-1 md:flex-none md:w-[60px] h-[5px] rounded-full bg-gray-200 overflow-hidden">
+					<div class="h-full rounded-full transition-[width] duration-500" style="width:{((band! - 1) / 5) * 100}%;background:{color}"></div>
+				</div>
+				<span class="text-sm md:text-xs font-bold min-w-[42px] md:min-w-[38px] text-right md:text-left whitespace-nowrap" style="color:{color}">{band!.toFixed(1)}/6</span>
+			{/if}
+		</div>
+		<!-- Actions: View + mark icons -->
+		<div class="flex items-center gap-1.5 flex-shrink-0 md:order-4">
+			<button onclick={onView} class="py-1 px-3 md:px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer hover:bg-brand-green hover:text-white transition-colors whitespace-nowrap">
+				View →
+			</button>
+			<MarkButton kind="star" active={starred} onclick={onStarToggle} />
+			<MarkButton kind="up" active={feedback === 'up'} onclick={() => onFeedback?.('up')} />
+			<MarkButton kind="down" active={feedback === 'down'} onclick={() => onFeedback?.('down')} />
+		</div>
 	</div>
-
-	<!-- Desktop View button -->
-	<button onclick={onView} class="hidden md:inline-block flex-shrink-0 py-1 px-[13px] rounded-full border-[1.5px] border-brand-green bg-transparent text-brand-green text-[11px] font-bold cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-brand-green hover:text-white md:order-4">
-		View →
-	</button>
 </div>

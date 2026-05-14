@@ -13,6 +13,7 @@
   	import GaugeCard from '$lib/components/GaugeCard.svelte';
   	import AverageChip from '$lib/components/AverageChip.svelte';
   	import QuizIcon from '$lib/components/QuizIcon.svelte';
+  	import MarkButton from '$lib/components/MarkButton.svelte';
 
 	/* ─── URL ↔ section name ─── */
 	const SLUG_TO_NAME: Record<string, string> = {
@@ -253,7 +254,28 @@
 			return Number.isInteger(n) && n >= 1 ? n : 1;
 		})()
 	);
+	/* Filter state. Star is an independent toggle; thumb is a mutually-exclusive up/down choice.
+	   Both can be combined (e.g. starred + thumbs-up). */
+	let starFilter  = $state<boolean>(initialUrl.get('star') === '1');
+	let thumbFilter = $state<'up' | 'down' | null>(
+		(() => {
+			const f = initialUrl.get('feedback');
+			return f === 'up' || f === 'down' ? f : null;
+		})()
+	);
 	const sec = $derived(SLUG_TO_NAME[page.params.section!] ?? 'Reading');
+
+	/* Per-submission marks. Page-local state — no backend yet. Map submission id → marks. */
+	type SubMarks = { starred?: boolean; feedback?: 'up' | 'down' | null };
+	let userMarks = $state<Record<string, SubMarks>>({});
+	function toggleStar(id: string) {
+		const cur = userMarks[id] ?? {};
+		userMarks = { ...userMarks, [id]: { ...cur, starred: !cur.starred } };
+	}
+	function setFeedback(id: string, kind: 'up' | 'down') {
+		const cur = userMarks[id] ?? {};
+		userMarks = { ...userMarks, [id]: { ...cur, feedback: cur.feedback === kind ? null : kind } };
+	}
 
 	const modeOptions = [
 		{ value: 'all'      as const, label: 'All' },
@@ -291,7 +313,16 @@
 	const ctData   = $derived(mode === 'practice' ? [] : COMPLETE);
 	const ctByDate = $derived([...ctData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
-	const filteredByDate   = $derived(testFilter === 'all' ? sectionData : sectionData.filter(s => s.test_number === testFilter));
+	const matchesMarks = (id: string) => {
+		const m = userMarks[id];
+		if (starFilter && m?.starred !== true) return false;
+		if (thumbFilter !== null && m?.feedback !== thumbFilter) return false;
+		return true;
+	};
+	const filteredByDate = $derived(
+		(testFilter === 'all' ? sectionData : sectionData.filter(s => s.test_number === testFilter))
+			.filter(s => matchesMarks(s.id))
+	);
 	const filteredCtByDate = $derived(testFilter === 'all' ? ctByDate    : ctByDate.filter(t => t.testNumber === testFilter));
 
 	const isComplete  = $derived(sec === 'Complete Tests');
@@ -336,11 +367,21 @@
 	let lastSecForPage = sec;
 	let lastModeForPage = mode;
 	let lastTestForPage = testFilter;
+	let lastStarForPage = starFilter;
+	let lastThumbForPage = thumbFilter;
 	$effect(() => {
-		if (sec === lastSecForPage && mode === lastModeForPage && testFilter === lastTestForPage) return;
+		if (
+			sec === lastSecForPage &&
+			mode === lastModeForPage &&
+			testFilter === lastTestForPage &&
+			starFilter === lastStarForPage &&
+			thumbFilter === lastThumbForPage
+		) return;
 		lastSecForPage = sec;
 		lastModeForPage = mode;
 		lastTestForPage = testFilter;
+		lastStarForPage = starFilter;
+		lastThumbForPage = thumbFilter;
 		datePage = 1;
 	});
 
@@ -351,6 +392,8 @@
 		if (mode === 'all') params.delete('mode'); else params.set('mode', mode);
 		if (testFilter === 'all') params.delete('testno'); else params.set('testno', String(testFilter));
 		if (datePage === 1) params.delete('page'); else params.set('page', String(datePage));
+		if (!starFilter) params.delete('star'); else params.set('star', '1');
+		if (thumbFilter === null) params.delete('feedback'); else params.set('feedback', thumbFilter);
 
 		const nextSearch = params.toString();
 		const currentSearch = page.url.searchParams.toString();
@@ -460,6 +503,11 @@
 			<div class="flex items-center gap-2 flex-shrink-0 max-md:basis-full max-md:justify-end">
 				<Select label="Test no." bind:value={testFilter} options={testOptions} />
 				<Select label="Mode" bind:value={mode} options={modeOptions} />
+				<div class="flex items-center gap-1 pl-1 border-l border-gray-200">
+					<MarkButton kind="star" size="sm" active={starFilter}           onclick={() => starFilter = !starFilter}                                  ariaLabel="Filter by starred" />
+					<MarkButton kind="up"   size="sm" active={thumbFilter === 'up'}   onclick={() => thumbFilter = thumbFilter === 'up'   ? null : 'up'}   ariaLabel="Filter by thumbs up" />
+					<MarkButton kind="down" size="sm" active={thumbFilter === 'down'} onclick={() => thumbFilter = thumbFilter === 'down' ? null : 'down'} ariaLabel="Filter by thumbs down" />
+				</div>
 			</div>
 		</div>
 	</div>
@@ -494,7 +542,13 @@
 			{:else}
 				<div bind:this={listEl} class="flex flex-col gap-2 scroll-mt-20 md:scroll-mt-72">
 					{#each pagedDateRows as sub (sub.id)}
-						<QuizRow quiz={sub} />
+						<QuizRow
+							quiz={sub}
+							starred={userMarks[sub.id]?.starred ?? false}
+							feedback={userMarks[sub.id]?.feedback ?? null}
+							onStarToggle={() => toggleStar(sub.id)}
+							onFeedback={(kind) => setFeedback(sub.id, kind)}
+						/>
 					{/each}
 				</div>
 				{#if totalDatePages > 1}
