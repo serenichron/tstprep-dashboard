@@ -137,3 +137,33 @@ export type QuizSubmission = {
 export type QuizType = "reading" | "listening" | "writing" | "speaking";
 export type QuizTypeComplete = QuizType | "complete";
 export type QuizMode = "practice" | "test";
+
+type StatsPart = {
+  average: number | null;
+  best: number | null;
+  count: number;
+};
+type StatsPartWithMode = Record<QuizMode | "all", StatsPart>;
+type StatsPartWithModeAndTest = Record<number, StatsPartWithMode> & {
+  all: StatsPartWithMode;
+};
+
+export type SubmissionStats = Record<
+  QuizTypeComplete,
+  StatsPartWithModeAndTest
+>;
+
+export type SubmissionGeneralStats = Record<QuizType, StatsPartWithMode> & {
+  all: StatsPart;
+};
+
+export type Sec4 = "Reading" | "Listening" | "Speaking" | "Writing";
+
+export type CompleteSub = {
+  id: string;
+  testNumber: number;
+  date: string;
+  duration: string;
+  scores: Record<Sec4, number | null>;
+  composite: number | null;
+};
