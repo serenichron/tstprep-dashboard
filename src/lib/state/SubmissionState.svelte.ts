@@ -3,11 +3,10 @@ import type {
   QuizMode,
   QuizSubmission,
   QuizType,
-  QuizTypeComplete,
+  StatsPart,
+  StatsPartWithMode,
   SubmissionGeneralStats,
-  SubmissionStats,
 } from "$lib/types";
-import { formatScore } from "$lib/utils";
 import { createQuery } from "@tanstack/svelte-query";
 
 // prettier-ignore
@@ -117,38 +116,25 @@ const COMPLETE: CompleteSub[] = [
   { id:'ct7a', testNumber:7, date:'2026-04-14T11:00:00', duration:'1h 28m', scores:{Reading:75,Listening:75,Speaking:66,  Writing:66  }, composite:Math.round((75+75+66+66)/4) },
 ];
 
-const PAGE_SIZE = 20;
-type FetchKey = {
-  type: QuizType;
-  mode?: QuizMode;
-  test?: number;
-  page?: number;
-};
+export const PAGE_SIZE = 20;
+export const CHART_DATAPOINTS = 10;
+export const CHART_BASELINE = 20;
 
 export default class SubmissionState {
   public stats: SubmissionGeneralStats;
 
   public constructor() {
+    const sum = (quizzes: QuizSubmission[]) =>
+      quizzes.reduce((a, q) => a + q.score, 0);
     const average = (quizzes: QuizSubmission[]) =>
       quizzes.length
-        ? formatScore(quizzes.reduce((a, q) => a + q.score, 0) / quizzes.length)
+        ? quizzes.reduce((a, q) => a + q.score, 0) / quizzes.length
         : null;
     const best = (quizzes: QuizSubmission[]) =>
-      quizzes.length
-        ? formatScore(Math.max(...quizzes.map((q) => q.score)))
-        : null;
+      quizzes.length ? Math.max(...quizzes.map((q) => q.score)) : null;
     const graded = (quizzes: QuizSubmission[]) =>
-      quizzes.filter((q) => q.ai !== false && q.score !== 0);
-    const extract = (
-      type: QuizType,
-    ): Record<
-      QuizMode | "all",
-      {
-        average: number | null;
-        best: number | null;
-        count: number;
-      }
-    > => {
+      quizzes.filter((q) => q.ai !== false);
+    const extract = (type: QuizType): Record<QuizMode | "all", StatsPart> => {
       const d = MOCK.filter((q) => q.quiz_type === type);
       const p = d.filter((q) => q.practice);
       const t = d.filter((q) => !q.practice);
@@ -159,19 +145,25 @@ export default class SubmissionState {
 
       return {
         practice: {
+          sum: sum(pg),
           average: average(pg),
           best: best(pg),
           count: p.length,
+          gradedCount: pg.length,
         },
         test: {
+          sum: sum(tg),
           average: average(tg),
           best: best(tg),
           count: t.length,
+          gradedCount: tg.length,
         },
         all: {
+          sum: sum(dg),
           average: average(dg),
           best: best(dg),
           count: d.length,
+          gradedCount: dg.length,
         },
       };
     };
@@ -183,14 +175,26 @@ export default class SubmissionState {
       writing: extract("writing"),
       speaking: extract("speaking"),
       all: {
+        sum: sum(g),
         average: average(g),
         best: best(g),
         count: MOCK.length,
+        gradedCount: g.length,
       },
     };
   }
 
-  public fetch({ type, mode, test, page = 1 }: FetchKey) {
+  public fetchSubmissions({
+    type,
+    mode,
+    test,
+    page = 1,
+  }: {
+    type: QuizType;
+    mode?: QuizMode;
+    test?: number;
+    page?: number;
+  }) {
     return createQuery(() => ({
       queryKey: [type, page, mode, test],
       queryFn: async () => {
@@ -198,43 +202,96 @@ export default class SubmissionState {
           mode === undefined || s.practice === (mode === "practice");
         const matchesTestNumber = (s: QuizSubmission) =>
           test === undefined || s.test_number === test;
-        const subs = MOCK.filter(
+
+        const submissions = MOCK.filter(
           (s) => s.quiz_type === type && matchesMode(s) && matchesTestNumber(s),
+        ).sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
 
-        const rawStats =
-          test === undefined
-            ? undefined
-            : subs.reduce(
-                (acc, s) =>
-                  s.ai !== false && s.score !== 0
-                    ? {
-                        sum: acc.sum + s.score,
-                        count: acc.count + 1,
-                        scoredCount: acc.scoredCount + 1,
-                        best: Math.max(acc.best, s.score),
-                      }
-                    : {
-                        sum: acc.sum,
-                        count: acc.count + 1,
-                        scoredCount: acc.scoredCount,
-                        best: acc.best,
-                      },
-                { sum: 0, count: 0, scoredCount: 0, best: 0 },
-              );
+        const pagedSubmissions = submissions.slice(
+          (page - 1) * PAGE_SIZE,
+          page * PAGE_SIZE,
+        );
+
+        if (page === 1) {
+          const missing =
+            CHART_DATAPOINTS - submissions.filter((s) => s.ai !== false).length;
+          if (missing > 0) {
+            return {
+              submissions: pagedSubmissions,
+              extraSubmissions: submissions
+                .slice(PAGE_SIZE)
+                .filter((s) => s.ai !== false)
+                .slice(0, missing),
+            };
+          }
+        }
+
+        return { submissions: pagedSubmissions };
+      },
+    }));
+  }
+
+  public fetchStats(type: QuizType, test?: number) {
+    return createQuery(() => ({
+      queryKey: [type, test],
+      queryFn: async (): Promise<StatsPartWithMode> => {
+        if (test === undefined) {
+          return this.stats[type];
+        }
+
+        const subs = MOCK.filter(
+          (s) => s.quiz_type === type && s.test_number === test,
+        );
+        const reduce = (subs: QuizSubmission[]) =>
+          subs.reduce(
+            (acc, s) =>
+              s.ai !== false
+                ? {
+                    sum: acc.sum + s.score,
+                    count: acc.count + 1,
+                    gradedCount: acc.gradedCount + 1,
+                    best: Math.max(acc.best, s.score),
+                  }
+                : {
+                    ...acc,
+                    count: acc.count + 1,
+                  },
+            {
+              sum: 0,
+              count: 0,
+              gradedCount: 0,
+              best: 0,
+            },
+          );
+
+        const stats = (subs: QuizSubmission[]) => {
+          const s = reduce(subs);
+          if (s.gradedCount === 0) {
+            return {
+              sum: s.sum,
+              average: null,
+              best: null,
+              count: s.count,
+              gradedCount: s.gradedCount,
+            };
+          }
+
+          return {
+            sum: s.sum,
+            average: s.sum / s.gradedCount,
+            best: s.best,
+            count: s.count,
+            gradedCount: s.gradedCount,
+          };
+        };
 
         return {
-          submissions: subs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-          stats:
-            rawStats === undefined || rawStats.scoredCount === 0
-              ? {
-                  count: rawStats?.count ?? 0,
-                }
-              : {
-                  average: rawStats.sum / rawStats.scoredCount,
-                  count: rawStats.count,
-                  best: rawStats.best,
-                },
+          practice: stats(subs.filter((s) => s.practice)),
+          test: stats(subs.filter((s) => !s.practice)),
+          all: stats(subs),
         };
       },
     }));

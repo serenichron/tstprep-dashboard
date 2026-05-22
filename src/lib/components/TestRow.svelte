@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { extractDateTime, formatScore, scoreColor } from '$lib/utils';
+	import { extractDateTime, formatScoreOptional, scoreColor } from '$lib/utils';
 
 	type Sec4 = 'Reading' | 'Listening' | 'Speaking' | 'Writing';
 
@@ -24,7 +24,7 @@
 	const SEC4_DEFAULT: Sec4[] = ['Reading', 'Listening', 'Speaking', 'Writing'];
 	const secs = $derived(sections ?? SEC4_DEFAULT);
 	const { date, time } = $derived(extractDateTime(row.date));
-	const compBand = $derived(row.composite !== null ? formatScore(row.composite) : null);
+	const compBand = $derived(formatScoreOptional(row.composite));
 	const compColor = $derived(compBand !== null ? scoreColor(compBand) : '#cbd5e1');
 </script>
 
@@ -40,7 +40,7 @@
 	<div class="flex gap-1 flex-wrap mt-2 md:mt-0 md:flex-1 md:min-w-0 md:order-3">
 		{#each secs as s}
 			{@const v = row.scores[s]}
-			{@const band = v !== null ? formatScore(v) : null}
+			{@const band = formatScoreOptional(v)}
 			{@const c = band !== null ? scoreColor(band) : '#ccc'}
 			<span class="text-[11px] md:text-[10px] font-bold py-0.5 px-[7px] rounded whitespace-nowrap" style="color:{c};background:{band !== null ? c + '18' : '#f5f5f5'}">
 				{s.slice(0, 1)}: {band !== null ? band.toFixed(1) : '—'}

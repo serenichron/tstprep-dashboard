@@ -138,13 +138,15 @@ export type QuizType = "reading" | "listening" | "writing" | "speaking";
 export type QuizTypeComplete = QuizType | "complete";
 export type QuizMode = "practice" | "test";
 
-type StatsPart = {
+export type StatsPart = {
   average: number | null;
   best: number | null;
+  sum: number;
   count: number;
+  gradedCount: number;
 };
-type StatsPartWithMode = Record<QuizMode | "all", StatsPart>;
-type StatsPartWithModeAndTest = Record<number, StatsPartWithMode> & {
+export type StatsPartWithMode = Record<QuizMode | "all", StatsPart>;
+export type StatsPartWithModeAndTest = Record<number, StatsPartWithMode> & {
   all: StatsPartWithMode;
 };
 

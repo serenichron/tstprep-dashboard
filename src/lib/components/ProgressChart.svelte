@@ -1,11 +1,20 @@
 <script lang="ts">
-  	import type { QuizSubmission } from "$lib/types";
-    import { formatScore } from "$lib/utils";
+  import { CHART_BASELINE, CHART_DATAPOINTS } from "$lib/state/SubmissionState.svelte";
+  	import type { QuizSubmission, StatsPart } from "$lib/types";
+    import { formatScore, formatScoreOptional } from "$lib/utils";
 
     const mn = 0.5, mx = 6.5;
     const CW = 400, CH = 160, pL = 32, pR = 14, pT = 16, pB = 32;
     const iW = CW - pL - pR, iH = CH - pT - pB;
-    const { quizzes, label }: { quizzes: Pick<QuizSubmission, 'score' | 'created_at'>[], label: string } = $props();
+    const {
+		submissions,
+		stats,
+		label,
+	}: {
+		submissions: Pick<QuizSubmission, 'score' | 'created_at'>[],
+		stats: StatsPart,
+		label: string,
+	} = $props();
 
     let trendOpen  = $state(false);
 	let trendHovIdx = $state<number | null>(null);
@@ -15,21 +24,20 @@
 		return { destroy: () => node.remove() };
 	}
 
-    const latestQuizzes = $derived(quizzes.slice(-10));
-
-	const average = $derived(quizzes.length ? formatScore(quizzes.reduce((a, q) => a + q.score, 0) / quizzes.length) : null);
-	const latestAverage = $derived(latestQuizzes.length ? formatScore(latestQuizzes.reduce((a, q) => a + q.score, 0) / latestQuizzes.length) : null);
+	const latestSum = $derived(submissions.reduce((a, q) => a + q.score, 0));
+	const average = $derived(formatScoreOptional((stats.sum - latestSum) / (CHART_BASELINE - CHART_DATAPOINTS)));
+	const latestAverage = $derived(submissions.length ? formatScore(latestSum / submissions.length) : null);
 
     const trendData = $derived.by(() => {
-		if (latestQuizzes.length < 2) {
+		if (submissions.length !== CHART_DATAPOINTS || stats.gradedCount < CHART_BASELINE) {
             return null;
         }
 
 		const yFor = (v: number) => (1 - (v - mn) / (mx - mn)) * iH;
-		const coords = latestQuizzes.map((q, i) => {
+		const coords = submissions.map((q, i) => {
 			const s = formatScore(q.score);
 			return {
-				x: (i / (latestQuizzes.length - 1)) * iW,
+				x: (i / (submissions.length - 1)) * iW,
 				y: yFor(s),
 				v: s,
 				date: q.created_at
