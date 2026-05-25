@@ -1,16 +1,23 @@
 <script lang="ts">
 	import type { QuizType, StatsPartWithMode } from '$lib/types';
-	import { formatScoreOptional, sectionLabel } from '$lib/utils';
+	import { formatScoreOptional, scoreColor, sectionLabel } from '$lib/utils';
 	import QuizIcon from './QuizIcon.svelte';
+	import HelpTip from './HelpTip.svelte';
+	import TrendChip from './TrendChip.svelte';
 
 	let {
-		selected = $bindable(),
+		selected,
 		value,
 		stats,
+		onSelect,
+		trendDiff
 	}: {
 		selected: QuizType;
 		value: QuizType;
 		stats: StatsPartWithMode;
+		onSelect?: (value: QuizType) => void;
+		/** Trend delta in the 1–6 band; pass undefined if not available. */
+		trendDiff?: number;
 	} = $props();
 
 	const label = $derived(sectionLabel(value));
@@ -20,13 +27,21 @@
 	const testAverage = $derived(formatScoreOptional(stats.test.average));
 	const practiceAverage = $derived(formatScoreOptional(stats.practice.average));
 
+	/* Score-band colors (red < 3.5, amber < 5, green ≥ 5) applied to all score numbers.
+	   The ruler markers + legend dots keep identity colors (green=Test, amber=Practice)
+	   so the two are still visually distinguishable on the same ruler. */
+	const averageColor  = $derived(average  === null ? '#d0d5dd' : scoreColor(average));
+	const bestColor     = $derived(best     === null ? '#d0d5dd' : scoreColor(best));
+	const testColor     = $derived(testAverage     === null ? '#d0d5dd' : scoreColor(testAverage));
+	const practiceColor = $derived(practiceAverage === null ? '#d0d5dd' : scoreColor(practiceAverage));
+
 	const pct = (v: number) => ((v - 1) / 5) * 100;
 	const fmt = (v: number) => v.toFixed(1);
 </script>
 
 <button
 	type="button"
-	onclick={() => selected = value}
+	onclick={() => onSelect?.(value)}
 	class="flex flex-col no-underline rounded-xl relative overflow-hidden cursor-pointer text-left transition-shadow duration-150 bg-white
 		{active
 			? 'ring-2 ring-brand-green ring-offset-2 ring-offset-gray-50 shadow-[0_6px_20px_rgba(0,177,137,.18)]'
@@ -38,6 +53,9 @@
 			<QuizIcon width="11" height="11" variant={value} />
 		</div>
 		<span class="text-[11px] md:text-[12px] font-bold text-white truncate">{label}</span>
+		{#if trendDiff !== undefined}
+			<TrendChip diff={trendDiff} variant="onGreen" />
+		{/if}
 		<span class="ml-auto text-[10px] text-white/75 flex-shrink-0">{stats.all.count} <span class="hidden md:inline xl:hidden">submission{stats.all.count !== 1 ? 's' : ''}</span><span class="hidden xl:inline 2xl:hidden">sub.</span><span class="hidden 2xl:inline">submission{stats.all.count !== 1 ? 's' : ''}</span></span>
 	</div>
 
@@ -45,14 +63,15 @@
 	<div class="flex flex-col flex-1 px-2.5 md:px-3 pt-2 pb-2 md:pt-2.5 md:pb-2.5">
 		<!-- Hero avg + Best -->
 		<div class="flex items-baseline gap-1 mb-2 md:mb-3 flex-wrap">
-			<span class="text-[20px] md:text-[28px] font-extrabold tracking-[-1px] md:tracking-[-1.5px] leading-none" style="color:{average === null ? '#d0d5dd' : '#1a1a1a'}">{average === null ? '—' : fmt(average)}</span>
-			<span class="text-[10px] md:text-[12px] font-semibold text-gray-300 leading-none">/6</span>
-			<span class="text-[8.5px] md:text-[9px] uppercase tracking-[.5px] text-gray-400 leading-none ml-0.5">avg</span>
+			<span class="text-[20px] md:text-[28px] font-extrabold tracking-[-1px] md:tracking-[-1.5px] leading-none" style="color:{averageColor}">{average === null ? '—' : fmt(average)}</span>
+			<span class="text-[11px] md:text-[13px] font-semibold text-gray-500 leading-none">/6</span>
+			<span class="text-[9px] md:text-[10px] uppercase tracking-[.5px] text-gray-500 leading-none ml-0.5 font-semibold">avg</span>
+			<HelpTip text="Based on your last 30 submissions for this section. If you have fewer, the average uses all available." />
 			{#if best !== null}
 				<span class="ml-auto inline-flex items-baseline gap-1 text-[10px] text-gray-400 leading-none">
-					<svg class="w-3 h-3 text-brand-green self-center -translate-y-px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.3 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
+					<svg class="w-3 h-3 self-center -translate-y-px" viewBox="0 0 24 24" fill="currentColor" style="color:{bestColor}"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.3 5.8 22l2.4-8.1L2 9.4h7.6z"/></svg>
 					<span>Best</span>
-					<b class="text-[10.5px] md:text-[12px] font-bold" style="color:#00b189">{fmt(best)}</b>
+					<b class="text-[10.5px] md:text-[12px] font-bold" style="color:{bestColor}">{fmt(best)}</b>
 				</span>
 			{/if}
 		</div>
@@ -84,13 +103,13 @@
 					<div class="flex items-center gap-1 min-w-0 leading-none">
 						<svg width="7" height="7" viewBox="0 0 7 7" class="flex-shrink-0 overflow-visible" aria-hidden="true"><circle cx="3.5" cy="3.5" r="3.5" fill="#00b189" /></svg>
 						<span class="text-[8.5px] uppercase tracking-[.4px] font-semibold text-gray-500">Test</span>
-						<b class="text-[11px] font-extrabold" style="color:{testAverage === null ? '#d0d5dd' : '#00876c'}">{testAverage === null ? '—' : fmt(testAverage)}</b>
+						<b class="text-[11px] font-extrabold" style="color:{testColor}">{testAverage === null ? '—' : fmt(testAverage)}</b>
 						<span class="hidden md:inline xl:hidden 2xl:inline text-[8px] uppercase tracking-[.4px] text-gray-400">avg</span>
 					</div>
 					<div class="flex items-center gap-1 min-w-0 leading-none">
 						<svg width="7" height="7" viewBox="0 0 7 7" class="flex-shrink-0 overflow-visible" aria-hidden="true"><circle cx="3.5" cy="3.5" r="3.5" fill="#f0a030" /></svg>
 						<span class="text-[8.5px] uppercase tracking-[.4px] font-semibold text-gray-500 truncate"><span class="hidden md:inline xl:hidden 2xl:inline">Practice</span><span class="md:hidden xl:inline 2xl:hidden">Prac</span></span>
-						<b class="text-[11px] font-extrabold" style="color:{practiceAverage === null ? '#d0d5dd' : '#a87a08'}">{practiceAverage === null ? '—' : fmt(practiceAverage)}</b>
+						<b class="text-[11px] font-extrabold" style="color:{practiceColor}">{practiceAverage === null ? '—' : fmt(practiceAverage)}</b>
 						<span class="hidden md:inline xl:hidden 2xl:inline text-[8px] uppercase tracking-[.4px] text-gray-400">avg</span>
 					</div>
 				</div>

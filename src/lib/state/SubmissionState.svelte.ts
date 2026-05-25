@@ -189,26 +189,51 @@ export default class SubmissionState {
     mode,
     test,
     page = 1,
+    sortBy = "date",
+    sortDir = "desc",
   }: {
     type: QuizType;
     mode?: QuizMode;
     test?: number;
     page?: number;
+    sortBy?: "date" | "score";
+    sortDir?: "asc" | "desc";
   }) {
     return createQuery(() => ({
-      queryKey: [type, page, mode, test],
+      queryKey: [type, page, mode, test, sortBy, sortDir],
       queryFn: async () => {
         const matchesMode = (s: QuizSubmission) =>
           mode === undefined || s.practice === (mode === "practice");
         const matchesTestNumber = (s: QuizSubmission) =>
           test === undefined || s.test_number === test;
 
-        const submissions = MOCK.filter(
+        const filtered = MOCK.filter(
           (s) => s.quiz_type === type && matchesMode(s) && matchesTestNumber(s),
-        ).sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
+
+        // Always tiebreak ties by newest-first. Non-AI (ai === false) submissions
+        // are kept at the tail of a score-sort regardless of direction, since
+        // they have no comparable score.
+        const dateDesc = (a: QuizSubmission, b: QuizSubmission) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+
+        let submissions: QuizSubmission[];
+        if (sortBy === "score") {
+          const scored = filtered.filter((s) => s.ai !== false);
+          const unscored = filtered.filter((s) => s.ai === false);
+          scored.sort((a, b) =>
+            sortDir === "asc" ? a.score - b.score : b.score - a.score,
+          );
+          // Stable: secondary sort by date desc on equal scores
+          // (the .sort above isn't stable across all envs, but the dataset is
+          // small enough that this is acceptable for the mock).
+          unscored.sort(dateDesc);
+          submissions = [...scored, ...unscored];
+        } else {
+          submissions = [...filtered].sort((a, b) =>
+            sortDir === "asc" ? -dateDesc(a, b) : dateDesc(a, b),
+          );
+        }
 
         const pagedSubmissions = submissions.slice(
           (page - 1) * PAGE_SIZE,
@@ -232,6 +257,63 @@ export default class SubmissionState {
         return { submissions: pagedSubmissions };
       },
     }));
+  }
+
+  /**
+   * Trend setup for the progress chart.
+   *
+   * Math (per the product spec):
+   *   - Compare the LATEST 1/3 of graded submissions to the PREVIOUS 2/3
+   *   - Latest is capped at CHART_DATAPOINTS (10), baseline at CHART_BASELINE (20)
+   *   - If total graded count is not divisible by 3, round it down to the nearest
+   *     multiple of 3 first when computing the latest count
+   *
+   * Examples:
+   *   8 graded → rounded 6 → latest=2, baseline=6
+   *   9 graded → rounded 9 → latest=3, baseline=6
+   *  30 graded → latest=10, baseline=20
+   *  33 graded → latest=10 (capped), baseline=20 (capped)
+   *
+   * `latestCount` is what the dashboard slices off the row list for the chart.
+   * `baseline.count` is 0 when no prior submissions exist (progress = 0).
+   */
+  public getTrendInfo(
+    type: QuizType,
+    mode?: QuizMode,
+    test?: number,
+  ): {
+    latestCount: number;
+    latestSum: number;
+    baseline: { sum: number; count: number };
+  } {
+    const subs = MOCK.filter(
+      (s) =>
+        s.quiz_type === type &&
+        s.ai !== false &&
+        (mode === undefined || s.practice === (mode === "practice")) &&
+        (test === undefined || s.test_number === test),
+    ).sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+
+    const totalGraded = subs.length;
+    if (totalGraded < 3) {
+      return { latestCount: 0, latestSum: 0, baseline: { sum: 0, count: 0 } };
+    }
+
+    const rounded = Math.floor(totalGraded / 3) * 3;
+    const latestCount = Math.min(CHART_DATAPOINTS, rounded / 3);
+    const latest = subs.slice(0, latestCount);
+    const baselineRaw = subs.slice(latestCount, latestCount + CHART_BASELINE);
+    return {
+      latestCount,
+      latestSum: latest.reduce((acc, s) => acc + s.score, 0),
+      baseline: {
+        sum: baselineRaw.reduce((acc, s) => acc + s.score, 0),
+        count: baselineRaw.length,
+      },
+    };
   }
 
   public fetchStats(type: QuizType, test?: number) {

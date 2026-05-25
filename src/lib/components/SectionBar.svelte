@@ -4,6 +4,7 @@
     import ProgressChart from "./ProgressChart.svelte";
     import QuizIcon from "./QuizIcon.svelte";
     import Select from "./Select.svelte";
+    import SortControl from "./SortControl.svelte";
 
     let {
         section,
@@ -11,6 +12,10 @@
         test = $bindable(),
         mode = $bindable(),
         trendSubmissions,
+        trendBaseline,
+        sortBy,
+        sortDir,
+        onToggleSort,
         root = $bindable(),
     }: {
         section: QuizType,
@@ -18,6 +23,10 @@
         test?: number,
         mode?: QuizMode,
         trendSubmissions: Pick<QuizSubmission, 'score' | 'created_at'>[];
+        trendBaseline: { sum: number, count: number };
+        sortBy: 'date' | 'score';
+        sortDir: 'asc' | 'desc';
+        onToggleSort: (by: 'date' | 'score') => void;
         root?: HTMLElement;
     } = $props();
     const label = $derived(sectionLabel(section));
@@ -65,15 +74,14 @@
             </span>
         {/if}
     </div>
-    <ProgressChart submissions={trendSubmissions} {stats} {label} />
+    <ProgressChart submissions={trendSubmissions} baseline={trendBaseline} {label} />
     <div class="w-px h-5 bg-gray-200 flex-shrink-0 max-md:hidden"></div>
     <div class="flex items-center gap-2 flex-shrink-0 max-md:basis-full max-md:justify-end">
         <Select label="Test no." bind:value={test} options={testOptions} />
         <Select label="Mode" bind:value={mode} options={modeOptions} />
-        <!-- <div class="flex items-center gap-1 pl-1 border-l border-gray-200">
-            <MarkButton kind="star" size="sm" active={starFilter}           onclick={() => starFilter = !starFilter}                                  ariaLabel="Filter by starred" />
-            <MarkButton kind="up"   size="sm" active={thumbFilter === 'up'}   onclick={() => thumbFilter = thumbFilter === 'up'   ? null : 'up'}   ariaLabel="Filter by thumbs up" />
-            <MarkButton kind="down" size="sm" active={thumbFilter === 'down'} onclick={() => thumbFilter = thumbFilter === 'down' ? null : 'down'} ariaLabel="Filter by thumbs down" />
-        </div> -->
+        <div class="w-px h-5 bg-gray-200 flex-shrink-0"></div>
+        <span class="text-[10px] uppercase tracking-[.4px] font-semibold text-gray-400 whitespace-nowrap">Sort by</span>
+        <SortControl label="Date"  by="date"  activeBy={sortBy} activeDir={sortDir} onclick={onToggleSort} />
+        <SortControl label="Score" by="score" activeBy={sortBy} activeDir={sortDir} onclick={onToggleSort} />
     </div>
 </div>

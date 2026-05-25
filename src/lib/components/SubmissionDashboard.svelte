@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page as route } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
 	import SectionCard from '$lib/components/SectionCard.svelte';
 	import type { QuizMode, QuizType } from '$lib/types';
@@ -14,10 +16,25 @@
     const { state: submissionState }: { state: SubmissionState } = $props();
 
 	/* ─── State ─── */
+	/* Section comes from the URL path (/submission-history/[section]). Filters live in
+	   query params. Changing section = navigate to a new path; the rest of the state
+	   stays in this component instance. */
+	const SECTIONS: QuizType[] = ['reading', 'listening', 'writing', 'speaking'];
+	const section = $derived(
+		whitelist<QuizType, string | undefined>(route.params.section, SECTIONS, 'reading')
+	);
+
 	const params = new URLSearchParams(location.search);
-	let section = $state(whitelist<QuizType, string | null>(params.get('type'), ['reading', 'listening', 'writing', 'speaking'], 'reading'));
 	let mode = $state(whitelist<QuizMode, string | null>(params.get('mode'), ['practice', 'test']));
 	let test = $state(whitelist<number, number>(parseInt(params.get('test') ?? ''), (t) => t > 0 && t <= 15));
+
+	function selectSection(newSection: QuizType) {
+		if (newSection === section) return;
+		test = undefined;
+		page = 1;
+		const qs = location.search; // keep remaining filters when switching section
+		goto(resolve(`/submission-history/${newSection}`) + qs, { keepFocus: true, noScroll: true });
+	}
 
 	const { data: newStats } = $derived(submissionState.fetchStats(section, test));
 	const modeStats = $derived(newStats?.[mode ?? 'all']);
@@ -25,11 +42,32 @@
 
 	let page = $state(whitelist<number, number>(parseInt(params.get('page') ?? ''), (p) => (p > 0) && (!newStats || p <= maxPage), 1));
 
+	/* Sort. Default is date-desc (newest first) which gets stripped from the URL.
+	   URL shape: ?sort=score-desc, ?sort=score-asc, ?sort=date-asc. */
+	let sortBy = $state<'date' | 'score'>(
+		whitelist<'date' | 'score', string | null>(params.get('sort')?.split('-')[0] ?? null, ['date', 'score'], 'date')
+	);
+	let sortDir = $state<'asc' | 'desc'>(
+		whitelist<'asc' | 'desc', string | null>(params.get('sort')?.split('-')[1] ?? null, ['asc', 'desc'], 'desc')
+	);
+
+	function toggleSort(by: 'date' | 'score') {
+		if (sortBy === by) {
+			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortBy = by;
+			sortDir = 'desc';
+		}
+		page = 1;
+	}
+
 	const { data: firstPageSubmissions } = $derived(submissionState.fetchSubmissions({
 		type: section,
 		mode: mode,
 		test: test,
 		page: page,
+		sortBy,
+		sortDir,
 	}));
 	
 	const needsAI = $derived(section === 'writing' || section === 'speaking');
@@ -38,10 +76,12 @@
 	   (e.g. ?mode=all) is normalized to a clean URL on first run. */
 	$effect(() => {
 		const params = new URLSearchParams(location.search);
-		params.set('type', section);
+		// section lives in the URL path now, not the query string
+		params.delete('type');
 		if (mode === undefined) params.delete('mode'); else params.set('mode', mode);
 		if (test === undefined) params.delete('test'); else params.set('test', test.toString());
 		if (page === 1) params.delete('page'); else params.set('page', String(page));
+		if (sortBy === 'date' && sortDir === 'desc') params.delete('sort'); else params.set('sort', `${sortBy}-${sortDir}`);
 
 		const nextSearch = params.toString();
 		const currentSearch = location.search.startsWith('?') ? location.search.slice(1) : location.search;
@@ -102,24 +142,24 @@
 			<GaugeCard best={formatScoreOptional(submissionState.stats.all.best)} average={formatScoreOptional(submissionState.stats.all.average)} />
 
 			<!-- Section cards -->
-			{#each ['reading', 'listening', 'writing', 'speaking'] satisfies QuizType[] as sc}
+			{#each SECTIONS as sc}
+				{@const info = submissionState.getTrendInfo(sc)}
+				{@const latestAvg = info.latestCount > 0 ? formatScoreOptional(info.latestSum / info.latestCount) : null}
+				{@const baselineAvg = info.baseline.count > 0 ? formatScoreOptional(info.baseline.sum / info.baseline.count) : null}
+				{@const trendDiff = latestAvg !== null && baselineAvg !== null ? +(latestAvg - baselineAvg).toFixed(1) : undefined}
 				<SectionCard
-					bind:selected={
-						() => section,
-						(s) => {
-							section = s;
-							test = undefined;
-							page = 1;
-						}
-					}
+					selected={section}
 					value={sc}
 					stats={submissionState.stats[sc]}
+					onSelect={selectSection}
+					{trendDiff}
 				/>
 			{/each}
 		</div>
 
 		<!-- Section bar -->
 		{#if modeStats && firstPageSubmissions}
+			{@const trendInfo = submissionState.getTrendInfo(section, mode, test)}
 			<SectionBar
 				section={section}
 				stats={modeStats}
@@ -128,9 +168,13 @@
 						.submissions
 						.filter(s => s.ai !== false)
 						.concat(firstPageSubmissions.extraSubmissions ?? [])
-						.slice(0, CHART_DATAPOINTS)
+						.slice(0, trendInfo.latestCount)
 						.reverse()
 				}
+				trendBaseline={trendInfo.baseline}
+				{sortBy}
+				{sortDir}
+				onToggleSort={toggleSort}
 				bind:root={sectionBarEl}
 				bind:mode={
 					() => mode,
@@ -180,12 +224,14 @@
 				</div>
 			{:else}
 				<div bind:this={listEl} class="flex flex-col gap-2 scroll-mt-20 md:scroll-mt-72">
-					<QuizRows 
+					<QuizRows
 						{submissionState}
 						type={section}
 						mode={mode}
 						test={test}
 						page={page}
+						{sortBy}
+						{sortDir}
 					/>
 				</div>
 				{#if maxPage > 1}

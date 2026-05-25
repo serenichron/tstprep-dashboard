@@ -1,18 +1,20 @@
 <script lang="ts">
-  import { CHART_BASELINE, CHART_DATAPOINTS } from "$lib/state/SubmissionState.svelte";
-  	import type { QuizSubmission, StatsPart } from "$lib/types";
-    import { formatScore, formatScoreOptional } from "$lib/utils";
+  	import { CHART_DATAPOINTS } from "$lib/state/SubmissionState.svelte";
+  	import type { QuizSubmission } from "$lib/types";
+	import { formatScore, formatScoreOptional } from "$lib/utils";
 
     const mn = 0.5, mx = 6.5;
     const CW = 400, CH = 160, pL = 32, pR = 14, pT = 16, pB = 32;
     const iW = CW - pL - pR, iH = CH - pT - pB;
     const {
 		submissions,
-		stats,
+		baseline,
 		label,
 	}: {
 		submissions: Pick<QuizSubmission, 'score' | 'created_at'>[],
-		stats: StatsPart,
+		/** Sum + count of the 20 submissions immediately before the latest CHART_DATAPOINTS.
+		 *  count: 0 means no prior submissions exist — progress shows as 0. */
+		baseline: { sum: number, count: number },
 		label: string,
 	} = $props();
 
@@ -25,27 +27,27 @@
 	}
 
 	const latestSum = $derived(submissions.reduce((a, q) => a + q.score, 0));
-	const average = $derived(formatScoreOptional((stats.sum - latestSum) / (CHART_BASELINE - CHART_DATAPOINTS)));
 	const latestAverage = $derived(submissions.length ? formatScore(latestSum / submissions.length) : null);
+	const baselineAverage = $derived(baseline.count > 0 ? formatScoreOptional(baseline.sum / baseline.count) : null);
 
     const trendData = $derived.by(() => {
-		if (submissions.length !== CHART_DATAPOINTS || stats.gradedCount < CHART_BASELINE) {
+		if (submissions.length === 0) {
             return null;
         }
 
 		const yFor = (v: number) => (1 - (v - mn) / (mx - mn)) * iH;
+		// Single point: center it. Multiple points: distribute across the width.
 		const coords = submissions.map((q, i) => {
 			const s = formatScore(q.score);
-			return {
-				x: (i / (submissions.length - 1)) * iW,
-				y: yFor(s),
-				v: s,
-				date: q.created_at
-			};
+			const x = submissions.length === 1
+				? iW / 2
+				: (i / (submissions.length - 1)) * iW;
+			return { x, y: yFor(s), v: s, date: q.created_at };
 		});
 		const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
-		const diff  = latestAverage! - average!;
-		const color = diff >= 0 ? '#00b189' : '#ff5859';
+		// No prior submissions → progress = 0 (neutral). Otherwise diff = latest avg − baseline avg.
+		const diff = baselineAverage !== null ? latestAverage! - baselineAverage : 0;
+		const color = diff > 0 ? '#00b189' : diff < 0 ? '#ff5859' : '#94a3b8';
 		return {
 			coords,
             d,
@@ -54,7 +56,7 @@
 			diff,
 			diffLabel: (diff >= 0 ? '+' : '') + diff.toFixed(1),
 			yLast10: yFor(latestAverage!),
-			yAllTime: yFor(average!),
+			yBaseline: baselineAverage !== null ? yFor(baselineAverage) : null,
 			yTicks: [1, 2, 3, 4, 5, 6].map(v => ({ v, y: yFor(v) })),
 		};
 	});
@@ -97,7 +99,10 @@
 		<div class="flex justify-between items-start p-[18px] pb-3.5 border-b border-gray-100">
 			<div class="flex flex-col gap-[3px]">
 				<span class="text-[15px] font-extrabold text-gray-900 tracking-[-0.3px]">{label}</span>
-				<span class="text-[11px] text-gray-400">Last {trendData.coords.length} scored submissions · progress vs baseline</span>
+				<span class="text-[11px] text-gray-400">
+					Last {trendData.coords.length} scored submissions
+					{#if baseline.count > 0} · progress vs previous {baseline.count}{/if}
+				</span>
 			</div>
 			<button
 				type="button"
@@ -129,9 +134,9 @@
 							<text x={-7} y={t.y + 3.5} text-anchor="end" font-size="9" fill="#ccc" font-family="DM Sans,sans-serif">{t.v}</text>
 						{/each}
 
-						{#if trendData.yAllTime !== null}
-							<line x1={0} y1={trendData.yAllTime} x2={iW} y2={trendData.yAllTime} stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="5,4" />
-							<text x={iW + 5} y={trendData.yAllTime + 3.5} font-size="8.5" fill="#94a3b8" font-family="DM Sans,sans-serif" font-weight="600">{average!.toFixed(1)}</text>
+						{#if trendData.yBaseline !== null}
+							<line x1={0} y1={trendData.yBaseline} x2={iW} y2={trendData.yBaseline} stroke="#cbd5e1" stroke-width="1.3" stroke-dasharray="5,4" />
+							<text x={iW + 5} y={trendData.yBaseline + 3.5} font-size="8.5" fill="#94a3b8" font-family="DM Sans,sans-serif" font-weight="600">{baselineAverage!.toFixed(1)}</text>
 						{/if}
 
 						<line x1={0} y1={trendData.yLast10} x2={iW} y2={trendData.yLast10} stroke={trendData.color} stroke-width="1.3" stroke-dasharray="5,4" opacity=".55" />
@@ -176,19 +181,23 @@
 
 		<!-- Legend -->
 		<div class="flex items-center gap-3.5 py-3 px-[18px] border-t border-gray-100 flex-wrap">
-			<div class="flex items-center gap-1.5 text-[11px] text-gray-500">
-				<span class="inline-block w-5 h-0.5 rounded-sm flex-shrink-0 bg-slate-300"></span>
-				All-time avg&nbsp;<b class="text-gray-800 font-bold">{average!.toFixed(1)}/6</b>
-			</div>
+			{#if baselineAverage !== null}
+				<div class="flex items-center gap-1.5 text-[11px] text-gray-500">
+					<span class="inline-block w-5 h-0.5 rounded-sm flex-shrink-0 bg-slate-300"></span>
+					Previous {baseline.count} avg&nbsp;<b class="text-gray-800 font-bold">{baselineAverage.toFixed(1)}/6</b>
+				</div>
+			{:else}
+				<div class="flex items-center gap-1.5 text-[11px] text-gray-400 italic">
+					No prior submissions to compare against
+				</div>
+			{/if}
 			<div class="flex items-center gap-1.5 text-[11px] text-gray-500">
 				<span class="inline-block w-5 h-0.5 rounded-sm flex-shrink-0" style="background:{trendData.color};opacity:.55"></span>
 				Last {trendData.coords.length} avg&nbsp;<b class="font-bold" style="color:{trendData.color}">{latestAverage!.toFixed(1)}/6</b>
 			</div>
-			{#if trendData.diff !== null}
-				<div class="ml-auto text-[13px] font-extrabold tracking-[-0.4px]" style="color:{trendData.color}">
-					{trendData.diff >= 0 ? '+' : ''}{trendData.diff.toFixed(1)} vs baseline
-				</div>
-			{/if}
+			<div class="ml-auto text-[13px] font-extrabold tracking-[-0.4px]" style="color:{trendData.color}">
+				{trendData.diff >= 0 ? '+' : ''}{trendData.diff.toFixed(1)} {baselineAverage !== null ? 'vs previous' : ''}
+			</div>
 		</div>
 	</div>
 </div>
