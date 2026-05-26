@@ -219,7 +219,8 @@ export const resources: Resource[] = [
 		access: 'free',
 		description: 'Full 4-section TOEFL practice test in printable PDF format.',
 		fileSize: '2.4 MB',
-		downloadUrl: '#'
+		downloadUrl: '#',
+		coverImage: 'https://tstprep.com/app/uploads/2025/11/TST-Prep-Test-Cover-Complete_Practice-Test_-1.jpeg'
 	},
 	{
 		id: 402,
@@ -229,7 +230,8 @@ export const resources: Resource[] = [
 		access: 'free',
 		description: 'Full 4-section TOEFL practice test in printable PDF format.',
 		fileSize: '2.6 MB',
-		downloadUrl: '#'
+		downloadUrl: '#',
+		coverImage: 'https://tstprep.com/app/uploads/2025/11/TST-Prep-Test-Cover-Complete_Practice-Test-_2-scaled.jpg'
 	},
 	{
 		id: 403,
@@ -239,7 +241,8 @@ export const resources: Resource[] = [
 		access: 'free',
 		description: '100 TOEFL-style reading comprehension questions with answer key.',
 		fileSize: '1.8 MB',
-		downloadUrl: '#'
+		downloadUrl: '#',
+		coverImage: 'https://tstprep.com/app/uploads/2020/11/100-Questions-TOEFL-Reading-Cover.jpg'
 	},
 	{
 		id: 404,
@@ -249,7 +252,8 @@ export const resources: Resource[] = [
 		access: 'free',
 		description: '100 TOEFL-style listening questions with transcripts and answer key.',
 		fileSize: '1.5 MB',
-		downloadUrl: '#'
+		downloadUrl: '#',
+		coverImage: 'https://tstprep.com/app/uploads/2025/11/TST-Prep-Test-Cover-Complete_Practice-Test_-1.jpeg'
 	},
 	{
 		id: 405,
@@ -259,7 +263,8 @@ export const resources: Resource[] = [
 		access: 'free',
 		description: 'Official-style rubrics for self-assessing Speaking and Writing responses.',
 		fileSize: '0.8 MB',
-		downloadUrl: '#'
+		downloadUrl: '#',
+		coverImage: 'https://tstprep.com/app/uploads/2025/11/TST-Prep-Test-Cover-Complete_Practice-Test_-1.jpeg'
 	},
 	{
 		id: 406,
@@ -269,7 +274,8 @@ export const resources: Resource[] = [
 		access: 'free',
 		description: 'Sample Speaking prompts with model answers and scoring notes.',
 		fileSize: '1.1 MB',
-		downloadUrl: '#'
+		downloadUrl: '#',
+		coverImage: 'https://tstprep.com/app/uploads/2025/11/TST-Prep-Test-Cover-Complete_Practice-Test_-1.jpeg'
 	},
 	{
 		id: 407,
@@ -279,7 +285,8 @@ export const resources: Resource[] = [
 		access: 'free',
 		description: 'Sample Writing tasks (Integrated & Independent) with model essays.',
 		fileSize: '1.3 MB',
-		downloadUrl: '#'
+		downloadUrl: '#',
+		coverImage: 'https://tstprep.com/app/uploads/2025/11/TST-Prep-Test-Cover-Complete_Practice-Test_-1.jpeg'
 	}
 ];
 

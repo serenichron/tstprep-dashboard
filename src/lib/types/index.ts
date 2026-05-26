@@ -64,6 +64,7 @@ export interface Resource {
 	description: string;
 	fileSize: string;
 	downloadUrl: string;
+	coverImage?: string;
 }
 
 export interface HistoryEntry {
