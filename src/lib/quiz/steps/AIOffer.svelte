@@ -3,47 +3,69 @@
 
 	let {
 		answers,
+		available,
 		onPick,
 		onSkip
 	}: {
 		answers: QuizAnswers;
+		available: ('speaking' | 'writing')[];
 		onPick: (section: 'speaking' | 'writing') => void;
 		onSkip: () => void;
 	} = $props();
+
+	const showSpeaking = $derived(available.includes('speaking'));
+	const showWriting  = $derived(available.includes('writing'));
+	const both         = $derived(showSpeaking && showWriting);
 </script>
 
 <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-1 leading-tight">Want to know your exact level?</h2>
 <p class="text-xs text-gray-500 mb-5 leading-relaxed">
-	Take a 2-minute practice task and our AI will score you on the official TOEFL scale. It's free and instant.
+	{#if both}
+		Take two short practice tasks and our AI will score you on the official TOEFL scale. Free and instant — about 2 minutes each.
+	{:else}
+		Take a 2-minute practice task and our AI will score you on the official TOEFL scale. It's free and instant.
+	{/if}
 </p>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-	<button
-		type="button"
-		onclick={() => onPick('speaking')}
-		class="border-2 border-gray-200 hover:border-brand-green rounded-xl p-5 text-center transition-colors group"
-	>
-		<svg class="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-brand-green transition-colors" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-			<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-			<path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-		</svg>
-		<p class="text-sm font-semibold text-gray-900 mb-1">Speaking Sample</p>
-		<p class="text-xs text-gray-500 leading-relaxed mb-3">Record a 45-second response to a practice prompt.</p>
-		<span class="inline-block text-xs font-semibold text-brand-green">Record Now →</span>
-	</button>
-	<button
-		type="button"
-		onclick={() => onPick('writing')}
-		class="border-2 border-gray-200 hover:border-brand-green rounded-xl p-5 text-center transition-colors group"
-	>
-		<svg class="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-brand-green transition-colors" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-			<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-		</svg>
-		<p class="text-sm font-semibold text-gray-900 mb-1">Writing Sample</p>
-		<p class="text-xs text-gray-500 leading-relaxed mb-3">Write a short response to a practice question.</p>
-		<span class="inline-block text-xs font-semibold text-brand-green">Write Now →</span>
-	</button>
+<div class="grid grid-cols-1 {both ? 'sm:grid-cols-2' : ''} gap-3 mb-4">
+	{#if showSpeaking}
+		<button
+			type="button"
+			onclick={() => onPick('speaking')}
+			class="border-2 border-gray-200 hover:border-brand-green rounded-xl p-5 text-center transition-colors group"
+		>
+			<svg class="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-brand-green transition-colors" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+				<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+				<path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+			</svg>
+			<p class="text-sm font-semibold text-gray-900 mb-1">Speaking Sample</p>
+			<p class="text-xs text-gray-500 leading-relaxed mb-3">Record a 45-second response to a practice prompt.</p>
+			<span class="inline-block text-xs font-semibold text-brand-green">
+				{both ? 'Start here →' : 'Record Now →'}
+			</span>
+		</button>
+	{/if}
+	{#if showWriting}
+		<button
+			type="button"
+			onclick={() => onPick('writing')}
+			class="border-2 border-gray-200 hover:border-brand-green rounded-xl p-5 text-center transition-colors group"
+		>
+			<svg class="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-brand-green transition-colors" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+				<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+			</svg>
+			<p class="text-sm font-semibold text-gray-900 mb-1">Writing Sample</p>
+			<p class="text-xs text-gray-500 leading-relaxed mb-3">Write a short response to a practice question.</p>
+			<span class="inline-block text-xs font-semibold text-brand-green">
+				{both ? 'Start here →' : 'Write Now →'}
+			</span>
+		</button>
+	{/if}
 </div>
+
+{#if both}
+	<p class="text-[11px] text-gray-500 text-center mb-4">We'll run both samples one after the other — pick where to begin.</p>
+{/if}
 
 <button
 	onclick={onSkip}

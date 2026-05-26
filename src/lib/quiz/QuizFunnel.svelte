@@ -33,6 +33,7 @@
 	let answers = $state<QuizAnswers>({ weakAreas: [] });
 	let history = $state<StepId[]>([]);
 	let pendingStep = $state<StepId | null>(null); // for urgent / ai branches
+	let aiPending = $state<('speaking' | 'writing')[]>([]); // queue of samples still to run
 
 	// Seed / reset when cohort prop changes
 	$effect(() => {
@@ -44,7 +45,17 @@
 		};
 		history = [cohortSteps[cohort][0]];
 		pendingStep = null;
+		aiPending = [];
 	});
+
+	// Which AI samples are relevant based on self-reported weak areas
+	function neededAISamples(): ('speaking' | 'writing')[] {
+		const w = answers.weakAreas;
+		const list: ('speaking' | 'writing')[] = [];
+		if (w.includes('Speaking') || w.includes('all')) list.push('speaking');
+		if (w.includes('Writing')  || w.includes('all')) list.push('writing');
+		return list;
+	}
 
 	const current = $derived<StepId>(pendingStep ?? history[history.length - 1] ?? baseSteps[0]);
 
@@ -79,6 +90,20 @@
 		const next = nextMainStep();
 		if (!next) return;
 		if (patch) answers = { ...answers, ...patch };
+
+		// If advancing to ai-offer but user didn't flag Speaking/Writing/all,
+		// skip ai-offer and ai-results entirely.
+		if (next === 'ai-offer') {
+			const needed = neededAISamples();
+			if (needed.length === 0) {
+				const afterIdx = baseSteps.indexOf('ai-offer') + 1;
+				const skipTo = baseSteps.slice(afterIdx).find((s) => s !== 'ai-results');
+				if (skipTo) history = [...history, skipTo];
+				return;
+			}
+			aiPending = needed;
+		}
+
 		history = [...history, next];
 	}
 
@@ -101,21 +126,31 @@
 
 	function handleAIPick(section: 'speaking' | 'writing') {
 		answers = { ...answers, aiSection: section };
+		aiPending = aiPending.filter((s) => s !== section);
 		pendingStep = section;
 	}
 
 	function handleAISampleDone() {
-		// After speaking/writing sample, advance main sequence to ai-results (already next in baseSteps)
+		// If there are more pending samples, auto-start the next one
+		if (aiPending.length > 0) {
+			const nextSample = aiPending[0];
+			answers = { ...answers, aiSection: nextSample };
+			aiPending = aiPending.slice(1);
+			pendingStep = nextSample;
+			return;
+		}
+		// Otherwise advance main sequence to ai-results
 		pendingStep = null;
 		const next = nextMainStep();
 		if (next) history = [...history, next];
 	}
 
 	function handleAISkip() {
-		// Skip ai-results too: advance twice
+		// Skip ai-results too: advance past both ai-offer and ai-results
 		const idx = baseSteps.indexOf('ai-offer');
 		const afterAI = baseSteps.slice(idx + 1).find((s) => s !== 'ai-results');
 		answers = { ...answers, aiSection: null };
+		aiPending = [];
 		if (afterAI) history = [...history, afterAI];
 	}
 
@@ -130,7 +165,8 @@
 	}
 </script>
 
-<div class="min-h-[calc(100vh-3.5rem)] bg-white">
+<div class="min-h-[calc(100vh-3.5rem)] bg-[#eaeaea] px-4 py-8 sm:py-10">
+	<div class="max-w-lg mx-auto bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
 	<QuizShell
 		progress={progress}
 		stepLabel={stepLabel}
@@ -171,7 +207,7 @@
 			/>
 
 		{:else if current === 'ai-offer'}
-			<AIOffer {answers} onPick={handleAIPick} onSkip={handleAISkip} />
+			<AIOffer {answers} available={aiPending} onPick={handleAIPick} onSkip={handleAISkip} />
 
 
 		{:else if current === 'ai-results'}
@@ -187,4 +223,5 @@
 			<C1Dashboard {user} {onExit} />
 		{/if}
 	</QuizShell>
+	</div>
 </div>
