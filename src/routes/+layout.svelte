@@ -17,7 +17,7 @@
 	let error = $state('');
 	let checking = $state(false);
 
-	// Sidebar: open by default on first visit; persisted in localStorage thereafter
+	// Sidebar: closed on mobile (must use hamburger), persisted only on desktop
 	let sidebarOpen = $state(false);
 
 	function applyViewportSidebar() {
