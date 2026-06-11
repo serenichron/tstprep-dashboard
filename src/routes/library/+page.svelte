@@ -6,6 +6,7 @@
 	import type { Section } from '$lib/types';
 	import { isTestAccessible, isCourseAccessible } from '$lib/userState.svelte';
 
+
 	type Tab = 'tests' | 'practice' | 'courses' | 'resources';
 	type TestView = 'byTest' | 'bySection';
 	type SectionFilter = Section | 'All';
@@ -527,13 +528,13 @@
 				</button>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 sm:grid-cols-2 min-[1400px]:grid-cols-4 gap-3">
+			<div class="grid grid-cols-1 sm:grid-cols-2 min-[1600px]:grid-cols-4 gap-3">
 				{#each filteredResources as res}
 					<div class="bg-white rounded-[5px] border border-gray-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-200 flex flex-row group">
 						<!-- Cover image — portrait, left side -->
 						{#if res.coverImage}
-							<div class="w-[128px] flex-shrink-0 bg-gray-100 overflow-hidden">
-								<img src={res.coverImage} alt={res.title} class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-200" />
+							<div class="relative aspect-[1/1.3] flex-shrink-0 min-w-[128px] bg-gray-100 overflow-hidden">
+								<img src={res.coverImage} alt={res.title} class="absolute inset-0 w-full h-full object-cover object-top" />
 							</div>
 						{/if}
 						<!-- Content — right side -->
@@ -543,16 +544,18 @@
 								<div class="mb-1.5"><SectionBadge section={res.section} size="sm" /></div>
 								<h3 class="font-bold text-sm leading-snug {sectionHeaderText[res.section] ?? 'text-gray-800'} line-clamp-2">{res.title}</h3>
 							</div>
-							<!-- White content area — flex col so footer always sticks to bottom -->
-							<div class="px-3 pt-2.5 pb-3 flex flex-col flex-1">
-								<p class="text-[11px] text-gray-600 leading-relaxed flex-1">{res.description}</p>
-								<!-- Footer: button left, file size right -->
-								<div class="flex items-center justify-between gap-2 mt-2.5">
-									<a href={res.downloadUrl} class="text-xs font-semibold px-2.5 py-1.5 rounded-[5px] bg-brand-green text-white hover:bg-brand-green-dark transition-colors flex items-center gap-1.5">
-										<svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-										Download PDF
-									</a>
-									<span class="text-[11px] text-gray-500">{res.fileSize}</span>
+							<!-- White content area -->
+							<div class="px-3 pt-2.5 pb-3 flex items-start gap-2 flex-1">
+								<p class="text-[11px] text-gray-600 leading-relaxed line-clamp-3 flex-1">{res.description}</p>
+								<div class="flex-shrink-0 self-end flex flex-col items-center gap-1">
+									<div class="relative">
+										<span class="hidden lg:group-hover:block absolute inset-0 rounded-[5px] bg-brand-green/40 animate-ping"></span>
+										<span class="lg:hidden absolute inset-0 rounded-[5px] bg-brand-green/40" style="animation: mobilePingAnim 1s cubic-bezier(0, 0, 0.2, 1) infinite"></span>
+										<a href={res.downloadUrl} class="relative w-7 h-7 rounded-[5px] border border-brand-green transition-colors flex items-center justify-center bg-brand-green/[0.12] text-brand-green max-lg:bg-brand-green max-lg:text-white lg:group-hover:bg-brand-green lg:group-hover:text-white">
+											<i class="bi bi-download text-sm"></i>
+										</a>
+									</div>
+									<span class="text-[10px] text-gray-400 whitespace-nowrap">{res.fileSize}</span>
 								</div>
 							</div>
 						</div>
@@ -563,3 +566,4 @@
 
 	{/if}
 </div>
+

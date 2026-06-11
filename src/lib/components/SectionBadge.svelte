@@ -9,18 +9,25 @@
 		size?: 'sm' | 'md';
 	} = $props();
 
-	const map: Record<Section, { label: string; color: string }> = {
-		Reading:   { label: 'R', color: 'bg-blue-500' },
-		Listening: { label: 'L', color: 'bg-purple-500' },
-		Speaking:  { label: 'S', color: 'bg-orange-500' },
-		Writing:   { label: 'W', color: 'bg-pink-500' },
-		General:   { label: 'G', color: 'bg-brand-green' }
+	const colorMap: Record<Section, string> = {
+		Reading:   'bg-blue-500 text-white',
+		Listening: 'bg-purple-500 text-white',
+		Speaking:  'bg-orange-500 text-white',
+		Writing:   'bg-pink-500 text-white',
+		General:   'bg-brand-green text-white'
 	};
 
-	const badge = $derived(map[section]);
-	const sizeClass = $derived(size === 'sm' ? 'w-5 h-5 text-[10px]' : 'w-7 h-7 text-xs');
+	const colorClass = $derived(colorMap[section]);
+	const sizeClass = $derived(
+		size === 'sm'
+			? 'text-[9px] px-1.5 py-0.5'
+			: 'text-[10px] px-2 py-0.5'
+	);
 </script>
 
-<span class="section-badge {badge.color} {sizeClass}" title={section}>
-	{badge.label}
+<span
+	class="inline-flex items-center rounded-full font-bold uppercase tracking-wide {colorClass} {sizeClass}"
+	title={section}
+>
+	{section}
 </span>
