@@ -13,6 +13,11 @@
 
 	let mounted = $state(false);
 	let unlocked = $state(false);
+	// Embed mode: when the dashboard is mounted inside another site (e.g. WordPress),
+	// drop our own header + sidebar + top padding so content snaps to the top of its
+	// container and sits flush below whatever header that host page already has.
+	// Trigger by adding ?embed=1 (or just ?embed) to the URL.
+	let embed = $state(false);
 	let password = $state('');
 	let error = $state('');
 	let checking = $state(false);
@@ -32,6 +37,7 @@
 
 	$effect(() => {
 		mounted = true;
+		embed = new URLSearchParams(window.location.search).has('embed');
 		if (sessionStorage.getItem(STORAGE_KEY) === '1') {
 			unlocked = true;
 		}
@@ -78,6 +84,13 @@
 
 {#if !mounted}
 	<div class="min-h-screen bg-gray-50"></div>
+{:else if embed}
+	<!-- ─── Embed mode (no chrome) ──────────────────────────────────────────────
+	     Mounted inside a host page (WordPress, etc). No fixed header, no sidebar,
+	     no top padding — content snaps to the top of its container. -->
+	<div class="bg-gray-50">
+		{@render children()}
+	</div>
 {:else if !unlocked}
 	<div class="flex min-h-screen items-center justify-center bg-gray-50 px-4">
 		<form

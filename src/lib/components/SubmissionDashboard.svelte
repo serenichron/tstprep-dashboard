@@ -19,7 +19,7 @@
 	/* Section comes from the URL path (/submission-history/[section]). Filters live in
 	   query params. Changing section = navigate to a new path; the rest of the state
 	   stays in this component instance. */
-	const SECTIONS: QuizType[] = ['reading', 'listening', 'writing', 'speaking'];
+	const SECTIONS: QuizType[] = ['reading', 'listening', 'speaking', 'writing'];
 	const section = $derived(
 		whitelist<QuizType, string | undefined>(route.params.section, SECTIONS, 'reading')
 	);
