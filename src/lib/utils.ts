@@ -56,6 +56,20 @@ export function sectionLabel(section: QuizType) {
   )[section];
 }
 
+/* Per-section identity color for an icon chip (tinted bg + colored glyph),
+   matched to the content library tabs: Reading=blue, Listening=purple,
+   Speaking=orange, Writing=pink. Full literal classes so Tailwind keeps them. */
+export function sectionIconClass(section: QuizType) {
+  return (
+    {
+      reading: "bg-blue-100 text-blue-600",
+      listening: "bg-purple-100 text-purple-600",
+      speaking: "bg-orange-100 text-orange-600",
+      writing: "bg-pink-100 text-pink-600",
+    } satisfies Record<typeof section, string>
+  )[section];
+}
+
 export function whitelist<U extends T, T>(value: T, list: U[], def: U): U;
 export function whitelist<U extends T, T>(value: T, list: U[]): U | undefined;
 export function whitelist<U extends T, T>(

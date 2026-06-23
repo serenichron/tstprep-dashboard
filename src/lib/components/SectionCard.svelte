@@ -22,6 +22,16 @@
 
 	const label = $derived(sectionLabel(value));
 	const active = $derived(value === selected);
+
+	/* Per-section identity colors — muted pastel tints matched to the content
+	   library tabs: Reading=blue, Listening=purple, Speaking=orange, Writing=pink. */
+	const sectionTheme: Record<QuizType, { base: string; active: string; text: string; icon: string; border: string }> = {
+		reading:   { base: 'bg-blue-50',   active: 'bg-blue-100',   text: 'text-blue-700',   icon: 'bg-blue-100 text-blue-600',     border: 'border-blue-100' },
+		listening: { base: 'bg-purple-50', active: 'bg-purple-100', text: 'text-purple-700', icon: 'bg-purple-100 text-purple-600', border: 'border-purple-100' },
+		speaking:  { base: 'bg-orange-50', active: 'bg-orange-100', text: 'text-orange-700', icon: 'bg-orange-100 text-orange-600', border: 'border-orange-100' },
+		writing:   { base: 'bg-pink-50',   active: 'bg-pink-100',   text: 'text-pink-700',   icon: 'bg-pink-100 text-pink-600',     border: 'border-pink-100' }
+	};
+	const theme = $derived(sectionTheme[value]);
 	const average = $derived(formatScoreOptional(stats.all.average));
 	const best = $derived(formatScoreOptional(stats.all.best));
 	const testAverage = $derived(formatScoreOptional(stats.test.average));
@@ -42,21 +52,21 @@
 <button
 	type="button"
 	onclick={() => onSelect?.(value)}
-	class="flex flex-col no-underline rounded-xl relative overflow-hidden cursor-pointer text-left transition-shadow duration-150 bg-white
+	class="flex flex-col no-underline rounded-xl relative overflow-hidden cursor-pointer text-left transition-shadow duration-150 bg-white border
 		{active
-			? 'ring-2 ring-brand-green ring-offset-2 ring-offset-gray-50 shadow-[0_6px_20px_rgba(0,177,137,.18)]'
-			: 'shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:shadow-[0_3px_10px_rgba(0,0,0,.1)]'}"
+			? 'border-transparent ring-2 ring-brand-green ring-offset-2 ring-offset-gray-50 shadow-[0_6px_20px_rgba(0,0,0,.12)]'
+			: `${theme.border} shadow-[0_1px_4px_rgba(0,0,0,.05)] hover:shadow-[0_3px_10px_rgba(0,0,0,.1)]`}"
 >
-	<!-- Green header strip -->
-	<div class="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 {active ? 'bg-brand-green-dark' : 'bg-brand-green'}">
-		<div class="w-[18px] h-[18px] md:w-[22px] md:h-[22px] rounded-md flex items-center justify-center flex-shrink-0 bg-white/20 text-white">
+	<!-- Section-colored header strip -->
+	<div class="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 {active ? theme.active : theme.base}">
+		<div class="w-[18px] h-[18px] md:w-[22px] md:h-[22px] rounded-md flex items-center justify-center flex-shrink-0 {theme.icon}">
 			<QuizIcon width="11" height="11" variant={value} />
 		</div>
-		<span class="text-[11px] md:text-[12px] font-bold text-white truncate">{label}</span>
+		<span class="text-[11px] md:text-[12px] font-bold truncate {theme.text}">{label}</span>
 		{#if trendDiff !== undefined}
-			<TrendChip diff={trendDiff} variant="onGreen" />
+			<TrendChip diff={trendDiff} variant="default" />
 		{/if}
-		<span class="ml-auto text-[10px] text-white/75 flex-shrink-0">{stats.all.count} <span class="hidden md:inline xl:hidden">submission{stats.all.count !== 1 ? 's' : ''}</span><span class="hidden xl:inline 2xl:hidden">sub.</span><span class="hidden 2xl:inline">submission{stats.all.count !== 1 ? 's' : ''}</span></span>
+		<span class="ml-auto text-[10px] text-gray-400 flex-shrink-0">{stats.all.count} <span class="hidden md:inline xl:hidden">submission{stats.all.count !== 1 ? 's' : ''}</span><span class="hidden xl:inline 2xl:hidden">sub.</span><span class="hidden 2xl:inline">submission{stats.all.count !== 1 ? 's' : ''}</span></span>
 	</div>
 
 	<!-- Body -->

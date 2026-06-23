@@ -2,6 +2,14 @@
 
 Project-specific instructions for Claude Code working in this repo.
 
+## Reply signature
+
+End every chat reply with this signature on its own line:
+
+```
+▰▰▱  TST Prep Dashboard - main ▱▰▰
+```
+
 ## Stack
 
 - **SvelteKit 5** with **Svelte 5 runes mode** (not legacy Svelte 3/4)

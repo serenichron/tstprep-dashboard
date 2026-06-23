@@ -10,7 +10,7 @@
   	import QuizIcon from '$lib/components/QuizIcon.svelte';
     import SubmissionState, { CHART_DATAPOINTS, PAGE_SIZE } from '$lib/state/SubmissionState.svelte';
 	import SectionBar from './SectionBar.svelte';
-	import { formatScoreOptional, sectionLabel, whitelist } from '$lib/utils';
+	import { formatScoreOptional, sectionIconClass, sectionLabel, whitelist } from '$lib/utils';
   	import QuizRows from './QuizRows.svelte';
 
     const { state: submissionState }: { state: SubmissionState } = $props();
@@ -201,7 +201,7 @@
 			transition:fade={{ duration: 180 }}
 		>
 			<div class="flex items-center gap-2">
-				<div class="w-[22px] h-[22px] rounded-md bg-brand-green/10 text-brand-green flex items-center justify-center flex-shrink-0">
+				<div class="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0 {sectionIconClass(section)}">
 					<QuizIcon variant={section} width="13" height="13" />
 				</div>
 				<span class="text-[13px] font-bold text-gray-800">{sectionLabel(section)}</span>

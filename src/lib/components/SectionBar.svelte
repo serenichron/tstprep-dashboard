@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { QuizMode, QuizSubmission, QuizType, StatsPart } from "$lib/types";
-    import { formatScore, scoreColor, sectionLabel } from "$lib/utils";
+    import { formatScore, scoreColor, sectionIconClass, sectionLabel } from "$lib/utils";
     import ProgressChart from "./ProgressChart.svelte";
     import QuizIcon from "./QuizIcon.svelte";
     import Select from "./Select.svelte";
@@ -49,7 +49,7 @@
 
 <div bind:this={root} class="flex items-center gap-2.5 pt-2 pb-2 border-t border-gray-200 mt-2 flex-wrap max-md:gap-y-2">
     <div class="flex items-center gap-1.5 flex-1 min-w-0 flex-wrap">
-        <div class="w-[22px] h-[22px] rounded-md bg-brand-green/10 text-brand-green flex items-center justify-center flex-shrink-0">
+        <div class="w-[22px] h-[22px] rounded-md flex items-center justify-center flex-shrink-0 {sectionIconClass(section)}">
             <QuizIcon variant={section} width="14" height="14" />
         </div>
         <span class="text-xs font-bold text-gray-800 whitespace-nowrap">{label}</span>
