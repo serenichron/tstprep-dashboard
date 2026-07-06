@@ -1,47 +1,43 @@
 <script lang="ts">
 	import type { QuizType, StatsPartWithMode } from '$lib/types';
-	import { formatScoreOptional, scoreColor, sectionLabel } from '$lib/utils';
+	import { formatScoreOptional, scoreColor, sectionLabel, trendInfoRoot } from '$lib/utils';
 	import QuizIcon from './QuizIcon.svelte';
 	import HelpTip from './HelpTip.svelte';
 	import TrendChip from './TrendChip.svelte';
 
 	let {
-		selected,
+		section=$bindable(),
 		value,
 		stats,
-		onSelect,
-		trendDiff
 	}: {
-		selected: QuizType;
+		section: QuizType;
 		value: QuizType;
 		stats: StatsPartWithMode;
-		onSelect?: (value: QuizType) => void;
-		/** Trend delta in the 1–6 band; pass undefined if not available. */
-		trendDiff?: number;
 	} = $props();
 
 	const label = $derived(sectionLabel(value));
-	const active = $derived(value === selected);
-	const average = $derived(formatScoreOptional(stats.all.average));
-	const best = $derived(formatScoreOptional(stats.all.best));
-	const testAverage = $derived(formatScoreOptional(stats.test.average));
-	const practiceAverage = $derived(formatScoreOptional(stats.practice.average));
+  const active = $derived(value === section);
+  const average = $derived(formatScoreOptional(stats.all.average));
+  const best = $derived(formatScoreOptional(stats.all.best));
+  const testAverage = $derived(formatScoreOptional(stats.test.average));
+  const practiceAverage = $derived(formatScoreOptional(stats.practice.average));
 
 	/* Score-band colors (red < 3.5, amber < 5, green ≥ 5) applied to all score numbers.
 	   The ruler markers + legend dots keep identity colors (green=Test, amber=Practice)
 	   so the two are still visually distinguishable on the same ruler. */
-	const averageColor  = $derived(average  === null ? '#d0d5dd' : scoreColor(average));
-	const bestColor     = $derived(best     === null ? '#d0d5dd' : scoreColor(best));
-	const testColor     = $derived(testAverage     === null ? '#d0d5dd' : scoreColor(testAverage));
-	const practiceColor = $derived(practiceAverage === null ? '#d0d5dd' : scoreColor(practiceAverage));
+  const averageColor = $derived(average === null ? '#d0d5dd' : scoreColor(average));
+  const bestColor = $derived(best === null ? '#d0d5dd' : scoreColor(best));
+  const testColor = $derived(testAverage === null ? '#d0d5dd' : scoreColor(testAverage));
+  const practiceColor = $derived(practiceAverage === null ? '#d0d5dd' : scoreColor(practiceAverage));
+  const trendDiff = $derived(trendInfoRoot(stats.all));
 
-	const pct = (v: number) => ((v - 1) / 5) * 100;
-	const fmt = (v: number) => v.toFixed(1);
+  const pct = (v: number) => ((v - 1) / 5) * 100;
+  const fmt = (v: number) => v.toFixed(1);
 </script>
 
 <button
 	type="button"
-	onclick={() => onSelect?.(value)}
+	onclick={() => (section = value)}
 	class="flex flex-col no-underline rounded-xl relative overflow-hidden cursor-pointer text-left transition-shadow duration-150 bg-white
 		{active
 			? 'ring-2 ring-brand-green ring-offset-2 ring-offset-gray-50 shadow-[0_6px_20px_rgba(0,177,137,.18)]'

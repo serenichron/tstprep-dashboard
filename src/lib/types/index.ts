@@ -143,20 +143,31 @@ export type StatsPart = {
   best: number | null;
   sum: number;
   count: number;
-  gradedCount: number;
-};
-export type StatsPartWithMode = Record<QuizMode | "all", StatsPart>;
-export type StatsPartWithModeAndTest = Record<number, StatsPartWithMode> & {
-  all: StatsPartWithMode;
 };
 
-export type SubmissionStats = Record<
-  QuizTypeComplete,
-  StatsPartWithModeAndTest
->;
+export type StatsPartWithMode = Record<QuizMode, StatsPart> & {
+  all: StatsPart & {
+    trend_sum: number | null;
+    trend_count: number;
+    total: number;
+  };
+};
 
 export type SubmissionGeneralStats = Record<QuizType, StatsPartWithMode> & {
-  all: StatsPart;
+  all: Pick<StatsPart, "average" | "best">;
+};
+
+export type TrendInfo = {
+  submissions: QuizSubmission[];
+  latest: {
+    count: number;
+    average: number;
+  };
+  prev: {
+    count: number;
+    average: number;
+  };
+  diff: number;
 };
 
 export type Sec4 = "Reading" | "Listening" | "Speaking" | "Writing";

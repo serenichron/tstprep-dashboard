@@ -120,6 +120,21 @@ export const PAGE_SIZE = 20;
 export const CHART_DATAPOINTS = 10;
 export const CHART_BASELINE = 20;
 
+type FetchKey = {
+  type: QuizType;
+  mode?: QuizMode;
+  test?: number;
+  page?: number;
+  sortBy?: "date" | "score";
+  sortDir?: "asc" | "desc";
+};
+
+type SubmissionsPage = {
+  submissions: QuizSubmission[];
+  extraSubmissions?: QuizSubmission[];
+  total: number;
+};
+
 export default class SubmissionState {
   public stats: SubmissionGeneralStats;
 
@@ -134,7 +149,7 @@ export default class SubmissionState {
       quizzes.length ? Math.max(...quizzes.map((q) => q.score)) : null;
     const graded = (quizzes: QuizSubmission[]) =>
       quizzes.filter((q) => q.ai !== false);
-    const extract = (type: QuizType): Record<QuizMode | "all", StatsPart> => {
+    const extract = (type: QuizType): StatsPartWithMode => {
       const d = MOCK.filter((q) => q.quiz_type === type);
       const p = d.filter((q) => q.practice);
       const t = d.filter((q) => !q.practice);
@@ -149,21 +164,21 @@ export default class SubmissionState {
           average: average(pg),
           best: best(pg),
           count: p.length,
-          gradedCount: pg.length,
         },
         test: {
           sum: sum(tg),
           average: average(tg),
           best: best(tg),
           count: t.length,
-          gradedCount: tg.length,
         },
         all: {
           sum: sum(dg),
           average: average(dg),
           best: best(dg),
           count: d.length,
-          gradedCount: dg.length,
+          trend_sum: 0,
+          trend_count: 0,
+          total: d.length,
         },
       };
     };
@@ -175,88 +190,84 @@ export default class SubmissionState {
       writing: extract("writing"),
       speaking: extract("speaking"),
       all: {
-        sum: sum(g),
         average: average(g),
         best: best(g),
-        count: MOCK.length,
-        gradedCount: g.length,
       },
     };
   }
 
-  public fetchSubmissions({
-    type,
-    mode,
-    test,
-    page = 1,
-    sortBy = "date",
-    sortDir = "desc",
-  }: {
-    type: QuizType;
-    mode?: QuizMode;
-    test?: number;
-    page?: number;
-    sortBy?: "date" | "score";
-    sortDir?: "asc" | "desc";
-  }) {
-    return createQuery(() => ({
-      queryKey: [type, page, mode, test, sortBy, sortDir],
-      queryFn: async () => {
-        const matchesMode = (s: QuizSubmission) =>
-          mode === undefined || s.practice === (mode === "practice");
-        const matchesTestNumber = (s: QuizSubmission) =>
-          test === undefined || s.test_number === test;
+  public fetchSubmissions(getKey: () => FetchKey) {
+    return createQuery(() => {
+      const {
+        type,
+        mode,
+        test,
+        page = 1,
+        sortBy = "date",
+        sortDir = "desc",
+      } = getKey();
+      return {
+        queryKey: [type, page, mode, test, sortBy, sortDir],
+        queryFn: async (): Promise<SubmissionsPage> => {
+          const matchesMode = (s: QuizSubmission) =>
+            mode === undefined || s.practice === (mode === "practice");
+          const matchesTestNumber = (s: QuizSubmission) =>
+            test === undefined || s.test_number === test;
 
-        const filtered = MOCK.filter(
-          (s) => s.quiz_type === type && matchesMode(s) && matchesTestNumber(s),
-        );
-
-        // Always tiebreak ties by newest-first. Non-AI (ai === false) submissions
-        // are kept at the tail of a score-sort regardless of direction, since
-        // they have no comparable score.
-        const dateDesc = (a: QuizSubmission, b: QuizSubmission) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-
-        let submissions: QuizSubmission[];
-        if (sortBy === "score") {
-          const scored = filtered.filter((s) => s.ai !== false);
-          const unscored = filtered.filter((s) => s.ai === false);
-          scored.sort((a, b) =>
-            sortDir === "asc" ? a.score - b.score : b.score - a.score,
+          const filtered = MOCK.filter(
+            (s) =>
+              s.quiz_type === type && matchesMode(s) && matchesTestNumber(s),
           );
-          // Stable: secondary sort by date desc on equal scores
-          // (the .sort above isn't stable across all envs, but the dataset is
-          // small enough that this is acceptable for the mock).
-          unscored.sort(dateDesc);
-          submissions = [...scored, ...unscored];
-        } else {
-          submissions = [...filtered].sort((a, b) =>
-            sortDir === "asc" ? -dateDesc(a, b) : dateDesc(a, b),
-          );
-        }
 
-        const pagedSubmissions = submissions.slice(
-          (page - 1) * PAGE_SIZE,
-          page * PAGE_SIZE,
-        );
+          // Always tiebreak ties by newest-first. Non-AI (ai === false) submissions
+          // are kept at the tail of a score-sort regardless of direction, since
+          // they have no comparable score.
+          const dateDesc = (a: QuizSubmission, b: QuizSubmission) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 
-        if (page === 1) {
-          const missing =
-            CHART_DATAPOINTS - submissions.filter((s) => s.ai !== false).length;
-          if (missing > 0) {
-            return {
-              submissions: pagedSubmissions,
-              extraSubmissions: submissions
-                .slice(PAGE_SIZE)
-                .filter((s) => s.ai !== false)
-                .slice(0, missing),
-            };
+          let submissions: QuizSubmission[];
+          if (sortBy === "score") {
+            const scored = filtered.filter((s) => s.ai !== false);
+            const unscored = filtered.filter((s) => s.ai === false);
+            scored.sort((a, b) =>
+              sortDir === "asc" ? a.score - b.score : b.score - a.score,
+            );
+            // Stable: secondary sort by date desc on equal scores
+            // (the .sort above isn't stable across all envs, but the dataset is
+            // small enough that this is acceptable for the mock).
+            unscored.sort(dateDesc);
+            submissions = [...scored, ...unscored];
+          } else {
+            submissions = [...filtered].sort((a, b) =>
+              sortDir === "asc" ? -dateDesc(a, b) : dateDesc(a, b),
+            );
           }
-        }
 
-        return { submissions: pagedSubmissions };
-      },
-    }));
+          const pagedSubmissions = submissions.slice(
+            (page - 1) * PAGE_SIZE,
+            page * PAGE_SIZE,
+          );
+
+          if (page === 1) {
+            const missing =
+              CHART_DATAPOINTS -
+              submissions.filter((s) => s.ai !== false).length;
+            if (missing > 0) {
+              return {
+                submissions: pagedSubmissions,
+                extraSubmissions: submissions
+                  .slice(PAGE_SIZE)
+                  .filter((s) => s.ai !== false)
+                  .slice(0, missing),
+                total: submissions.length,
+              };
+            }
+          }
+
+          return { submissions: pagedSubmissions, total: submissions.length };
+        },
+      };
+    });
   }
 
   /**
@@ -316,66 +327,69 @@ export default class SubmissionState {
     };
   }
 
-  public fetchStats(type: QuizType, test?: number) {
-    return createQuery(() => ({
-      queryKey: [type, test],
-      queryFn: async (): Promise<StatsPartWithMode> => {
-        if (test === undefined) {
-          return this.stats[type];
-        }
+  public fetchStats(getKey: () => Pick<FetchKey, "type" | "mode" | "test">) {
+    return createQuery(() => {
+      const { type, mode, test } = getKey();
+      return {
+        queryKey: ["stats", type, mode, test],
+        queryFn: async (): Promise<StatsPart> => {
+          if (test === undefined) {
+            return this.stats[type][mode ?? "all"];
+          }
 
-        const subs = MOCK.filter(
-          (s) => s.quiz_type === type && s.test_number === test,
-        );
-        const reduce = (subs: QuizSubmission[]) =>
-          subs.reduce(
-            (acc, s) =>
-              s.ai !== false
-                ? {
-                    sum: acc.sum + s.score,
-                    count: acc.count + 1,
-                    gradedCount: acc.gradedCount + 1,
-                    best: Math.max(acc.best, s.score),
-                  }
-                : {
-                    ...acc,
-                    count: acc.count + 1,
-                  },
-            {
-              sum: 0,
-              count: 0,
-              gradedCount: 0,
-              best: 0,
-            },
+          const subs = MOCK.filter(
+            (s) => s.quiz_type === type && s.test_number === test,
           );
+          const reduce = (subs: QuizSubmission[]) =>
+            subs.reduce(
+              (acc, s) =>
+                s.ai !== false
+                  ? {
+                      sum: acc.sum + s.score,
+                      count: acc.count + 1,
+                      gradedCount: acc.gradedCount + 1,
+                      best: Math.max(acc.best, s.score),
+                    }
+                  : {
+                      ...acc,
+                      count: acc.count + 1,
+                    },
+              {
+                sum: 0,
+                count: 0,
+                gradedCount: 0,
+                best: 0,
+              },
+            );
 
-        const stats = (subs: QuizSubmission[]) => {
-          const s = reduce(subs);
-          if (s.gradedCount === 0) {
+          const stats = (subs: QuizSubmission[]) => {
+            const s = reduce(subs);
+            if (s.gradedCount === 0) {
+              return {
+                sum: s.sum,
+                average: null,
+                best: null,
+                count: s.count,
+                gradedCount: s.gradedCount,
+              };
+            }
+
             return {
               sum: s.sum,
-              average: null,
-              best: null,
+              average: s.sum / s.gradedCount,
+              best: s.best,
               count: s.count,
               gradedCount: s.gradedCount,
             };
-          }
+          };
 
           return {
-            sum: s.sum,
-            average: s.sum / s.gradedCount,
-            best: s.best,
-            count: s.count,
-            gradedCount: s.gradedCount,
-          };
-        };
-
-        return {
-          practice: stats(subs.filter((s) => s.practice)),
-          test: stats(subs.filter((s) => !s.practice)),
-          all: stats(subs),
-        };
-      },
-    }));
+            practice: stats(subs.filter((s) => s.practice)),
+            test: stats(subs.filter((s) => !s.practice)),
+            all: stats(subs),
+          }[mode ?? "all"];
+        },
+      };
+    });
   }
 }

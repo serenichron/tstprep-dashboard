@@ -1,115 +1,97 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page as route } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
 	import SectionCard from '$lib/components/SectionCard.svelte';
 	import type { QuizMode, QuizType } from '$lib/types';
-  	import GaugeCard from '$lib/components/GaugeCard.svelte';
-  	import AverageChip from '$lib/components/AverageChip.svelte';
-  	import QuizIcon from '$lib/components/QuizIcon.svelte';
-    import SubmissionState, { CHART_DATAPOINTS, PAGE_SIZE } from '$lib/state/SubmissionState.svelte';
+  import GaugeCard from '$lib/components/GaugeCard.svelte';
+  import AverageChip from '$lib/components/AverageChip.svelte';
+  import QuizIcon from '$lib/components/QuizIcon.svelte';
+  import SubmissionState, { PAGE_SIZE } from '$lib/state/SubmissionState.svelte';
 	import SectionBar from './SectionBar.svelte';
-	import { formatScoreOptional, sectionLabel, whitelist } from '$lib/utils';
-  	import QuizRows from './QuizRows.svelte';
+	import { formatScoreOptional, sectionLabel, trendInfo, whitelist } from '$lib/utils';
+  import QuizRows from './QuizRows.svelte';
 
-    const { state: submissionState }: { state: SubmissionState } = $props();
+  const { state: submissionState }: { state: SubmissionState } = $props();
 
 	/* ─── State ─── */
 	/* Section comes from the URL path (/submission-history/[section]). Filters live in
 	   query params. Changing section = navigate to a new path; the rest of the state
 	   stays in this component instance. */
-	const SECTIONS: QuizType[] = ['reading', 'listening', 'writing', 'speaking'];
-	const section = $derived(
-		whitelist<QuizType, string | undefined>(route.params.section, SECTIONS, 'reading')
-	);
+  const SECTIONS: QuizType[] = ['reading', 'listening', 'speaking', 'writing'];
+  const params = new URLSearchParams(location.search);
+  let section = $state(whitelist<QuizType, string | undefined>(params.get('type')!, SECTIONS, 'reading'));
+  let mode = $state(whitelist<QuizMode, string | null>(params.get('mode'), ['practice', 'test']));
+  let test = $state(whitelist<number, number>(parseInt(params.get('test') ?? ''), t => t > 0 && t <= 15));
 
-	const params = new URLSearchParams(location.search);
-	let mode = $state(whitelist<QuizMode, string | null>(params.get('mode'), ['practice', 'test']));
-	let test = $state(whitelist<number, number>(parseInt(params.get('test') ?? ''), (t) => t > 0 && t <= 15));
+  // svelte-ignore state_referenced_locally
+  const statsQuery = submissionState.fetchStats(() => ({ type: section, test, mode }));
+  const stats = $derived(statsQuery.data);
 
-	function selectSection(newSection: QuizType) {
-		if (newSection === section) return;
-		test = undefined;
-		page = 1;
-		const qs = location.search; // keep remaining filters when switching section
-		goto(resolve(`/submission-history/${newSection}`) + qs, { keepFocus: true, noScroll: true });
-	}
+  let page = $state(whitelist<number, number>(parseInt(params.get('page') ?? ''), p => p > 0, 1));
 
-	const { data: newStats } = $derived(submissionState.fetchStats(section, test));
-	const modeStats = $derived(newStats?.[mode ?? 'all']);
-	const maxPage = $derived(Math.ceil((modeStats?.count ?? 0) / PAGE_SIZE));
-
-	let page = $state(whitelist<number, number>(parseInt(params.get('page') ?? ''), (p) => (p > 0) && (!newStats || p <= maxPage), 1));
-
-	/* Sort. Default is date-desc (newest first) which gets stripped from the URL.
+  /* Sort. Default is date-desc (newest first) which gets stripped from the URL.
 	   URL shape: ?sort=score-desc, ?sort=score-asc, ?sort=date-asc. */
-	let sortBy = $state<'date' | 'score'>(
-		whitelist<'date' | 'score', string | null>(params.get('sort')?.split('-')[0] ?? null, ['date', 'score'], 'date')
-	);
-	let sortDir = $state<'asc' | 'desc'>(
-		whitelist<'asc' | 'desc', string | null>(params.get('sort')?.split('-')[1] ?? null, ['asc', 'desc'], 'desc')
-	);
+  let sortBy = $state<'date' | 'score'>(
+    whitelist<'date' | 'score', string | null>(params.get('sort')?.split('-')[0] ?? null, ['date', 'score'], 'date')
+  );
+  let sortDir = $state<'asc' | 'desc'>(
+    whitelist<'asc' | 'desc', string | null>(params.get('sort')?.split('-')[1] ?? null, ['asc', 'desc'], 'desc')
+  );
 
-	function toggleSort(by: 'date' | 'score') {
-		if (sortBy === by) {
-			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-		} else {
-			sortBy = by;
-			sortDir = 'desc';
-		}
-		page = 1;
-	}
+  // svelte-ignore state_referenced_locally
+  const submissionsQuery = submissionState.fetchSubmissions(() => ({
+    type: section,
+    mode,
+    test,
+  }));
+  const firstPageSubmissions = $derived(submissionsQuery.data);
+  const maxPage = $derived(Math.ceil((firstPageSubmissions?.total ?? 0) / PAGE_SIZE));
 
-	const { data: firstPageSubmissions } = $derived(submissionState.fetchSubmissions({
-		type: section,
-		mode: mode,
-		test: test,
-		page: page,
-		sortBy,
-		sortDir,
-	}));
-	
-	const needsAI = $derived(section === 'writing' || section === 'speaking');
+  const needsAI = $derived(section === 'writing' || section === 'speaking');
 
-	/* Sync state → URL. Default values are stripped. Manual entry of default values
+  /* Sync state → URL. Default values are stripped. Manual entry of default values
 	   (e.g. ?mode=all) is normalized to a clean URL on first run. */
-	$effect(() => {
-		const params = new URLSearchParams(location.search);
-		// section lives in the URL path now, not the query string
-		params.delete('type');
-		if (mode === undefined) params.delete('mode'); else params.set('mode', mode);
-		if (test === undefined) params.delete('test'); else params.set('test', test.toString());
-		if (page === 1) params.delete('page'); else params.set('page', String(page));
-		if (sortBy === 'date' && sortDir === 'desc') params.delete('sort'); else params.set('sort', `${sortBy}-${sortDir}`);
+  $effect(() => {
+    const params = new URLSearchParams(location.search);
+    params.set('type', section);
+    if (mode === undefined) params.delete('mode');
+    else params.set('mode', mode);
+    if (test === undefined) params.delete('test');
+    else params.set('test', test.toString());
+    if (page === 1) params.delete('page');
+    else params.set('page', String(page));
+    if (sortBy === 'date' && sortDir === 'desc') params.delete('sort');
+    else params.set('sort', `${sortBy}-${sortDir}`);
 
-		const nextSearch = params.toString();
-		const currentSearch = location.search.startsWith('?') ? location.search.slice(1) : location.search;
-		if (nextSearch === currentSearch) return;
+    const nextSearch = params.toString();
+    const currentSearch = location.search.startsWith('?') ? location.search.slice(1) : location.search;
+    if (nextSearch === currentSearch) return;
 
-		const target = location.pathname + (nextSearch ? '?' + nextSearch : '');
-		goto(target, { replaceState: true, keepFocus: true, noScroll: true });
-	});
+    history.replaceState(null, '', nextSearch ? '?' + nextSearch : '');
+  });
+  
+  /* Scroll list back into view when paginating */
+  let listEl = $state<HTMLDivElement | undefined>();
+  $effect(() => {
+    page;
+    listEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
-	/* Scroll list back into view when paginating */
-	let listEl = $state<HTMLDivElement | undefined>();
-	$effect(() => {
-		page;
-		listEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-	});
-
-	/* Mobile floating section indicator — appears only when the original section bar leaves view */
-	let sectionBarEl = $state<HTMLDivElement | undefined>();
-	let sectionBarVisible = $state(true);
-	$effect(() => {
-		if (!sectionBarEl) return;
-		const observer = new IntersectionObserver(
-			([entry]) => { sectionBarVisible = entry.isIntersecting; },
-			{ rootMargin: '-56px 0px 0px 0px' }
-		);
-		observer.observe(sectionBarEl);
-		return () => observer.disconnect();
-	});
+  /* Mobile floating section indicator — appears only when the original section bar leaves view */
+  let sectionBarEl = $state<HTMLDivElement | undefined>();
+  let sectionBarVisible = $state(true);
+  $effect(() => {
+    if (!sectionBarEl) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        sectionBarVisible = entry.isIntersecting;
+      },
+      { rootMargin: '-56px 0px 0px 0px' }
+    );
+    observer.observe(sectionBarEl);
+    return () => observer.disconnect();
+  });
 
 </script>
 
@@ -143,59 +125,61 @@
 
 			<!-- Section cards -->
 			{#each SECTIONS as sc}
-				{@const info = submissionState.getTrendInfo(sc)}
-				{@const latestAvg = info.latestCount > 0 ? formatScoreOptional(info.latestSum / info.latestCount) : null}
-				{@const baselineAvg = info.baseline.count > 0 ? formatScoreOptional(info.baseline.sum / info.baseline.count) : null}
-				{@const trendDiff = latestAvg !== null && baselineAvg !== null ? +(latestAvg - baselineAvg).toFixed(1) : undefined}
 				<SectionCard
-					selected={section}
+					bind:section={
+						() => section,
+						s => {
+						section = s;
+						mode = undefined;
+						test = undefined;
+						page = 1;
+						}
+					}
 					value={sc}
 					stats={submissionState.stats[sc]}
-					onSelect={selectSection}
-					{trendDiff}
 				/>
 			{/each}
 		</div>
 
 		<!-- Section bar -->
-		{#if modeStats && firstPageSubmissions}
-			{@const trendInfo = submissionState.getTrendInfo(section, mode, test)}
+		{#if stats && firstPageSubmissions}
+			{@const trend = trendInfo(stats, firstPageSubmissions.submissions, firstPageSubmissions.extraSubmissions)}
 			<SectionBar
-				section={section}
-				stats={modeStats}
-				trendSubmissions={
-					firstPageSubmissions
-						.submissions
-						.filter(s => s.ai !== false)
-						.concat(firstPageSubmissions.extraSubmissions ?? [])
-						.slice(0, trendInfo.latestCount)
-						.reverse()
+				{section}
+				{stats}
+				total={firstPageSubmissions.total}
+				{trend}
+				bind:sortBy={
+				() => sortBy,
+				by => {
+					if (by === sortBy) return;
+					sortBy = by;
+					sortDir = 'desc';
+					page = 1;
 				}
-				trendBaseline={trendInfo.baseline}
-				{sortBy}
-				{sortDir}
-				onToggleSort={toggleSort}
+				}
+				bind:sortDir
 				bind:root={sectionBarEl}
 				bind:mode={
-					() => mode,
-					(m) => {
-						mode = m;
-						page = 1;
-					}
+				() => mode,
+				m => {
+					mode = m;
+					page = 1;
+				}
 				}
 				bind:test={
-					() => test,
-					(t) => {
-						test = t;
-						page = 1;
-					}
+				() => test,
+				t => {
+					test = t;
+					page = 1;
+				}
 				}
 			/>
 		{/if}
 	</div>
 
 	<!-- Mobile-only floating section indicator — fades in once the original section bar leaves view -->
-	{#if !sectionBarVisible && modeStats}
+	{#if !sectionBarVisible && firstPageSubmissions}
 		<div
 			class="md:hidden fixed top-14 left-0 right-0 z-30 px-4 py-2 bg-gray-50/85 backdrop-blur-md border-b border-gray-200/70"
 			transition:fade={{ duration: 180 }}
@@ -206,8 +190,7 @@
 				</div>
 				<span class="text-[13px] font-bold text-gray-800">{sectionLabel(section)}</span>
 				<span class="text-gray-300 text-xs">·</span>
-				<span class="text-[11px] text-gray-500">{modeStats.count} submission{modeStats.count !== 1 ? 's' : ''}</span>
-				<!-- <span class="text-[11px] text-gray-500">{isComplete ? filteredCtByDate.length : newStats.count} {isComplete ? 'attempt' : 'submission'}{(isComplete ? filteredCtByDate.length : newStats.count) !== 1 ? 's' : ''}</span> -->
+				<span class="text-[11px] text-gray-500">{firstPageSubmissions.total} submission{firstPageSubmissions.total !== 1 ? 's' : ''}</span>
 			</div>
 		</div>
 	{/if}
@@ -215,8 +198,8 @@
 	<!-- Detail Panel -->
 	<div>
 		<!-- ═══ SECTION VIEW ═══ -->
-		{#if modeStats}
-			{#if modeStats.count === 0}
+		{#if firstPageSubmissions}
+			{#if firstPageSubmissions.total === 0}
 				<div class="py-11 px-5 text-center">
 					<div class="text-3xl mb-1.5 opacity-40">📝</div>
 					<div class="text-[13px] font-semibold text-gray-400">No {section} submissions{test ? ` for Test #${test}` : ''}</div>
@@ -240,7 +223,7 @@
 							class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
 							← Prev
 						</button>
-						<span class="text-[11px] text-gray-400">Page {page} of {maxPage} · {modeStats.count} submissions</span>
+						<span class="text-[11px] text-gray-400">Page {page} of {maxPage} · {firstPageSubmissions.total} submissions</span>
 						<button disabled={page === maxPage} onclick={() => page++}
 							class="py-[5px] px-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-xs font-semibold cursor-pointer transition-all duration-150 hover:enabled:border-brand-green hover:enabled:text-brand-green disabled:opacity-40 disabled:cursor-default">
 							Next →
