@@ -19,9 +19,16 @@
 
 	// Sidebar: closed on mobile (must use hamburger), persisted only on desktop
 	let sidebarOpen = $state(false);
+	let desktop = $state(false);
+
+	// True only when the sidebar is actually occupying layout width (desktop, expanded).
+	// On mobile the sidebar is an overlay drawer and never shifts content, so it
+	// should always use the "collapsed" breakpoint set regardless of isOpen.
+	const sidebarLayoutOpen = $derived(sidebarOpen && desktop);
 
 	function applyViewportSidebar() {
 		const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+		desktop = isDesktop;
 		if (isDesktop) {
 			const saved = localStorage.getItem('sidebarOpen');
 			sidebarOpen = saved !== null ? saved === 'true' : true;
@@ -191,7 +198,10 @@
 	<!-- ─── Layout body ───────────────────────────────────────────────────────── -->
 	<div class="flex min-h-screen bg-gray-50 pt-14">
 		<Sidebar isOpen={sidebarOpen} onClose={() => setSidebar(false)} onToggle={() => setSidebar(!sidebarOpen)} />
-		<main class="flex-1 min-w-0 overflow-x-clip min-h-[calc(100vh-3.5rem)] transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : 'lg:ml-14'}">
+		<main
+			class="group/layout flex-1 min-w-0 overflow-x-clip min-h-[calc(100vh-3.5rem)] transition-[margin] duration-300 {sidebarOpen ? 'lg:ml-60' : 'lg:ml-14'}"
+			data-sidebar={sidebarLayoutOpen ? 'open' : 'collapsed'}
+		>
 			{@render children()}
 		</main>
 	</div>

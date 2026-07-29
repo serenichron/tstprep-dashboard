@@ -137,7 +137,7 @@
 	</div>
 
 	<!-- Tab bar: 2×2 grid on mobile, single row on desktop -->
-	<div class="bg-white border border-gray-200 shadow-sm rounded-[5px] p-1 grid grid-cols-2 sm:flex gap-1 mb-4 sm:mb-5">
+	<div class="bg-white border border-gray-200 shadow-sm rounded-[5px] p-1 grid grid-cols-2 min-[710px]:flex gap-1 mb-4 sm:mb-5">
 		{#each tabs as tab}
 			<button
 				class="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-[5px] text-xs sm:text-sm font-semibold transition-all duration-150
@@ -195,7 +195,7 @@
 			{/if}
 
 			<!-- Access filter: desktop — same row, pushed right -->
-			{#if activeTab !== 'resources' && activeTab !== 'practice'}
+			{#if activeTab !== 'resources'}
 				<div class="hidden sm:flex gap-1 ml-auto">
 					{#each [['all', 'All'], ['free', 'Free'], ['locked', 'Premium']] as [val, lbl]}
 						<button
@@ -212,7 +212,7 @@
 		</div>
 
 		<!-- Access filter: mobile — separate row with divider -->
-		{#if activeTab !== 'resources' && activeTab !== 'practice'}
+		{#if activeTab !== 'resources'}
 			<div class="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200 sm:hidden">
 				<span class="text-[10px] font-semibold text-gray-500 mr-1">Access:</span>
 				{#each [['all', 'All'], ['free', 'Free'], ['locked', 'Premium']] as [val, lbl]}
@@ -241,7 +241,12 @@
 				</button>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 sm:grid-cols-2 min-[1400px]:grid-cols-4 gap-3">
+			<div class="grid grid-cols-1
+				group-data-[sidebar=open]/layout:min-[1040px]:grid-cols-2
+				group-data-[sidebar=open]/layout:min-[1790px]:grid-cols-4
+				group-data-[sidebar=collapsed]/layout:min-[790px]:grid-cols-2
+				group-data-[sidebar=collapsed]/layout:min-[1610px]:grid-cols-4
+				gap-3">
 				{#each filteredTests as test}
 					{@const locked = !isTestAccessible(test.testNumber)}
 					{@const completedCount = getCompletedSections(test)}
@@ -320,7 +325,12 @@
 			Improvement #2: replace the unreadable tiny icon grid with compact
 			table-style rows — one row per test, scannable at a glance.
 		-->
-		<div class="grid grid-cols-1 sm:grid-cols-2 min-[1400px]:grid-cols-4 gap-3">
+		<div class="grid grid-cols-1
+			group-data-[sidebar=open]/layout:min-[1040px]:grid-cols-2
+			group-data-[sidebar=open]/layout:min-[1790px]:grid-cols-4
+			group-data-[sidebar=collapsed]/layout:min-[790px]:grid-cols-2
+			group-data-[sidebar=collapsed]/layout:min-[1610px]:grid-cols-4
+			gap-3">
 			{#each sectionList as section}
 				{@const sectionScoreList = (practiceTests.map(t => t.sectionScores?.[section]).filter(s => s !== null && s !== undefined) as number[])}
 				{@const sectionTotalAttempts = practiceTests.filter(t => { const s = t.sectionScores?.[section]; return s !== null && s !== undefined; }).reduce((sum, t) => sum + (t.attempts ?? 0), 0)}
@@ -400,7 +410,9 @@
 							<div class="min-w-0">
 								<div class="mb-1.5"><SectionBadge section={set.section} size="sm" /></div>
 								<h3 class="font-bold text-sm leading-snug {sectionHeaderText[set.section]} line-clamp-2">{set.title}</h3>
-								<p class="text-[11px] mt-0.5 text-gray-500">{set.questionCount} questions · {set.difficulty}</p>
+								<p class="text-[11px] mt-0.5 text-gray-500">
+									{#if set.setCount}{set.setCount} sets · {set.questionCount} questions/set{:else}{set.questionCount} questions{/if} · {set.difficulty}
+								</p>
 							</div>
 							{#if set.access === 'locked'}
 								<span class="text-[10px] bg-white/80 text-gray-500 font-bold px-2 py-0.5 rounded-full flex-shrink-0">Locked</span>

@@ -42,6 +42,7 @@ export interface PracticeSet {
   section: Section;
   access: AccessLevel;
   questionCount: number;
+  setCount?: number;
   completionPercent: number;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   rating: number;

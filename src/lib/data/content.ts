@@ -127,6 +127,30 @@ export const practiceSets: PracticeSet[] = [
 		rating: 4.6,
 		ratingCount: 278
 	},
+
+	// Reading
+	{ id: 205, type: 'practice', title: 'Academic Passages', section: 'Reading', access: 'locked', setCount: 15, questionCount: 5, completionPercent: 0, difficulty: 'Advanced', rating: 4.7, ratingCount: 96 },
+	{ id: 206, type: 'practice', title: 'Complete the Words', section: 'Reading', access: 'locked', setCount: 15, questionCount: 3, completionPercent: 0, difficulty: 'Beginner', rating: 4.6, ratingCount: 84 },
+	{ id: 207, type: 'practice', title: 'Daily Life Short', section: 'Reading', access: 'locked', setCount: 4, questionCount: 4, completionPercent: 0, difficulty: 'Beginner', rating: 4.5, ratingCount: 52 },
+	{ id: 208, type: 'practice', title: 'Read in Daily Life Long', section: 'Reading', access: 'locked', setCount: 13, questionCount: 3, completionPercent: 0, difficulty: 'Intermediate', rating: 4.7, ratingCount: 108 },
+	{ id: 209, type: 'practice', title: 'Text Chain', section: 'Reading', access: 'locked', setCount: 10, questionCount: 3, completionPercent: 0, difficulty: 'Intermediate', rating: 4.6, ratingCount: 77 },
+
+	// Listening
+	{ id: 210, type: 'practice', title: 'Listen and Choose', section: 'Listening', access: 'locked', setCount: 14, questionCount: 10, completionPercent: 0, difficulty: 'Beginner', rating: 4.6, ratingCount: 91 },
+	{ id: 211, type: 'practice', title: 'Listen and Transcribe', section: 'Listening', access: 'locked', setCount: 40, questionCount: 10, completionPercent: 0, difficulty: 'Advanced', rating: 4.8, ratingCount: 143 },
+	{ id: 212, type: 'practice', title: 'Listen to a Conversation', section: 'Listening', access: 'locked', setCount: 10, questionCount: 6, completionPercent: 0, difficulty: 'Intermediate', rating: 4.6, ratingCount: 88 },
+	{ id: 213, type: 'practice', title: 'Listen to an Academic Talk', section: 'Listening', access: 'locked', setCount: 7, questionCount: 12, completionPercent: 0, difficulty: 'Advanced', rating: 4.7, ratingCount: 65 },
+	{ id: 214, type: 'practice', title: 'Listen to an Announcement', section: 'Listening', access: 'locked', setCount: 5, questionCount: 8, completionPercent: 0, difficulty: 'Beginner', rating: 4.5, ratingCount: 47 },
+
+	// Speaking
+	{ id: 215, type: 'practice', title: 'Listen and Repeat', section: 'Speaking', access: 'locked', setCount: 15, questionCount: 7, completionPercent: 0, difficulty: 'Beginner', rating: 4.6, ratingCount: 89 },
+	{ id: 216, type: 'practice', title: 'Listen and Repeat Extra', section: 'Speaking', access: 'locked', setCount: 30, questionCount: 10, completionPercent: 0, difficulty: 'Intermediate', rating: 4.7, ratingCount: 112 },
+	{ id: 217, type: 'practice', title: 'Take an Interview', section: 'Speaking', access: 'locked', setCount: 11, questionCount: 4, completionPercent: 0, difficulty: 'Advanced', rating: 4.8, ratingCount: 74 },
+
+	// Writing
+	{ id: 218, type: 'practice', title: 'Build a Sentence', section: 'Writing', access: 'locked', setCount: 14, questionCount: 10, completionPercent: 0, difficulty: 'Beginner', rating: 4.6, ratingCount: 82 },
+	{ id: 219, type: 'practice', title: 'Write an Email', section: 'Writing', access: 'locked', setCount: 6, questionCount: 3, completionPercent: 0, difficulty: 'Intermediate', rating: 4.7, ratingCount: 59 },
+	{ id: 220, type: 'practice', title: 'Write for an Academic Discussion', section: 'Writing', access: 'locked', setCount: 6, questionCount: 3, completionPercent: 0, difficulty: 'Advanced', rating: 4.8, ratingCount: 63 },
 ];
 
 // ─── Skill Courses ────────────────────────────────────────────────────────────
